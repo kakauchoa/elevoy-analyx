@@ -1,0 +1,9 @@
+[phases.build]
+cmds = [
+  "npm ci",
+  "npx prisma generate",
+  "npm run build"
+]
+
+[start]
+cmd = "next start -p ${PORT:-3000}"
