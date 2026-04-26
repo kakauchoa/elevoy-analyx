@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { CampanhaHierarquica, ConjuntoHierarquico, AnuncioHierarquico, InsightNumericos } from "@/types/dashboard";
 import { formatarMetrica } from "@/lib/metricas";
 
@@ -72,6 +72,25 @@ export function TabelaCampanhas({
   const [expandidas, setExpandidas] = useState<Set<string>>(new Set());
 
   const custoCampo = MAPA_CUSTO[metricaPrincipal] ?? "custoPorResultado";
+
+  // Auto-expansão ao mudar o nível do filtro:
+  // "campanha" → colapsa tudo | "publico" → expande campanhas | "anuncio" → expande tudo
+  useEffect(() => {
+    if (nivelFiltro === "campanha") {
+      setExpandidas(new Set());
+      return;
+    }
+    const ids = new Set<string>();
+    for (const c of campanhas) {
+      ids.add(c.id); // expande campanha para mostrar conjuntos
+      if (nivelFiltro === "anuncio") {
+        for (const cs of c.conjuntos) {
+          ids.add(cs.id); // expande conjunto para mostrar anúncios
+        }
+      }
+    }
+    setExpandidas(ids);
+  }, [nivelFiltro, campanhas]);
 
   // Status permitidos: sempre ACTIVE; adiciona PAUSED se toggle ativo
   const statusPermitidos = mostrarPausados

@@ -108,11 +108,11 @@ export default function DashboardCompartilhavel({ params }: PageProps) {
     }).catch(() => {});
   }
 
+  // Dispara apenas na montagem inicial
   useEffect(() => {
     carregarDados(periodo);
     registrarAcesso();
 
-    // Registra duração da visita ao sair
     const registrarDuracao = () => {
       const duracao = Math.round((Date.now() - inicioRef.current) / 1000);
       navigator.sendBeacon(
@@ -126,13 +126,17 @@ export default function DashboardCompartilhavel({ params }: PageProps) {
       limparPolling();
       window.removeEventListener("beforeunload", registrarDuracao);
     };
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Recarrega sempre que o período muda (pula a primeira renderização)
+  const periodoIniciado = useRef(false);
   useEffect(() => {
-    if (!carregando) {
-      carregarDados(periodo);
+    if (!periodoIniciado.current) {
+      periodoIniciado.current = true;
+      return;
     }
-  }, [periodo]);
+    carregarDados(periodo);
+  }, [periodo]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (erro) {
     return (
@@ -189,20 +193,18 @@ export default function DashboardCompartilhavel({ params }: PageProps) {
           </div>
         )}
 
-        {/* Dados faltando — exibe sincronização */}
-        {sincronizando && dados && dados.datasFaltando.length > 0 && (
+        {/* Sem nenhum dado ainda e sincronizando — tela de espera */}
+        {sincronizando && dados && dados.porDia.length === 0 && <LoadingSync />}
+
+        {/* Há dados parciais e ainda sincronizando — banner discreto */}
+        {sincronizando && dados && dados.porDia.length > 0 && dados.datasFaltando.length > 0 && (
           <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 flex items-center gap-3">
             <div className="w-4 h-4 rounded-full border-2 border-amber-500 border-t-transparent animate-spin shrink-0" />
             <p className="text-sm text-amber-700">
-              Sincronizando dados do período ({dados.datasFaltando.length} dia{dados.datasFaltando.length > 1 ? "s" : ""} faltando).
+              Sincronizando {dados.datasFaltando.length} dia{dados.datasFaltando.length !== 1 ? "s" : ""} ainda sem dados.
               A página atualiza automaticamente a cada 30 segundos.
             </p>
           </div>
-        )}
-
-        {/* Dashboard completo sem dados (após sync tentado) */}
-        {!carregando && dados && dados.datasFaltando.length > 0 && dados.porDia.length === 0 && sincronizando && (
-          <LoadingSync />
         )}
 
         {/* Conteúdo principal */}
