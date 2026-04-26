@@ -10,22 +10,15 @@ const API_VERSION = process.env.META_API_VERSION ?? "v18.0";
 const BASE_URL = `https://graph.facebook.com/${API_VERSION}`;
 
 /** Campos solicitados ao endpoint /insights conforme CLAUDE.md */
+// Apenas valores brutos que a API retorna diretamente — métricas derivadas são calculadas localmente
 export const CAMPOS_INSIGHTS = [
   "spend",
   "impressions",
   "reach",
   "clicks",
   "inline_link_clicks",
-  "cpm",
-  "ctr",
-  "cpc",
-  "cpp",
-  "frequency",
   "unique_clicks",
-  "unique_ctr",
   "outbound_clicks",
-  "outbound_ctr",
-  "landing_page_views",
   "video_thruplay_watched_actions",
   "video_p25_watched_actions",
   "video_p50_watched_actions",
@@ -61,6 +54,7 @@ export const MAPA_ACTIONS: Record<string, string> = {
   omni_add_to_cart: "addToCart",
   omni_initiated_checkout: "initiateCheckout",
   omni_purchase: "purchaseCount",
+  landing_page_view: "landingPageViews",
 };
 
 /**

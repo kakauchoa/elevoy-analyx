@@ -37,35 +37,35 @@ function extrairValorAction(
   return arr?.find((a) => a.action_type === actionType)?.value;
 }
 
+/** Divisão segura — retorna null se o divisor for zero ou indefinido */
+function div(numerador: bigint | number | undefined, divisor: bigint | number | undefined): number | null {
+  if (numerador === undefined || divisor === undefined) return null;
+  const d = Number(divisor);
+  if (d === 0) return null;
+  return Number(numerador) / d;
+}
+
 /**
  * Converte um registro bruto da Graph API para os campos do schema Prisma.
  * Campos BigInt recebem BigInt(); campos Decimal recebem parseFloat().
+ * Métricas derivadas (cpm, ctr, cpc, etc.) são calculadas localmente.
  */
 function transformarInsight(record: MetaInsightBruto): Record<string, bigint | number | string | null> {
   const dados: Record<string, bigint | number | string | null> = {};
 
-  // Campos numéricos diretos (string → número)
+  // Campos brutos diretos (string → número)
   const numericos: Record<string, "bigint" | "float"> = {
     impressions: "bigint",
     reach: "bigint",
     clicks: "bigint",
     inline_link_clicks: "bigint",
     unique_clicks: "bigint",
-    landing_page_views: "bigint",
     spend: "float",
-    cpm: "float",
-    ctr: "float",
-    cpc: "float",
-    cpp: "float",
-    frequency: "float",
-    unique_ctr: "float",
   };
 
   const mapaCampoNomePrisma: Record<string, string> = {
     inline_link_clicks: "inlineLinkClicks",
     unique_clicks: "uniqueClicks",
-    unique_ctr: "uniqueCtr",
-    landing_page_views: "landingPageViews",
   };
 
   for (const [campo, tipo] of Object.entries(numericos)) {
@@ -76,12 +76,9 @@ function transformarInsight(record: MetaInsightBruto): Record<string, bigint | n
     dados[prismaField] = tipo === "bigint" ? BigInt(valor) : parseFloat(valor);
   }
 
-  // outbound_clicks e outbound_ctr — arrays com action_type "outbound_click"
+  // outbound_clicks — array com action_type "outbound_click"
   const outboundClicksVal = extrairValorAction(record.outbound_clicks, "outbound_click");
   if (outboundClicksVal) dados.outboundClicks = BigInt(outboundClicksVal);
-
-  const outboundCtrVal = extrairValorAction(record.outbound_ctr, "outbound_click");
-  if (outboundCtrVal) dados.outboundCtr = parseFloat(outboundCtrVal);
 
   // actions → mapeamento via MAPA_ACTIONS para campos de contagem
   for (const action of record.actions ?? []) {
@@ -98,7 +95,6 @@ function transformarInsight(record: MetaInsightBruto): Record<string, bigint | n
   for (const custo of record.cost_per_action_type ?? []) {
     const campo = MAPA_COST_PER_ACTION[custo.action_type];
     if (!campo) continue;
-    // Usa o primeiro valor encontrado (evita sobrescrever com duplicatas)
     if (dados[campo] === undefined) {
       dados[campo] = parseFloat(custo.value);
     }
@@ -136,14 +132,42 @@ function transformarInsight(record: MetaInsightBruto): Record<string, bigint | n
   const view10s = extrairValorAction(record.actions, "video_10_sec_watched_actions");
   if (view10s) dados.videoView10s = BigInt(view10s);
 
-  // landing_page_view_rate derivada de landingPageViews / clicks
-  const lpv = dados.landingPageViews as bigint | undefined;
-  const clk = dados.clicks as bigint | undefined;
-  if (lpv !== undefined && clk !== undefined && clk > BigInt(0)) {
-    dados.landingPageViewRate = parseFloat(
-      ((Number(lpv) / Number(clk)) * 100).toFixed(6)
-    );
-  }
+  // --- Métricas derivadas (calculadas localmente, nunca solicitadas à API) ---
+  const spend = dados.spend as number | undefined;
+  const impressions = dados.impressions as bigint | undefined;
+  const reach = dados.reach as bigint | undefined;
+  const clicks = dados.clicks as bigint | undefined;
+  const uniqueClicks = dados.uniqueClicks as bigint | undefined;
+  const outboundClicks = dados.outboundClicks as bigint | undefined;
+  const landingPageViews = dados.landingPageViews as bigint | undefined;
+  const resultadoPrincipal = dados.resultadoPrincipal as bigint | undefined;
+
+  const cpm = div(spend !== undefined ? spend * 1000 : undefined, impressions);
+  if (cpm !== null) dados.cpm = parseFloat(cpm.toFixed(4));
+
+  const cpc = div(spend, clicks);
+  if (cpc !== null) dados.cpc = parseFloat(cpc.toFixed(4));
+
+  const ctr = div(clicks !== undefined ? Number(clicks) * 100 : undefined, impressions);
+  if (ctr !== null) dados.ctr = parseFloat(ctr.toFixed(6));
+
+  const cpp = div(spend !== undefined ? spend * 1000 : undefined, reach);
+  if (cpp !== null) dados.cpp = parseFloat(cpp.toFixed(4));
+
+  const frequency = div(impressions, reach);
+  if (frequency !== null) dados.frequency = parseFloat(frequency.toFixed(4));
+
+  const uniqueCtr = div(uniqueClicks !== undefined ? Number(uniqueClicks) * 100 : undefined, impressions);
+  if (uniqueCtr !== null) dados.uniqueCtr = parseFloat(uniqueCtr.toFixed(6));
+
+  const outboundCtr = div(outboundClicks !== undefined ? Number(outboundClicks) * 100 : undefined, impressions);
+  if (outboundCtr !== null) dados.outboundCtr = parseFloat(outboundCtr.toFixed(6));
+
+  const landingPageViewRate = div(landingPageViews !== undefined ? Number(landingPageViews) * 100 : undefined, clicks);
+  if (landingPageViewRate !== null) dados.landingPageViewRate = parseFloat(landingPageViewRate.toFixed(6));
+
+  const custoPorResultado = div(spend, resultadoPrincipal);
+  if (custoPorResultado !== null) dados.custoPorResultado = parseFloat(custoPorResultado.toFixed(4));
 
   return dados;
 }
