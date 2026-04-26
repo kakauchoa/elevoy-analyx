@@ -1,0 +1,232 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum TipoUsuario {
+  gestor
+  cliente
+}
+
+enum TipoFunil {
+  whatsapp
+  landing_page_lead
+  landing_page_contato
+  ecommerce
+  conteudo
+  ecommerce_conteudo
+  outro
+}
+
+enum StatusCampanha {
+  ACTIVE
+  PAUSED
+  ARCHIVED
+  DELETED
+}
+
+enum NivelInsight {
+  conta
+  campanha
+  conjunto
+  anuncio
+}
+
+enum TipoDispositivo {
+  desktop
+  mobile
+  tablet
+  desconhecido
+}
+
+model Usuario {
+  id           String            @id @default(uuid())
+  nome         String
+  email        String            @unique
+  senhaHash    String            @map("senha_hash") @db.Text
+  tipo         TipoUsuario       @default(gestor)
+  ativo        Boolean           @default(true)
+  criadoEm     DateTime          @default(now()) @map("criado_em")
+  atualizadoEm DateTime          @updatedAt @map("atualizado_em")
+  contas       ContaAnuncio[]
+  relatorios   RelatorioGerado[]
+
+  @@map("usuarios")
+}
+
+model ContaAnuncio {
+  id                     String            @id @default(uuid())
+  usuarioId              String            @map("usuario_id")
+  nomeCliente            String            @map("nome_cliente")
+  slugCompartilhavel     String            @unique @map("slug_compartilhavel")
+  accountIdMeta          String            @map("account_id_meta")
+  tokenAcesso            String            @db.Text @map("token_acesso")
+  tipoFunil              TipoFunil         @map("tipo_funil")
+  metricaPrincipal       String            @map("metrica_principal")
+  labelMetricaPrincipal  String            @map("label_metrica_principal")
+  labelCustoPorResultado String            @map("label_custo_por_resultado")
+  compartilhamentoAtivo  Boolean           @default(false) @map("compartilhamento_ativo")
+  ultimaSincronizacao    DateTime?         @map("ultima_sincronizacao")
+  ativo                  Boolean           @default(true)
+  criadoEm               DateTime          @default(now()) @map("criado_em")
+  atualizadoEm           DateTime          @updatedAt @map("atualizado_em")
+  usuario                Usuario           @relation(fields: [usuarioId], references: [id])
+  campanhas              Campanha[]
+  insights               InsightDiario[]
+  acessos                AcessoDashboard[]
+  relatorios             RelatorioGerado[]
+  configuracaoGtm        ConfiguracaoGtm?
+
+  @@map("contas_anuncio")
+}
+
+model Campanha {
+  id             String            @id @default(uuid())
+  contaAnuncioId String            @map("conta_anuncio_id")
+  campanhaIdMeta String            @unique @map("campanha_id_meta")
+  nome           String            @db.VarChar(500)
+  status         StatusCampanha
+  objetivo       String?
+  criadoEm       DateTime          @default(now()) @map("criado_em")
+  atualizadoEm   DateTime          @updatedAt @map("atualizado_em")
+  conta          ContaAnuncio      @relation(fields: [contaAnuncioId], references: [id])
+  conjuntos      ConjuntoAnuncio[]
+
+  @@map("campanhas")
+}
+
+model ConjuntoAnuncio {
+  id           String         @id @default(uuid())
+  campanhaId   String         @map("campanha_id")
+  adsetIdMeta  String         @unique @map("adset_id_meta")
+  nome         String         @db.VarChar(500)
+  status       StatusCampanha
+  criadoEm     DateTime       @default(now()) @map("criado_em")
+  atualizadoEm DateTime       @updatedAt @map("atualizado_em")
+  campanha     Campanha       @relation(fields: [campanhaId], references: [id])
+  anuncios     Anuncio[]
+
+  @@map("conjuntos_anuncio")
+}
+
+model Anuncio {
+  id            String          @id @default(uuid())
+  conjuntoId    String          @map("conjunto_anuncio_id")
+  anuncioIdMeta String          @unique @map("anuncio_id_meta")
+  nome          String          @db.VarChar(500)
+  status        StatusCampanha
+  criadoEm      DateTime        @default(now()) @map("criado_em")
+  atualizadoEm  DateTime        @updatedAt @map("atualizado_em")
+  conjunto      ConjuntoAnuncio @relation(fields: [conjuntoId], references: [id])
+
+  @@map("anuncios")
+}
+
+model InsightDiario {
+  id                     String       @id @default(uuid())
+  contaAnuncioId         String       @map("conta_anuncio_id")
+  nivel                  NivelInsight
+  referenciaId           String?      @map("referencia_id")
+  referenciaMetaId       String       @map("referencia_meta_id")
+  data                   DateTime     @db.Date
+  spend                  Decimal?     @db.Decimal(15, 4)
+  impressions            BigInt?
+  reach                  BigInt?
+  clicks                 BigInt?
+  inlineLinkClicks       BigInt?      @map("inline_link_clicks")
+  cpm                    Decimal?     @db.Decimal(10, 4)
+  ctr                    Decimal?     @db.Decimal(10, 6)
+  cpc                    Decimal?     @db.Decimal(10, 4)
+  cpp                    Decimal?     @db.Decimal(10, 4)
+  frequency              Decimal?     @db.Decimal(10, 4)
+  uniqueClicks           BigInt?      @map("unique_clicks")
+  uniqueCtr              Decimal?     @map("unique_ctr") @db.Decimal(10, 6)
+  landingPageViews       BigInt?      @map("landing_page_views")
+  landingPageViewRate    Decimal?     @map("landing_page_view_rate") @db.Decimal(10, 6)
+  outboundClicks         BigInt?      @map("outbound_clicks")
+  outboundCtr            Decimal?     @map("outbound_ctr") @db.Decimal(10, 6)
+  resultadoPrincipal     BigInt?      @map("resultado_principal")
+  tipoResultadoPrincipal String?      @map("tipo_resultado_principal")
+  custoPorResultado      Decimal?     @map("custo_por_resultado") @db.Decimal(10, 4)
+  whatsappClicks         BigInt?      @map("whatsapp_clicks")
+  whatsappCost           Decimal?     @map("whatsapp_cost") @db.Decimal(10, 4)
+  leadCount              BigInt?      @map("lead_count")
+  costPerLead            Decimal?     @map("cost_per_lead") @db.Decimal(10, 4)
+  purchaseCount          BigInt?      @map("purchase_count")
+  purchaseValue          Decimal?     @map("purchase_value") @db.Decimal(15, 4)
+  purchaseRoas           Decimal?     @map("purchase_roas") @db.Decimal(10, 4)
+  costPerPurchase        Decimal?     @map("cost_per_purchase") @db.Decimal(10, 4)
+  addToCart              BigInt?      @map("add_to_cart")
+  initiateCheckout       BigInt?      @map("initiate_checkout")
+  contactCount           BigInt?      @map("contact_count")
+  costPerContact         Decimal?     @map("cost_per_contact") @db.Decimal(10, 4)
+  postEngagement         BigInt?      @map("post_engagement")
+  postReactions          BigInt?      @map("post_reactions")
+  postComments           BigInt?      @map("post_comments")
+  postShares             BigInt?      @map("post_shares")
+  pageLikes              BigInt?      @map("page_likes")
+  videoView3s            BigInt?      @map("video_view_3s")
+  videoView10s           BigInt?      @map("video_view_10s")
+  videoView25pct         BigInt?      @map("video_view_25pct")
+  videoView50pct         BigInt?      @map("video_view_50pct")
+  videoView75pct         BigInt?      @map("video_view_75pct")
+  videoView95pct         BigInt?      @map("video_view_95pct")
+  videoView100pct        BigInt?      @map("video_view_100pct")
+  videoAvgTimeWatched    Decimal?     @map("video_avg_time_watched") @db.Decimal(10, 4)
+  videoPlayActions       BigInt?      @map("video_play_actions")
+  videoThruplay          BigInt?      @map("video_thruplay")
+  costPerThruplay        Decimal?     @map("cost_per_thruplay") @db.Decimal(10, 4)
+  sincronizadoEm         DateTime     @default(now()) @map("sincronizado_em")
+  criadoEm               DateTime     @default(now()) @map("criado_em")
+  conta                  ContaAnuncio @relation(fields: [contaAnuncioId], references: [id])
+
+  @@unique([contaAnuncioId, nivel, referenciaMetaId, data])
+  @@map("insights_diarios")
+}
+
+model AcessoDashboard {
+  id              String          @id @default(uuid())
+  contaAnuncioId  String          @map("conta_anuncio_id")
+  slug            String
+  ipVisitante     String?         @map("ip_visitante") @db.VarChar(45)
+  userAgent       String?         @map("user_agent") @db.Text
+  referrer        String?         @db.Text
+  pais            String?         @db.VarChar(100)
+  dispositivo     TipoDispositivo @default(desconhecido)
+  duracaoSegundos Int?            @map("duracao_segundos")
+  acessadoEm      DateTime        @default(now()) @map("acessado_em")
+  conta           ContaAnuncio    @relation(fields: [contaAnuncioId], references: [id])
+
+  @@map("acessos_dashboard")
+}
+
+model RelatorioGerado {
+  id             String       @id @default(uuid())
+  contaAnuncioId String       @map("conta_anuncio_id")
+  geradoPorId    String       @map("gerado_por_id")
+  conteudo       String       @db.LongText
+  periodoInicio  DateTime     @db.Date @map("periodo_inicio")
+  periodoFim     DateTime     @db.Date @map("periodo_fim")
+  criadoEm       DateTime     @default(now()) @map("criado_em")
+  conta          ContaAnuncio @relation(fields: [contaAnuncioId], references: [id])
+  geradoPor      Usuario      @relation(fields: [geradoPorId], references: [id])
+
+  @@map("relatorios_gerados")
+}
+
+model ConfiguracaoGtm {
+  id                  String       @id @default(uuid())
+  contaAnuncioId      String       @unique @map("conta_anuncio_id")
+  gtmContainerId      String?      @map("gtm_container_id") @db.VarChar(50)
+  metaPixelId         String?      @map("meta_pixel_id") @db.VarChar(50)
+  eventosCustomizados Json?        @map("eventos_customizados")
+  ativo               Boolean      @default(false)
+  atualizadoEm        DateTime     @updatedAt @map("atualizado_em")
+  conta               ContaAnuncio @relation(fields: [contaAnuncioId], references: [id])
+
+  @@map("configuracoes_gtm")
+}
