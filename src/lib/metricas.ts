@@ -18,60 +18,60 @@ export interface ConfiguracaoFunil {
 
 export const CONFIGURACOES_FUNIL: Record<TipoFunil, ConfiguracaoFunil> = {
   whatsapp: {
-    metricaPrincipal: "whatsapp_clicks",
+    metricaPrincipal: "whatsappClicks",
     labelMetricaPrincipal: "Conversas no WhatsApp",
     labelCustoPorResultado: "Custo por Conversa",
-    metricasDestaque: ["spend", "whatsapp_clicks", "whatsapp_cost", "cpm", "ctr", "unique_ctr"],
-    submetricas: ["impressions", "reach", "clicks", "outbound_clicks", "frequency"],
-    metricasGrafico: ["spend", "whatsapp_clicks", "whatsapp_cost", "cpm", "ctr", "reach", "impressions"],
+    metricasDestaque: ["spend", "whatsappClicks", "whatsappCost", "cpm", "ctr", "uniqueCtr"],
+    submetricas: ["impressions", "reach", "clicks", "outboundClicks", "frequency"],
+    metricasGrafico: ["spend", "whatsappClicks", "whatsappCost", "cpm", "ctr", "reach", "impressions"],
   },
   landing_page_lead: {
-    metricaPrincipal: "lead_count",
+    metricaPrincipal: "leadCount",
     labelMetricaPrincipal: "Leads",
     labelCustoPorResultado: "Custo por Lead",
-    metricasDestaque: ["spend", "lead_count", "cost_per_lead", "cpm", "ctr", "landing_page_view_rate"],
-    submetricas: ["impressions", "reach", "clicks", "landing_page_views", "frequency"],
-    metricasGrafico: ["spend", "lead_count", "cost_per_lead", "cpm", "ctr", "landing_page_views", "reach"],
+    metricasDestaque: ["spend", "leadCount", "costPerLead", "cpm", "ctr", "landingPageViewRate"],
+    submetricas: ["impressions", "reach", "clicks", "landingPageViews", "frequency"],
+    metricasGrafico: ["spend", "leadCount", "costPerLead", "cpm", "ctr", "landingPageViews", "reach"],
   },
   landing_page_contato: {
-    metricaPrincipal: "contact_count",
+    metricaPrincipal: "contactCount",
     labelMetricaPrincipal: "Contatos",
     labelCustoPorResultado: "Custo por Contato",
-    metricasDestaque: ["spend", "contact_count", "cost_per_contact", "cpm", "ctr", "landing_page_view_rate"],
-    submetricas: ["impressions", "reach", "clicks", "landing_page_views", "frequency"],
-    metricasGrafico: ["spend", "contact_count", "cost_per_contact", "cpm", "ctr", "landing_page_views"],
+    metricasDestaque: ["spend", "contactCount", "costPerContact", "cpm", "ctr", "landingPageViewRate"],
+    submetricas: ["impressions", "reach", "clicks", "landingPageViews", "frequency"],
+    metricasGrafico: ["spend", "contactCount", "costPerContact", "cpm", "ctr", "landingPageViews"],
   },
   ecommerce: {
-    metricaPrincipal: "purchase_count",
+    metricaPrincipal: "purchaseCount",
     labelMetricaPrincipal: "Compras",
     labelCustoPorResultado: "Custo por Compra",
-    metricasDestaque: ["spend", "purchase_count", "cost_per_purchase", "purchase_roas", "ctr", "cpm"],
-    submetricas: ["impressions", "reach", "clicks", "add_to_cart", "initiate_checkout", "purchase_value"],
-    metricasGrafico: ["spend", "purchase_count", "purchase_roas", "cpm", "ctr", "add_to_cart", "cost_per_purchase"],
+    metricasDestaque: ["spend", "purchaseCount", "costPerPurchase", "purchaseRoas", "ctr", "cpm"],
+    submetricas: ["impressions", "reach", "clicks", "addToCart", "initiateCheckout", "purchaseValue"],
+    metricasGrafico: ["spend", "purchaseCount", "purchaseRoas", "cpm", "ctr", "addToCart", "costPerPurchase"],
   },
   conteudo: {
-    metricaPrincipal: "video_thruplay",
+    metricaPrincipal: "videoThruplay",
     labelMetricaPrincipal: "ThruPlays",
     labelCustoPorResultado: "Custo por ThruPlay",
-    metricasDestaque: ["spend", "video_thruplay", "cost_per_thruplay", "video_view_3s", "cpm", "ctr"],
-    submetricas: ["impressions", "reach", "video_view_25pct", "video_view_50pct", "video_view_100pct", "video_avg_time_watched"],
-    metricasGrafico: ["spend", "video_thruplay", "video_view_3s", "video_view_100pct", "cpm", "ctr"],
+    metricasDestaque: ["spend", "videoThruplay", "costPerThruplay", "videoView3s", "cpm", "ctr"],
+    submetricas: ["impressions", "reach", "videoView25pct", "videoView50pct", "videoView100pct", "videoAvgTimeWatched"],
+    metricasGrafico: ["spend", "videoThruplay", "videoView3s", "videoView100pct", "cpm", "ctr"],
   },
   ecommerce_conteudo: {
-    metricaPrincipal: "purchase_count",
+    metricaPrincipal: "purchaseCount",
     labelMetricaPrincipal: "Compras",
     labelCustoPorResultado: "Custo por Compra",
-    metricasDestaque: ["spend", "purchase_count", "purchase_roas", "video_thruplay", "cpm", "ctr"],
-    submetricas: ["impressions", "reach", "video_view_3s", "add_to_cart", "purchase_value", "frequency"],
-    metricasGrafico: ["spend", "purchase_count", "purchase_roas", "video_thruplay", "cpm", "ctr"],
+    metricasDestaque: ["spend", "purchaseCount", "purchaseRoas", "videoThruplay", "cpm", "ctr"],
+    submetricas: ["impressions", "reach", "videoView3s", "addToCart", "purchaseValue", "frequency"],
+    metricasGrafico: ["spend", "purchaseCount", "purchaseRoas", "videoThruplay", "cpm", "ctr"],
   },
   outro: {
-    metricaPrincipal: "resultado_principal",
+    metricaPrincipal: "resultadoPrincipal",
     labelMetricaPrincipal: "Resultado",
     labelCustoPorResultado: "Custo por Resultado",
-    metricasDestaque: ["spend", "resultado_principal", "custo_por_resultado", "cpm", "ctr", "impressions"],
+    metricasDestaque: ["spend", "resultadoPrincipal", "custoPorResultado", "cpm", "ctr", "impressions"],
     submetricas: ["reach", "clicks", "frequency", "cpc"],
-    metricasGrafico: ["spend", "resultado_principal", "custo_por_resultado", "cpm", "ctr"],
+    metricasGrafico: ["spend", "resultadoPrincipal", "custoPorResultado", "cpm", "ctr"],
   },
 };
 
@@ -84,3 +84,86 @@ export const LABELS_FUNIL: Record<TipoFunil, string> = {
   ecommerce_conteudo: "E-commerce + Conteúdo",
   outro: "Outro",
 };
+
+export const LABELS_METRICAS: Record<string, string> = {
+  spend: "Valor Gasto",
+  impressions: "Impressões",
+  reach: "Alcance",
+  clicks: "Cliques",
+  inlineLinkClicks: "Cliques no Link",
+  uniqueClicks: "Cliques Únicos",
+  outboundClicks: "Cliques de Saída",
+  landingPageViews: "Views da LP",
+  cpm: "CPM",
+  ctr: "CTR",
+  cpc: "CPC",
+  cpp: "CPP",
+  frequency: "Frequência",
+  uniqueCtr: "CTR Único",
+  outboundCtr: "CTR de Saída",
+  landingPageViewRate: "Taxa de LP",
+  whatsappClicks: "Conversas WhatsApp",
+  whatsappCost: "Custo por Conversa",
+  leadCount: "Leads",
+  costPerLead: "Custo por Lead",
+  purchaseCount: "Compras",
+  purchaseValue: "Valor de Compras",
+  purchaseRoas: "ROAS",
+  costPerPurchase: "Custo por Compra",
+  addToCart: "Adições ao Carrinho",
+  initiateCheckout: "Início de Checkout",
+  contactCount: "Contatos",
+  costPerContact: "Custo por Contato",
+  postEngagement: "Engajamentos",
+  postReactions: "Reações",
+  postComments: "Comentários",
+  postShares: "Compartilhamentos",
+  pageLikes: "Curtidas na Página",
+  videoView3s: "Views 3s",
+  videoView10s: "Views 10s",
+  videoView25pct: "Views 25%",
+  videoView50pct: "Views 50%",
+  videoView75pct: "Views 75%",
+  videoView95pct: "Views 95%",
+  videoView100pct: "Views 100%",
+  videoAvgTimeWatched: "Tempo Médio",
+  videoPlayActions: "Plays",
+  videoThruplay: "ThruPlays",
+  costPerThruplay: "Custo por ThruPlay",
+  resultadoPrincipal: "Resultado",
+  custoPorResultado: "Custo por Resultado",
+};
+
+const METRICAS_MONETARIAS = new Set([
+  "spend", "cpm", "cpc", "cpp", "whatsappCost", "costPerLead",
+  "costPerPurchase", "costPerContact", "costPerThruplay", "custoPorResultado", "purchaseValue",
+]);
+
+const METRICAS_PERCENTUAIS = new Set([
+  "ctr", "uniqueCtr", "outboundCtr", "landingPageViewRate",
+]);
+
+export function formatarMetrica(campo: string, valor: number): string {
+  if (METRICAS_MONETARIAS.has(campo)) {
+    return valor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+  }
+  if (METRICAS_PERCENTUAIS.has(campo)) {
+    return `${valor.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%`;
+  }
+  if (campo === "purchaseRoas") {
+    return `${valor.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}x`;
+  }
+  if (campo === "frequency") {
+    return valor.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+  if (campo === "videoAvgTimeWatched") {
+    const mins = Math.floor(valor / 60);
+    const secs = Math.floor(valor % 60);
+    return `${mins}:${secs.toString().padStart(2, "0")}`;
+  }
+  return Math.round(valor).toLocaleString("pt-BR");
+}
+
+export function isMetricaMonetaria(campo: string): boolean {
+  return METRICAS_MONETARIAS.has(campo);
+}
