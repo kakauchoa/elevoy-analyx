@@ -102,7 +102,8 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json(conta, { status: 201 });
-  } catch {
+  } catch (erro) {
+    console.error("[POST /api/contas]", erro);
     return NextResponse.json({ erro: "Erro interno do servidor" }, { status: 500 });
   }
 }

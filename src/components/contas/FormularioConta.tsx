@@ -37,7 +37,7 @@ export function FormularioConta({ conta, onSalvar, onFechar }: FormularioContaPr
   const [form, setForm] = useState<CamposForm>({
     nomeCliente: conta?.nomeCliente ?? "",
     slugCompartilhavel: conta?.slugCompartilhavel ?? "",
-    accountIdMeta: conta?.accountIdMeta ?? "",
+    accountIdMeta: conta?.accountIdMeta?.replace(/^act_/, "") ?? "",
     tokenAcesso: "",
     tipoFunil: conta?.tipoFunil ?? "",
   });
@@ -77,7 +77,7 @@ export function FormularioConta({ conta, onSalvar, onFechar }: FormularioContaPr
       const payload: Partial<CamposForm> = {
         nomeCliente: form.nomeCliente,
         slugCompartilhavel: form.slugCompartilhavel,
-        accountIdMeta: form.accountIdMeta,
+        accountIdMeta: `act_${form.accountIdMeta}`,
         tipoFunil: form.tipoFunil,
       };
 
@@ -170,16 +170,21 @@ export function FormularioConta({ conta, onSalvar, onFechar }: FormularioContaPr
           {/* Account ID do Meta */}
           <div className="flex flex-col gap-1.5">
             <label className="text-sm font-medium text-gray-700">Account ID do Meta</label>
-            <input
-              type="text"
-              value={form.accountIdMeta}
-              onChange={(e) =>
-                setForm((prev) => ({ ...prev, accountIdMeta: e.target.value.trim() }))
-              }
-              placeholder="act_123456789"
-              required
-              className="border border-gray-200 rounded-lg px-3 py-2.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500 transition-shadow"
-            />
+            <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-blue-500 transition-shadow">
+              <span className="px-3 py-2.5 bg-gray-50 text-gray-400 text-xs border-r border-gray-200 whitespace-nowrap select-none font-mono">
+                act_
+              </span>
+              <input
+                type="text"
+                value={form.accountIdMeta}
+                onChange={(e) =>
+                  setForm((prev) => ({ ...prev, accountIdMeta: e.target.value.replace(/\D/g, "") }))
+                }
+                placeholder="1128982335101932"
+                required
+                className="flex-1 px-3 py-2.5 text-sm font-mono outline-none bg-white"
+              />
+            </div>
             <p className="text-xs text-gray-400">
               Meta Business Suite → Configurações → Contas de anúncios
             </p>
