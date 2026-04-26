@@ -61,6 +61,13 @@ export interface InsightNumericos {
   costPerThruplay: number;
   resultadoPrincipal: number;
   custoPorResultado: number;
+  // Taxas de conversão por funil (calculadas, não armazenadas no BD)
+  taxaConversaWhatsapp: number;
+  taxaConversaoLead: number;
+  taxaConversaoContato: number;
+  taxaConversaoCompra: number;
+  taxaConversaoThruplay: number;
+  taxaConversao: number;
 }
 
 export interface InsightDiarioSerializado extends InsightNumericos {

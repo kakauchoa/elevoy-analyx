@@ -9,14 +9,51 @@ function f(v: { toNumber: () => number } | null | undefined): number {
   return v != null ? v.toNumber() : 0;
 }
 
+/** Calcula as taxas de conversão por funil a partir dos valores já somados */
+function calcularTaxasConversao(v: {
+  whatsappClicks: number;
+  clicks: number;
+  leadCount: number;
+  contactCount: number;
+  purchaseCount: number;
+  videoThruplay: number;
+  videoView3s: number;
+  resultadoPrincipal: number;
+}): {
+  taxaConversaWhatsapp: number;
+  taxaConversaoLead: number;
+  taxaConversaoContato: number;
+  taxaConversaoCompra: number;
+  taxaConversaoThruplay: number;
+  taxaConversao: number;
+} {
+  return {
+    taxaConversaWhatsapp: v.clicks > 0 ? (v.whatsappClicks / v.clicks) * 100 : 0,
+    taxaConversaoLead: v.clicks > 0 ? (v.leadCount / v.clicks) * 100 : 0,
+    taxaConversaoContato: v.clicks > 0 ? (v.contactCount / v.clicks) * 100 : 0,
+    taxaConversaoCompra: v.clicks > 0 ? (v.purchaseCount / v.clicks) * 100 : 0,
+    taxaConversaoThruplay: v.videoView3s > 0 ? (v.videoThruplay / v.videoView3s) * 100 : 0,
+    taxaConversao: v.clicks > 0 ? (v.resultadoPrincipal / v.clicks) * 100 : 0,
+  };
+}
+
 /** Converte um InsightDiario do Prisma para tipos serializáveis (sem BigInt/Decimal) */
 export function serializarDia(i: InsightDiario): InsightDiarioSerializado {
+  const whatsappClicks = n(i.whatsappClicks);
+  const clicks = n(i.clicks);
+  const leadCount = n(i.leadCount);
+  const contactCount = n(i.contactCount);
+  const purchaseCount = n(i.purchaseCount);
+  const videoThruplay = n(i.videoThruplay);
+  const videoView3s = n(i.videoView3s);
+  const resultadoPrincipal = n(i.resultadoPrincipal);
+
   return {
     data: i.data.toISOString().slice(0, 10),
     spend: f(i.spend),
     impressions: n(i.impressions),
     reach: n(i.reach),
-    clicks: n(i.clicks),
+    clicks,
     inlineLinkClicks: n(i.inlineLinkClicks),
     uniqueClicks: n(i.uniqueClicks),
     outboundClicks: n(i.outboundClicks),
@@ -29,24 +66,24 @@ export function serializarDia(i: InsightDiario): InsightDiarioSerializado {
     uniqueCtr: f(i.uniqueCtr),
     outboundCtr: f(i.outboundCtr),
     landingPageViewRate: f(i.landingPageViewRate),
-    whatsappClicks: n(i.whatsappClicks),
+    whatsappClicks,
     whatsappCost: f(i.whatsappCost),
-    leadCount: n(i.leadCount),
+    leadCount,
     costPerLead: f(i.costPerLead),
-    purchaseCount: n(i.purchaseCount),
+    purchaseCount,
     purchaseValue: f(i.purchaseValue),
     purchaseRoas: f(i.purchaseRoas),
     costPerPurchase: f(i.costPerPurchase),
     addToCart: n(i.addToCart),
     initiateCheckout: n(i.initiateCheckout),
-    contactCount: n(i.contactCount),
+    contactCount,
     costPerContact: f(i.costPerContact),
     postEngagement: n(i.postEngagement),
     postReactions: n(i.postReactions),
     postComments: n(i.postComments),
     postShares: n(i.postShares),
     pageLikes: n(i.pageLikes),
-    videoView3s: n(i.videoView3s),
+    videoView3s,
     videoView10s: n(i.videoView10s),
     videoView25pct: n(i.videoView25pct),
     videoView50pct: n(i.videoView50pct),
@@ -55,10 +92,11 @@ export function serializarDia(i: InsightDiario): InsightDiarioSerializado {
     videoView100pct: n(i.videoView100pct),
     videoAvgTimeWatched: f(i.videoAvgTimeWatched),
     videoPlayActions: n(i.videoPlayActions),
-    videoThruplay: n(i.videoThruplay),
+    videoThruplay,
     costPerThruplay: f(i.costPerThruplay),
-    resultadoPrincipal: n(i.resultadoPrincipal),
+    resultadoPrincipal,
     custoPorResultado: f(i.custoPorResultado),
+    ...calcularTaxasConversao({ whatsappClicks, clicks, leadCount, contactCount, purchaseCount, videoThruplay, videoView3s, resultadoPrincipal }),
   };
 }
 
@@ -141,6 +179,7 @@ export function agregarInsights(insights: InsightDiario[]): InsightNumericos {
     videoView75pct, videoView95pct, videoView100pct, videoAvgTimeWatched,
     videoPlayActions, videoThruplay, costPerThruplay,
     resultadoPrincipal, custoPorResultado,
+    ...calcularTaxasConversao({ whatsappClicks, clicks, leadCount, contactCount, purchaseCount, videoThruplay, videoView3s, resultadoPrincipal }),
   };
 }
 

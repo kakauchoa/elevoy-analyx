@@ -21,56 +21,56 @@ export const CONFIGURACOES_FUNIL: Record<TipoFunil, ConfiguracaoFunil> = {
     metricaPrincipal: "whatsappClicks",
     labelMetricaPrincipal: "Conversas no WhatsApp",
     labelCustoPorResultado: "Custo por Conversa",
-    metricasDestaque: ["spend", "whatsappClicks", "whatsappCost", "cpm", "ctr", "uniqueCtr"],
-    submetricas: ["impressions", "reach", "clicks", "outboundClicks", "frequency"],
+    metricasDestaque: ["spend", "whatsappClicks", "whatsappCost", "cpm", "ctr", "taxaConversaWhatsapp"],
+    submetricas: ["impressions", "reach", "clicks", "whatsappClicks", "outboundClicks", "frequency"],
     metricasGrafico: ["spend", "whatsappClicks", "whatsappCost", "cpm", "ctr", "reach", "impressions"],
   },
   landing_page_lead: {
     metricaPrincipal: "leadCount",
     labelMetricaPrincipal: "Leads",
     labelCustoPorResultado: "Custo por Lead",
-    metricasDestaque: ["spend", "leadCount", "costPerLead", "cpm", "ctr", "landingPageViewRate"],
-    submetricas: ["impressions", "reach", "clicks", "landingPageViews", "frequency"],
+    metricasDestaque: ["spend", "leadCount", "costPerLead", "cpm", "ctr", "taxaConversaoLead"],
+    submetricas: ["impressions", "reach", "clicks", "landingPageViews", "landingPageViewRate", "frequency"],
     metricasGrafico: ["spend", "leadCount", "costPerLead", "cpm", "ctr", "landingPageViews", "reach"],
   },
   landing_page_contato: {
     metricaPrincipal: "contactCount",
     labelMetricaPrincipal: "Contatos",
     labelCustoPorResultado: "Custo por Contato",
-    metricasDestaque: ["spend", "contactCount", "costPerContact", "cpm", "ctr", "landingPageViewRate"],
-    submetricas: ["impressions", "reach", "clicks", "landingPageViews", "frequency"],
+    metricasDestaque: ["spend", "contactCount", "costPerContact", "cpm", "ctr", "taxaConversaoContato"],
+    submetricas: ["impressions", "reach", "clicks", "landingPageViews", "landingPageViewRate", "frequency"],
     metricasGrafico: ["spend", "contactCount", "costPerContact", "cpm", "ctr", "landingPageViews"],
   },
   ecommerce: {
     metricaPrincipal: "purchaseCount",
     labelMetricaPrincipal: "Compras",
     labelCustoPorResultado: "Custo por Compra",
-    metricasDestaque: ["spend", "purchaseCount", "costPerPurchase", "purchaseRoas", "ctr", "cpm"],
-    submetricas: ["impressions", "reach", "clicks", "addToCart", "initiateCheckout", "purchaseValue"],
+    metricasDestaque: ["spend", "purchaseCount", "costPerPurchase", "purchaseRoas", "ctr", "taxaConversaoCompra"],
+    submetricas: ["impressions", "reach", "clicks", "addToCart", "initiateCheckout", "purchaseValue", "frequency"],
     metricasGrafico: ["spend", "purchaseCount", "purchaseRoas", "cpm", "ctr", "addToCart", "costPerPurchase"],
   },
   conteudo: {
     metricaPrincipal: "videoThruplay",
     labelMetricaPrincipal: "ThruPlays",
     labelCustoPorResultado: "Custo por ThruPlay",
-    metricasDestaque: ["spend", "videoThruplay", "costPerThruplay", "videoView3s", "cpm", "ctr"],
-    submetricas: ["impressions", "reach", "videoView25pct", "videoView50pct", "videoView100pct", "videoAvgTimeWatched"],
+    metricasDestaque: ["spend", "videoThruplay", "costPerThruplay", "videoView3s", "cpm", "taxaConversaoThruplay"],
+    submetricas: ["impressions", "reach", "videoView25pct", "videoView50pct", "videoView100pct", "videoAvgTimeWatched", "ctr"],
     metricasGrafico: ["spend", "videoThruplay", "videoView3s", "videoView100pct", "cpm", "ctr"],
   },
   ecommerce_conteudo: {
     metricaPrincipal: "purchaseCount",
     labelMetricaPrincipal: "Compras",
     labelCustoPorResultado: "Custo por Compra",
-    metricasDestaque: ["spend", "purchaseCount", "purchaseRoas", "videoThruplay", "cpm", "ctr"],
-    submetricas: ["impressions", "reach", "videoView3s", "addToCart", "purchaseValue", "frequency"],
+    metricasDestaque: ["spend", "purchaseCount", "purchaseRoas", "videoThruplay", "cpm", "taxaConversaoCompra"],
+    submetricas: ["impressions", "reach", "videoView3s", "addToCart", "purchaseValue", "frequency", "initiateCheckout"],
     metricasGrafico: ["spend", "purchaseCount", "purchaseRoas", "videoThruplay", "cpm", "ctr"],
   },
   outro: {
     metricaPrincipal: "resultadoPrincipal",
     labelMetricaPrincipal: "Resultado",
     labelCustoPorResultado: "Custo por Resultado",
-    metricasDestaque: ["spend", "resultadoPrincipal", "custoPorResultado", "cpm", "ctr", "impressions"],
-    submetricas: ["reach", "clicks", "frequency", "cpc"],
+    metricasDestaque: ["spend", "resultadoPrincipal", "custoPorResultado", "cpm", "ctr", "taxaConversao"],
+    submetricas: ["impressions", "reach", "clicks", "frequency", "cpc", "uniqueCtr"],
     metricasGrafico: ["spend", "resultadoPrincipal", "custoPorResultado", "cpm", "ctr"],
   },
 };
@@ -102,7 +102,7 @@ export const LABELS_METRICAS: Record<string, string> = {
   uniqueCtr: "CTR Único",
   outboundCtr: "CTR de Saída",
   landingPageViewRate: "Taxa de LP",
-  whatsappClicks: "Conversas WhatsApp",
+  whatsappClicks: "Mensagens Iniciadas",
   whatsappCost: "Custo por Conversa",
   leadCount: "Leads",
   costPerLead: "Custo por Lead",
@@ -132,6 +132,13 @@ export const LABELS_METRICAS: Record<string, string> = {
   costPerThruplay: "Custo por ThruPlay",
   resultadoPrincipal: "Resultado",
   custoPorResultado: "Custo por Resultado",
+  // Taxas de conversão por funil
+  taxaConversaWhatsapp: "Taxa de Conversa",
+  taxaConversaoLead: "Taxa de Lead",
+  taxaConversaoContato: "Taxa de Contato",
+  taxaConversaoCompra: "Taxa de Compra",
+  taxaConversaoThruplay: "Taxa de ThruPlay",
+  taxaConversao: "Taxa de Conversão",
 };
 
 const METRICAS_MONETARIAS = new Set([
@@ -141,6 +148,8 @@ const METRICAS_MONETARIAS = new Set([
 
 const METRICAS_PERCENTUAIS = new Set([
   "ctr", "uniqueCtr", "outboundCtr", "landingPageViewRate",
+  "taxaConversaWhatsapp", "taxaConversaoLead", "taxaConversaoContato",
+  "taxaConversaoCompra", "taxaConversaoThruplay", "taxaConversao",
 ]);
 
 export function formatarMetrica(campo: string, valor: number): string {
