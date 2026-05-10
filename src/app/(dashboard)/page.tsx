@@ -57,13 +57,13 @@ const MAIOR_MELHOR = new Set([
 ]);
 
 const COR_FUNIL: Record<TipoFunil, string> = {
-  whatsapp: "bg-green-100 text-green-700",
-  landing_page_lead: "bg-blue-100 text-blue-700",
-  landing_page_contato: "bg-cyan-100 text-cyan-700",
-  ecommerce: "bg-purple-100 text-purple-700",
-  conteudo: "bg-orange-100 text-orange-700",
-  ecommerce_conteudo: "bg-violet-100 text-violet-700",
-  outro: "bg-gray-100 text-gray-600",
+  whatsapp: "bg-black text-white",
+  landing_page_lead: "bg-black text-white",
+  landing_page_contato: "bg-black text-white",
+  ecommerce: "bg-black text-white",
+  conteudo: "bg-black text-white",
+  ecommerce_conteudo: "bg-black text-white",
+  outro: "bg-black text-white",
 };
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -140,7 +140,7 @@ function CardConta({ conta }: { conta: ContaAnuncio }) {
   ];
 
   return (
-    <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+    <div className="bg-white border border-[#e5e5e5] rounded-xl overflow-hidden">
       {/* Cabeçalho do card */}
       <div className="px-5 py-4 flex items-center justify-between gap-4 flex-wrap">
         <div className="flex items-center gap-3 min-w-0">
@@ -153,7 +153,7 @@ function CardConta({ conta }: { conta: ContaAnuncio }) {
           <select
             value={periodo}
             onChange={(e) => setPeriodo(e.target.value as PeriodoFiltro)}
-            className="text-xs border border-gray-200 rounded-lg px-2 py-1.5 text-gray-600 bg-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+            className="text-xs border border-[#e5e5e5] rounded-lg px-2 py-1.5 text-gray-600 bg-white focus:outline-none focus:ring-1 focus:ring-black"
           >
             <option value="ultimos7dias">Últimos 7 dias</option>
             <option value="ultimos30dias">Últimos 30 dias</option>
@@ -161,7 +161,7 @@ function CardConta({ conta }: { conta: ContaAnuncio }) {
           <Link
             href={`/compartilhavel/${conta.slugCompartilhavel}`}
             target="_blank"
-            className="text-xs font-medium text-blue-600 border border-blue-200 rounded-lg px-3 py-1.5 hover:bg-blue-50 transition-colors whitespace-nowrap"
+            className="text-xs font-medium text-gray-700 border border-[#e5e5e5] rounded-lg px-3 py-1.5 hover:bg-gray-50 transition-colors whitespace-nowrap"
           >
             Ver dashboard completo →
           </Link>
@@ -257,7 +257,7 @@ export default function DashboardPage() {
         </div>
         <Link
           href="/contas"
-          className="text-sm font-medium text-blue-600 border border-blue-200 rounded-lg px-3 py-2 hover:bg-blue-50 transition-colors"
+          className="text-sm font-medium text-white bg-black rounded-lg px-3 py-2 hover:bg-gray-900 transition-colors"
         >
           + Adicionar conta
         </Link>
@@ -267,16 +267,16 @@ export default function DashboardPage() {
       {carregando && (
         <div className="space-y-4">
           {[1, 2].map((i) => (
-            <div key={i} className="h-52 bg-white border border-gray-200 rounded-xl animate-pulse" />
+            <div key={i} className="h-52 bg-white border border-[#e5e5e5] rounded-xl animate-pulse" />
           ))}
         </div>
       )}
 
       {/* Estado vazio */}
       {!carregando && contas.length === 0 && (
-        <div className="bg-white border border-gray-200 rounded-xl p-12 text-center">
+        <div className="bg-white border border-[#e5e5e5] rounded-xl p-12 text-center">
           <p className="text-gray-500">Nenhuma conta adicionada ainda.</p>
-          <Link href="/contas" className="mt-3 inline-block text-sm text-blue-600 hover:underline">
+          <Link href="/contas" className="mt-3 inline-block text-sm text-gray-900 hover:underline">
             Adicionar primeira conta →
           </Link>
         </div>

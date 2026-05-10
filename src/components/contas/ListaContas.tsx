@@ -37,7 +37,6 @@ export function ListaContas({ contasIniciais }: ListaContasProps) {
   };
 
   const handleToggle = async (id: string, novoValor: boolean) => {
-    // Atualização otimista — reverte em caso de falha
     setContas((prev) =>
       prev.map((c) => (c.id === id ? { ...c, compartilhamentoAtivo: novoValor } : c))
     );
@@ -86,7 +85,6 @@ export function ListaContas({ contasIniciais }: ListaContasProps) {
 
   return (
     <>
-      {/* Cabeçalho da página */}
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Contas de Anúncio</h1>
@@ -96,13 +94,12 @@ export function ListaContas({ contasIniciais }: ListaContasProps) {
         </div>
         <button
           onClick={() => abrirModal()}
-          className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+          className="bg-black hover:bg-gray-900 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
         >
           + Nova conta
         </button>
       </div>
 
-      {/* Erro global */}
       {erroGlobal && (
         <div className="mb-4 flex items-center justify-between p-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg">
           {erroGlobal}
@@ -117,13 +114,12 @@ export function ListaContas({ contasIniciais }: ListaContasProps) {
         </div>
       )}
 
-      {/* Estado vazio */}
       {contas.length === 0 ? (
-        <div className="bg-white border border-gray-200 rounded-xl p-12 text-center">
+        <div className="bg-white border border-[#e5e5e5] rounded-xl p-12 text-center">
           <p className="text-gray-400 text-sm">Nenhuma conta cadastrada ainda.</p>
           <button
             onClick={() => abrirModal()}
-            className="mt-3 text-blue-600 hover:underline text-sm"
+            className="mt-3 text-gray-900 hover:underline text-sm"
           >
             Adicionar primeira conta
           </button>
@@ -133,14 +129,13 @@ export function ListaContas({ contasIniciais }: ListaContasProps) {
           {contas.map((conta) => (
             <div
               key={conta.id}
-              className="bg-white border border-gray-200 rounded-xl p-5 hover:border-gray-300 transition-colors"
+              className="bg-white border border-[#e5e5e5] rounded-xl p-5 hover:border-gray-300 transition-colors"
             >
               <div className="flex items-start justify-between gap-4">
-                {/* Informações da conta */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <h3 className="font-semibold text-gray-900">{conta.nomeCliente}</h3>
-                    <span className="text-xs bg-blue-50 text-blue-700 border border-blue-100 px-2 py-0.5 rounded-full">
+                    <span className="text-xs bg-black text-white px-2 py-0.5 rounded-full">
                       {LABELS_FUNIL[conta.tipoFunil as TipoFunil]}
                     </span>
                   </div>
@@ -153,14 +148,13 @@ export function ListaContas({ contasIniciais }: ListaContasProps) {
                   </div>
                 </div>
 
-                {/* Ações */}
                 <div className="flex items-center gap-1.5 shrink-0">
-                  {/* Toggle compartilhamento público */}
+                  {/* Toggle compartilhamento */}
                   <button
                     onClick={() => handleToggle(conta.id, !conta.compartilhamentoAtivo)}
                     title={conta.compartilhamentoAtivo ? "Desativar link público" : "Ativar link público"}
-                    className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
-                      conta.compartilhamentoAtivo ? "bg-blue-600" : "bg-gray-300"
+                    className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-black ${
+                      conta.compartilhamentoAtivo ? "bg-black" : "bg-gray-300"
                     }`}
                   >
                     <span
@@ -198,7 +192,7 @@ export function ListaContas({ contasIniciais }: ListaContasProps) {
                     </svg>
                   </button>
 
-                  {/* Excluir com confirmação inline */}
+                  {/* Excluir */}
                   {confirmandoExclusao === conta.id ? (
                     <div className="flex items-center gap-1">
                       <button
@@ -228,8 +222,7 @@ export function ListaContas({ contasIniciais }: ListaContasProps) {
                 </div>
               </div>
 
-              {/* Rodapé do card */}
-              <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between">
+              <div className="mt-3 pt-3 border-t border-[#e5e5e5] flex items-center justify-between">
                 <span
                   className={`text-xs font-medium ${
                     conta.compartilhamentoAtivo ? "text-green-600" : "text-gray-400"
@@ -257,7 +250,6 @@ export function ListaContas({ contasIniciais }: ListaContasProps) {
         </div>
       )}
 
-      {/* Modal de formulário */}
       {modalAberto && (
         <FormularioConta
           conta={contaEmEdicao}

@@ -55,7 +55,7 @@ export default function PerfilPage() {
         <p className="text-sm text-gray-500 mt-0.5">Altere sua senha de acesso</p>
       </div>
 
-      <div className="bg-white border border-gray-200 rounded-xl p-6 space-y-4">
+      <div className="bg-white border border-[#e5e5e5] rounded-xl p-6 space-y-4">
         <h2 className="text-base font-semibold text-gray-900">Alterar senha</h2>
 
         {erro && (
@@ -82,7 +82,7 @@ export default function PerfilPage() {
                 value={value}
                 onChange={(e) => setter(e.target.value)}
                 placeholder={placeholder}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full border border-[#e5e5e5] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black"
               />
             </div>
           ))}
@@ -91,7 +91,7 @@ export default function PerfilPage() {
         <button
           onClick={salvar}
           disabled={salvando}
-          className="w-full px-4 py-2.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
+          className="w-full px-4 py-2.5 text-sm font-medium text-white bg-black rounded-lg hover:bg-gray-900 disabled:opacity-50 transition-colors"
         >
           {salvando ? "Salvando..." : "Alterar senha"}
         </button>

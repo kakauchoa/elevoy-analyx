@@ -46,7 +46,6 @@ export function FormularioConta({ conta, onSalvar, onFechar }: FormularioContaPr
   const [carregando, setCarregando] = useState(false);
   const [erro, setErro] = useState("");
 
-  // Auto-gera slug enquanto o usuário não editar o campo manualmente
   useEffect(() => {
     if (!slugManual && form.nomeCliente) {
       setForm((prev) => ({ ...prev, slugCompartilhavel: gerarSlug(form.nomeCliente) }));
@@ -112,8 +111,7 @@ export function FormularioConta({ conta, onSalvar, onFechar }: FormularioContaPr
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onFechar} />
 
       <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] flex flex-col">
-        {/* Cabeçalho fixo */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[#e5e5e5]">
           <h2 className="font-semibold text-gray-900">
             {modoEdicao ? "Editar conta" : "Nova conta de anúncio"}
           </h2>
@@ -128,7 +126,6 @@ export function FormularioConta({ conta, onSalvar, onFechar }: FormularioContaPr
           </button>
         </div>
 
-        {/* Corpo com scroll */}
         <form onSubmit={handleSubmit} className="overflow-y-auto flex flex-col gap-5 p-6">
           {/* Nome do cliente */}
           <div className="flex flex-col gap-1.5">
@@ -139,15 +136,15 @@ export function FormularioConta({ conta, onSalvar, onFechar }: FormularioContaPr
               onChange={(e) => setForm((prev) => ({ ...prev, nomeCliente: e.target.value }))}
               placeholder="Ex: Loja da Maria"
               required
-              className="border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-shadow"
+              className="border border-[#e5e5e5] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black transition-shadow"
             />
           </div>
 
           {/* Slug compartilhável */}
           <div className="flex flex-col gap-1.5">
             <label className="text-sm font-medium text-gray-700">Slug compartilhável</label>
-            <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-blue-500 transition-shadow">
-              <span className="px-3 py-2.5 bg-gray-50 text-gray-400 text-xs border-r border-gray-200 whitespace-nowrap select-none">
+            <div className="flex items-center border border-[#e5e5e5] rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-black transition-shadow">
+              <span className="px-3 py-2.5 bg-gray-50 text-gray-400 text-xs border-r border-[#e5e5e5] whitespace-nowrap select-none">
                 /compartilhavel/
               </span>
               <input
@@ -170,8 +167,8 @@ export function FormularioConta({ conta, onSalvar, onFechar }: FormularioContaPr
           {/* Account ID do Meta */}
           <div className="flex flex-col gap-1.5">
             <label className="text-sm font-medium text-gray-700">Account ID do Meta</label>
-            <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-blue-500 transition-shadow">
-              <span className="px-3 py-2.5 bg-gray-50 text-gray-400 text-xs border-r border-gray-200 whitespace-nowrap select-none font-mono">
+            <div className="flex items-center border border-[#e5e5e5] rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-black transition-shadow">
+              <span className="px-3 py-2.5 bg-gray-50 text-gray-400 text-xs border-r border-[#e5e5e5] whitespace-nowrap select-none font-mono">
                 act_
               </span>
               <input
@@ -204,7 +201,7 @@ export function FormularioConta({ conta, onSalvar, onFechar }: FormularioContaPr
               onChange={(e) => setForm((prev) => ({ ...prev, tokenAcesso: e.target.value }))}
               placeholder={modoEdicao ? "••••••••" : "EAAxxxxxxxxxxxx"}
               required={!modoEdicao}
-              className="border border-gray-200 rounded-lg px-3 py-2.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500 transition-shadow"
+              className="border border-[#e5e5e5] rounded-lg px-3 py-2.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-black transition-shadow"
             />
             <p className="text-xs text-gray-400">
               Token de longa duração da Graph API. Criptografado antes de ser salvo.
@@ -220,7 +217,7 @@ export function FormularioConta({ conta, onSalvar, onFechar }: FormularioContaPr
                 setForm((prev) => ({ ...prev, tipoFunil: e.target.value as TipoFunil }))
               }
               required
-              className="border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white transition-shadow"
+              className="border border-[#e5e5e5] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black bg-white transition-shadow"
             >
               <option value="">Selecione o funil...</option>
               {OPCOES_FUNIL.map(([valor, label]) => (
@@ -231,30 +228,29 @@ export function FormularioConta({ conta, onSalvar, onFechar }: FormularioContaPr
             </select>
           </div>
 
-          {/* Painel informativo do funil selecionado */}
+          {/* Painel informativo do funil */}
           {configFunil && (
-            <div className="bg-blue-50 border border-blue-100 rounded-xl p-4">
-              <p className="text-xs font-semibold text-blue-600 uppercase tracking-wider mb-2">
+            <div className="bg-gray-50 border border-[#e5e5e5] rounded-xl p-4">
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
                 Métricas configuradas automaticamente
               </p>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <p className="text-xs text-blue-400">Resultado principal</p>
-                  <p className="text-sm font-medium text-blue-900">
+                  <p className="text-xs text-gray-400">Resultado principal</p>
+                  <p className="text-sm font-medium text-gray-900">
                     {configFunil.labelMetricaPrincipal}
                   </p>
                 </div>
                 <div>
-                  <p className="text-xs text-blue-400">Custo por resultado</p>
-                  <p className="text-sm font-medium text-blue-900">
+                  <p className="text-xs text-gray-400">Custo por resultado</p>
+                  <p className="text-sm font-medium text-gray-900">
                     {configFunil.labelCustoPorResultado}
                   </p>
                 </div>
               </div>
 
-              {/* Confirmação adicional para funnels de landing page conforme CLAUDE.md */}
               {ehLandingPage && (
-                <p className="mt-3 text-xs text-blue-600 border-t border-blue-100 pt-3">
+                <p className="mt-3 text-xs text-gray-500 border-t border-[#e5e5e5] pt-3">
                   A conversão rastreada será{" "}
                   <strong>{configFunil.labelMetricaPrincipal}</strong> via Pixel do Meta
                   ou API de Conversões.
@@ -263,26 +259,24 @@ export function FormularioConta({ conta, onSalvar, onFechar }: FormularioContaPr
             </div>
           )}
 
-          {/* Erro */}
           {erro && (
             <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2.5">
               {erro}
             </p>
           )}
 
-          {/* Ações */}
           <div className="flex gap-3 pt-1 pb-1">
             <button
               type="button"
               onClick={onFechar}
-              className="flex-1 border border-gray-200 text-gray-700 text-sm font-medium py-2.5 rounded-lg hover:bg-gray-50 transition-colors"
+              className="flex-1 border border-[#e5e5e5] text-gray-700 text-sm font-medium py-2.5 rounded-lg hover:bg-gray-50 transition-colors"
             >
               Cancelar
             </button>
             <button
               type="submit"
               disabled={carregando}
-              className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white text-sm font-medium py-2.5 rounded-lg transition-colors"
+              className="flex-1 bg-black hover:bg-gray-900 disabled:bg-gray-400 text-white text-sm font-medium py-2.5 rounded-lg transition-colors"
             >
               {carregando ? "Salvando..." : modoEdicao ? "Salvar alterações" : "Adicionar conta"}
             </button>

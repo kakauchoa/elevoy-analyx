@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { getServerSession } from "next-auth";
+import { useEffect, useState } from "react";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -80,7 +79,7 @@ function ModalNovoGestor({
                 value={value}
                 onChange={(e) => setter(e.target.value)}
                 placeholder={placeholder}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full border border-[#e5e5e5] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black"
               />
             </div>
           ))}
@@ -89,14 +88,14 @@ function ModalNovoGestor({
         <div className="flex gap-3 pt-2">
           <button
             onClick={onClose}
-            className="flex-1 px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50"
+            className="flex-1 px-4 py-2 text-sm text-gray-700 border border-[#e5e5e5] rounded-lg hover:bg-gray-50"
           >
             Cancelar
           </button>
           <button
             onClick={salvar}
             disabled={salvando}
-            className="flex-1 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50"
+            className="flex-1 px-4 py-2 text-sm font-medium text-white bg-black rounded-lg hover:bg-gray-900 disabled:opacity-50"
           >
             {salvando ? "Criando..." : "Criar gestor"}
           </button>
@@ -177,7 +176,7 @@ function ModalAcessos({
                   type="checkbox"
                   checked={selecionadas.has(conta.id)}
                   onChange={() => toggle(conta.id)}
-                  className="w-4 h-4 rounded text-blue-600"
+                  className="w-4 h-4 rounded accent-black"
                 />
                 <span className="text-sm text-gray-800">{conta.nomeCliente}</span>
               </label>
@@ -186,13 +185,16 @@ function ModalAcessos({
         )}
 
         <div className="flex gap-3 pt-2">
-          <button onClick={onClose} className="flex-1 px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50">
+          <button
+            onClick={onClose}
+            className="flex-1 px-4 py-2 text-sm text-gray-700 border border-[#e5e5e5] rounded-lg hover:bg-gray-50"
+          >
             Cancelar
           </button>
           <button
             onClick={salvar}
             disabled={salvando}
-            className="flex-1 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50"
+            className="flex-1 px-4 py-2 text-sm font-medium text-white bg-black rounded-lg hover:bg-gray-900 disabled:opacity-50"
           >
             {salvando ? "Salvando..." : "Salvar acessos"}
           </button>
@@ -253,7 +255,7 @@ export default function UsuariosPage() {
         </div>
         <button
           onClick={() => setModalNovo(true)}
-          className="text-sm font-medium text-white bg-blue-600 rounded-lg px-4 py-2 hover:bg-blue-700 transition-colors"
+          className="text-sm font-medium text-white bg-black rounded-lg px-4 py-2 hover:bg-gray-900 transition-colors"
         >
           + Adicionar gestor
         </button>
@@ -262,13 +264,13 @@ export default function UsuariosPage() {
       {carregando && (
         <div className="space-y-3">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="h-20 bg-white border border-gray-200 rounded-xl animate-pulse" />
+            <div key={i} className="h-20 bg-white border border-[#e5e5e5] rounded-xl animate-pulse" />
           ))}
         </div>
       )}
 
       {!carregando && gestores.length === 0 && (
-        <div className="bg-white border border-gray-200 rounded-xl p-10 text-center">
+        <div className="bg-white border border-[#e5e5e5] rounded-xl p-10 text-center">
           <p className="text-gray-500">Nenhum gestor cadastrado além de você.</p>
         </div>
       )}
@@ -276,12 +278,15 @@ export default function UsuariosPage() {
       {!carregando && gestores.length > 0 && (
         <div className="space-y-3">
           {gestores.map((g) => (
-            <div key={g.id} className="bg-white border border-gray-200 rounded-xl px-5 py-4 flex items-center justify-between gap-4">
+            <div
+              key={g.id}
+              className="bg-white border border-[#e5e5e5] rounded-xl px-5 py-4 flex items-center justify-between gap-4"
+            >
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
                   <p className="text-sm font-semibold text-gray-900 truncate">{g.nome}</p>
                   {g.isAdmin && (
-                    <span className="shrink-0 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-700">
+                    <span className="shrink-0 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-black text-white">
                       Admin
                     </span>
                   )}
@@ -298,7 +303,7 @@ export default function UsuariosPage() {
               {!g.isAdmin && (
                 <button
                   onClick={() => setGestorEditando(g)}
-                  className="shrink-0 text-xs font-medium text-blue-600 border border-blue-200 rounded-lg px-3 py-1.5 hover:bg-blue-50 transition-colors"
+                  className="shrink-0 text-xs font-medium text-gray-700 border border-[#e5e5e5] rounded-lg px-3 py-1.5 hover:bg-gray-50 transition-colors"
                 >
                   Editar acessos
                 </button>
