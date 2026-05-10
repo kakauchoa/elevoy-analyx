@@ -206,10 +206,11 @@ model AcessoDashboard {
   id              String          @id @default(uuid())
   contaAnuncioId  String          @map("conta_anuncio_id")
   slug            String
+  nomeVisitante   String?         @map("nome_visitante") @db.VarChar(255)
   ipVisitante     String?         @map("ip_visitante") @db.VarChar(45)
   userAgent       String?         @map("user_agent") @db.Text
   referrer        String?         @db.Text
-  pais            String?         @db.VarChar(100)
+  pais            String?         @db.VarChar(300)
   dispositivo     TipoDispositivo @default(desconhecido)
   duracaoSegundos Int?            @map("duracao_segundos")
   acessadoEm      DateTime        @default(now()) @map("acessado_em")

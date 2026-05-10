@@ -9,13 +9,35 @@ function detectarDispositivo(userAgent: string): "desktop" | "mobile" | "tablet"
   return "desconhecido";
 }
 
+async function geolocalizarIp(ip: string): Promise<string | null> {
+  try {
+    const res = await fetch(
+      `http://ip-api.com/json/${ip}?fields=country,regionName,city`,
+      { signal: AbortSignal.timeout(2000) }
+    );
+    const data = (await res.json()) as {
+      country?: string;
+      regionName?: string;
+      city?: string;
+    };
+    const partes = [data.city, data.regionName, data.country].filter(Boolean);
+    return partes.length > 0 ? partes.join(", ") : null;
+  } catch {
+    return null;
+  }
+}
+
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ slug: string }> }
 ) {
   try {
     const { slug } = await params;
-    const body = (await req.json()) as { referrer?: string; duracao?: number };
+    const body = (await req.json()) as {
+      referrer?: string;
+      duracao?: number;
+      nome?: string;
+    };
 
     const conta = await prisma.contaAnuncio.findUnique({
       where: { slugCompartilhavel: slug },
@@ -34,24 +56,16 @@ export async function POST(
     const userAgent = req.headers.get("user-agent") ?? "";
     const dispositivo = detectarDispositivo(userAgent);
 
-    // Geolocalização por IP (serviço gratuito, fire-and-forget)
-    let pais: string | null = null;
-    if (ip && ip !== "127.0.0.1" && ip !== "::1") {
-      try {
-        const geo = await fetch(`http://ip-api.com/json/${ip}?fields=country`, {
-          signal: AbortSignal.timeout(2000),
-        });
-        const data = (await geo.json()) as { country?: string };
-        pais = data.country ?? null;
-      } catch {
-        // geolocalização é melhor-esforço
-      }
-    }
+    const pais =
+      ip && ip !== "127.0.0.1" && ip !== "::1"
+        ? await geolocalizarIp(ip)
+        : null;
 
     await prisma.acessoDashboard.create({
       data: {
         contaAnuncioId: conta.id,
         slug,
+        nomeVisitante: body.nome?.trim() || null,
         ipVisitante: ip,
         userAgent: userAgent || null,
         referrer: body.referrer ?? null,

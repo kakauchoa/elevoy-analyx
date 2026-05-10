@@ -26,22 +26,21 @@ export default function DashboardCompartilhavel({ params }: PageProps) {
   const [carregando, setCarregando] = useState(true);
   const [sincronizando, setSincronizando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
+  const [verificandoManual, setVerificandoManual] = useState(false);
+
+  // Identificação do visitante
+  const [nomeIdentificado, setNomeIdentificado] = useState<string | null>(null);
+  const [checandoIdentidade, setChecandoIdentidade] = useState(true);
+  const [nomeInput, setNomeInput] = useState("");
 
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const acessoRegistrado = useRef(false);
   const inicioRef = useRef<number>(Date.now());
-  const [verificandoManual, setVerificandoManual] = useState(false);
 
   function limparPolling() {
-    if (pollingRef.current) {
-      clearInterval(pollingRef.current);
-      pollingRef.current = null;
-    }
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-      timeoutRef.current = null;
-    }
+    if (pollingRef.current) { clearInterval(pollingRef.current); pollingRef.current = null; }
+    if (timeoutRef.current) { clearTimeout(timeoutRef.current); timeoutRef.current = null; }
   }
 
   async function verificarSincronizacao(inicio: string, fim: string) {
@@ -49,7 +48,6 @@ export default function DashboardCompartilhavel({ params }: PageProps) {
     if (!r.ok) return;
     const atualizado: DashboardData = await r.json();
     setDados(atualizado);
-
     if (atualizado.datasFaltando.length === 0) {
       setSincronizando(false);
       limparPolling();
@@ -60,11 +58,8 @@ export default function DashboardCompartilhavel({ params }: PageProps) {
   async function verificarAgora() {
     const { inicio, fim } = calcularPeriodo(periodo);
     setVerificandoManual(true);
-    try {
-      await verificarSincronizacao(inicio, fim);
-    } finally {
-      setVerificandoManual(false);
-    }
+    try { await verificarSincronizacao(inicio, fim); }
+    finally { setVerificandoManual(false); }
   }
 
   async function carregarDados(tipo: TipoPeriodo) {
@@ -86,24 +81,14 @@ export default function DashboardCompartilhavel({ params }: PageProps) {
       setDados(json);
 
       if (json.datasFaltando.length > 0) {
-        // Dados faltando — dispara sincronização e começa polling
         setSincronizando(true);
         await fetch(`/api/compartilhavel/${slug}/sincronizar`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ inicio, fim }),
         });
-
-        // Verifica a cada 10 segundos
-        pollingRef.current = setInterval(() => {
-          verificarSincronizacao(inicio, fim);
-        }, 10_000);
-
-        // Timeout de 3 minutos — para o polling e exibe o que houver
-        timeoutRef.current = setTimeout(() => {
-          limparPolling();
-          setSincronizando(false);
-        }, 3 * 60 * 1000);
+        pollingRef.current = setInterval(() => { verificarSincronizacao(inicio, fim); }, 10_000);
+        timeoutRef.current = setTimeout(() => { limparPolling(); setSincronizando(false); }, 3 * 60 * 1000);
       } else {
         carregarCampanhas(inicio, fim);
       }
@@ -121,24 +106,38 @@ export default function DashboardCompartilhavel({ params }: PageProps) {
       const json: { campanhas: CampanhaHierarquica[] } = await res.json();
       setCampanhas(json.campanhas);
     } catch {
-      // campanhas são opcionais, não bloqueia o dashboard
+      // campanhas são opcionais
     }
   }
 
-  async function registrarAcesso() {
+  async function registrarAcesso(nome: string) {
     if (acessoRegistrado.current) return;
     acessoRegistrado.current = true;
     await fetch(`/api/compartilhavel/${slug}/acesso`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ referrer: document.referrer }),
+      body: JSON.stringify({ referrer: document.referrer, nome }),
     }).catch(() => {});
   }
 
-  // Dispara apenas na montagem inicial
+  function confirmarIdentidade() {
+    const nome = nomeInput.trim();
+    if (!nome) return;
+    localStorage.setItem(`visitante_nome_${slug}`, nome);
+    setNomeIdentificado(nome);
+    registrarAcesso(nome);
+  }
+
+  // Carrega dados sempre; verifica identidade no localStorage
   useEffect(() => {
     carregarDados(periodo);
-    registrarAcesso();
+
+    const salvo = localStorage.getItem(`visitante_nome_${slug}`);
+    if (salvo) {
+      setNomeIdentificado(salvo);
+      registrarAcesso(salvo);
+    }
+    setChecandoIdentidade(false);
 
     const registrarDuracao = () => {
       const duracao = Math.round((Date.now() - inicioRef.current) / 1000);
@@ -148,20 +147,12 @@ export default function DashboardCompartilhavel({ params }: PageProps) {
       );
     };
     window.addEventListener("beforeunload", registrarDuracao);
-
-    return () => {
-      limparPolling();
-      window.removeEventListener("beforeunload", registrarDuracao);
-    };
+    return () => { limparPolling(); window.removeEventListener("beforeunload", registrarDuracao); };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Recarrega sempre que o período muda (pula a primeira renderização)
   const periodoIniciado = useRef(false);
   useEffect(() => {
-    if (!periodoIniciado.current) {
-      periodoIniciado.current = true;
-      return;
-    }
+    if (!periodoIniciado.current) { periodoIniciado.current = true; return; }
     carregarDados(periodo);
   }, [periodo]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -176,15 +167,52 @@ export default function DashboardCompartilhavel({ params }: PageProps) {
     );
   }
 
-  const config = dados
-    ? CONFIGURACOES_FUNIL[dados.conta.tipoFunil as TipoFunil]
-    : null;
-
+  const config = dados ? CONFIGURACOES_FUNIL[dados.conta.tipoFunil as TipoFunil] : null;
   const isGestor = session?.user?.tipo === "gestor";
   const { inicio, fim } = calcularPeriodo(periodo);
 
+  // Modal de identificação (não mostra enquanto verifica localStorage)
+  const mostrarModal = !checandoIdentidade && !nomeIdentificado;
+
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Modal de identificação */}
+      {mostrarModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 space-y-5">
+            {dados?.conta.nomeCliente && (
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                Dashboard de {dados.conta.nomeCliente}
+              </p>
+            )}
+            <div>
+              <h2 className="text-lg font-bold text-gray-900">Como você se chama?</h2>
+              <p className="text-sm text-gray-500 mt-1">
+                Seu nome será salvo para que não precisemos perguntar novamente.
+              </p>
+            </div>
+            <div>
+              <input
+                type="text"
+                value={nomeInput}
+                onChange={(e) => setNomeInput(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") confirmarIdentidade(); }}
+                placeholder="Ex: João Silva"
+                autoFocus
+                className="w-full border border-[#e5e5e5] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+              />
+            </div>
+            <button
+              onClick={confirmarIdentidade}
+              disabled={!nomeInput.trim()}
+              className="w-full bg-black text-white text-sm font-medium py-2.5 rounded-lg hover:bg-gray-900 disabled:opacity-40 transition-colors"
+            >
+              Acessar dashboard
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <header className="bg-white border-b border-gray-200 px-4 py-4 sticky top-0 z-10">
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
@@ -198,10 +226,7 @@ export default function DashboardCompartilhavel({ params }: PageProps) {
               <p className="text-xs text-gray-400 mt-0.5">
                 Atualizado em{" "}
                 {new Date(dados.conta.ultimaSincronizacao).toLocaleString("pt-BR", {
-                  day: "2-digit",
-                  month: "2-digit",
-                  hour: "2-digit",
-                  minute: "2-digit",
+                  day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit",
                 })}
               </p>
             )}
@@ -211,7 +236,6 @@ export default function DashboardCompartilhavel({ params }: PageProps) {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 py-6 space-y-6">
-        {/* Estado de carregamento inicial */}
         {carregando && !dados && (
           <div className="space-y-4">
             {[...Array(6)].map((_, i) => (
@@ -220,42 +244,35 @@ export default function DashboardCompartilhavel({ params }: PageProps) {
           </div>
         )}
 
-        {/* Sem nenhum dado ainda e sincronizando — tela de espera */}
         {sincronizando && dados && dados.porDia.length === 0 && (
           <LoadingSync onAtualizar={verificarAgora} verificando={verificandoManual} />
         )}
 
-        {/* Há dados parciais e ainda sincronizando — banner discreto */}
         {sincronizando && dados && dados.porDia.length > 0 && dados.datasFaltando.length > 0 && (
           <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 flex items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <div className="w-4 h-4 rounded-full border-2 border-amber-500 border-t-transparent animate-spin shrink-0" />
               <p className="text-sm text-amber-700">
                 Sincronizando {dados.datasFaltando.length} dia{dados.datasFaltando.length !== 1 ? "s" : ""} ainda sem dados.
-                Verificando a cada 10 segundos.
               </p>
             </div>
             <button
               onClick={verificarAgora}
               disabled={verificandoManual}
-              className="shrink-0 text-xs font-medium text-amber-700 underline underline-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="shrink-0 text-xs font-medium text-amber-700 underline underline-offset-2 disabled:opacity-50"
             >
               {verificandoManual ? "Verificando..." : "Atualizar agora"}
             </button>
           </div>
         )}
 
-        {/* Conteúdo principal */}
         {dados && config && dados.porDia.length > 0 && (
           <>
-            {/* Botão de relatório (apenas gestor) */}
             {isGestor && (
               <div className="flex justify-end">
                 <BotaoRelatorio contaId={dados.conta.id} inicio={inicio} fim={fim} />
               </div>
             )}
-
-            {/* Métricas em destaque */}
             <section>
               <MetricasDestaque
                 metricas={config.metricasDestaque}
@@ -264,21 +281,12 @@ export default function DashboardCompartilhavel({ params }: PageProps) {
                 labelCustoPorResultado={dados.conta.labelCustoPorResultado}
               />
             </section>
-
-            {/* Métricas secundárias */}
             <section>
               <MetricasSecundarias metricas={config.submetricas} dados={dados.agregado} />
             </section>
-
-            {/* Gráfico */}
             <section>
-              <GraficoMetricas
-                porDia={dados.porDia}
-                metricasDisponiveis={config.metricasGrafico}
-              />
+              <GraficoMetricas porDia={dados.porDia} metricasDisponiveis={config.metricasGrafico} />
             </section>
-
-            {/* Tabela de campanhas */}
             {campanhas.length > 0 && (
               <section>
                 <TabelaCampanhas
@@ -292,7 +300,6 @@ export default function DashboardCompartilhavel({ params }: PageProps) {
           </>
         )}
 
-        {/* Sem dados e não sincronizando */}
         {!carregando && dados && dados.porDia.length === 0 && !sincronizando && (
           <div className="flex flex-col items-center justify-center py-20 text-center">
             <p className="text-gray-500">Nenhum dado encontrado para o período selecionado.</p>
