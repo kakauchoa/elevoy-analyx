@@ -79,6 +79,14 @@ function IconMenu() {
   );
 }
 
+function IconKey() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 11-7.778 7.778 5.5 5.5 0 017.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4" />
+    </svg>
+  );
+}
+
 function IconChevron({ open }: { open: boolean }) {
   return (
     <svg
@@ -103,6 +111,7 @@ interface NavItem {
   href: string;
   label: string;
   icon: React.ReactNode;
+  adminOnly?: boolean;
 }
 
 interface NavSection {
@@ -135,7 +144,10 @@ const SECTIONS: NavSection[] = [
   {
     id: "configuracoes",
     label: "Configurações",
-    items: [{ href: "/perfil", label: "Perfil", icon: <IconUser /> }],
+    items: [
+      { href: "/perfil", label: "Perfil", icon: <IconUser /> },
+      { href: "/configuracoes/meta", label: "App Meta", icon: <IconKey />, adminOnly: true },
+    ],
   },
 ];
 
@@ -204,7 +216,7 @@ export function Sidebar({ isAdmin, userName, userEmail }: SidebarProps) {
               {/* Items */}
               {(collapsed || open) && (
                 <div className="mt-0.5">
-                  {section.items.map((item) => {
+                  {section.items.filter((item) => !item.adminOnly || isAdmin).map((item) => {
                     const active = isActive(item.href);
                     return (
                       <Link

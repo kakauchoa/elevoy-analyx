@@ -13,6 +13,8 @@ type DadosAtualizacao = {
   slugCompartilhavel?: string;
   accountIdMeta?: string;
   tokenAcesso?: string;
+  tokenExpiraEm?: Date;
+  tokenStatus?: "ok" | "expirando" | "expirado" | "erro";
   tipoFunil?: TipoFunil;
   metricaPrincipal?: string;
   labelMetricaPrincipal?: string;
@@ -78,6 +80,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Params }) {
     // Token só é recriptografado quando um novo valor é enviado explicitamente
     if (body.tokenAcesso) {
       dados.tokenAcesso = criptografar(body.tokenAcesso);
+      dados.tokenExpiraEm = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000);
+      dados.tokenStatus = "ok";
     }
 
     if (body.tipoFunil) {
@@ -102,6 +106,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Params }) {
         labelCustoPorResultado: true,
         compartilhamentoAtivo: true,
         ultimaSincronizacao: true,
+        tokenExpiraEm: true,
+        tokenStatus: true,
         criadoEm: true,
       },
     });

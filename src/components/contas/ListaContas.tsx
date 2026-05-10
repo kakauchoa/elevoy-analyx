@@ -5,6 +5,21 @@ import { ContaAnuncio } from "@/types/dashboard";
 import { LABELS_FUNIL, TipoFunil } from "@/lib/metricas";
 import { FormularioConta } from "./FormularioConta";
 
+function BadgeTokenStatus({ status }: { status: ContaAnuncio["tokenStatus"] }) {
+  const map = {
+    ok: { label: "Token OK", cls: "bg-green-50 text-green-700 border-green-200" },
+    expirando: { label: "Expirando", cls: "bg-yellow-50 text-yellow-700 border-yellow-200" },
+    expirado: { label: "Expirado", cls: "bg-red-50 text-red-700 border-red-200" },
+    erro: { label: "Erro no token", cls: "bg-red-50 text-red-700 border-red-200" },
+  };
+  const { label, cls } = map[status] ?? map.ok;
+  return (
+    <span className={`text-[11px] font-medium border px-2 py-0.5 rounded-full ${cls}`}>
+      {label}
+    </span>
+  );
+}
+
 interface ListaContasProps {
   contasIniciais: ContaAnuncio[];
 }
@@ -15,6 +30,7 @@ export function ListaContas({ contasIniciais }: ListaContasProps) {
   const [contaEmEdicao, setContaEmEdicao] = useState<ContaAnuncio | null>(null);
   const [confirmandoExclusao, setConfirmandoExclusao] = useState<string | null>(null);
   const [copiado, setCopiado] = useState<string | null>(null);
+  const [renovando, setRenovando] = useState<string | null>(null);
   const [erroGlobal, setErroGlobal] = useState("");
 
   const abrirModal = (conta: ContaAnuncio | null = null) => {
@@ -67,6 +83,35 @@ export function ListaContas({ contasIniciais }: ListaContasProps) {
     await navigator.clipboard.writeText(`${base}/compartilhavel/${slug}`);
     setCopiado(slug);
     setTimeout(() => setCopiado(null), 2000);
+  };
+
+  const handleRenovarToken = async (id: string) => {
+    setRenovando(id);
+    setErroGlobal("");
+    try {
+      const res = await fetch(`/api/contas/${id}/renovar-token`, { method: "POST" });
+      const data = (await res.json()) as {
+        ok?: boolean;
+        erro?: string;
+        tokenExpiraEm?: string;
+        tokenStatus?: ContaAnuncio["tokenStatus"];
+      };
+      if (res.ok && data.ok) {
+        setContas((prev) =>
+          prev.map((c) =>
+            c.id === id
+              ? { ...c, tokenExpiraEm: data.tokenExpiraEm ?? null, tokenStatus: data.tokenStatus ?? "ok" }
+              : c
+          )
+        );
+      } else {
+        setErroGlobal(data.erro ?? "Erro ao renovar token");
+      }
+    } catch {
+      setErroGlobal("Erro ao renovar token");
+    } finally {
+      setRenovando(null);
+    }
   };
 
   const handleExcluir = async (id: string) => {
@@ -138,6 +183,7 @@ export function ListaContas({ contasIniciais }: ListaContasProps) {
                     <span className="text-xs bg-black text-white px-2 py-0.5 rounded-full">
                       {LABELS_FUNIL[conta.tipoFunil as TipoFunil]}
                     </span>
+                    <BadgeTokenStatus status={conta.tokenStatus} />
                   </div>
                   <div className="mt-1.5 flex items-center gap-2 text-xs text-gray-400 flex-wrap">
                     <span className="font-mono">{conta.accountIdMeta}</span>
@@ -177,6 +223,25 @@ export function ListaContas({ contasIniciais }: ListaContasProps) {
                     ) : (
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                      </svg>
+                    )}
+                  </button>
+
+                  {/* Renovar token */}
+                  <button
+                    onClick={() => handleRenovarToken(conta.id)}
+                    disabled={renovando === conta.id}
+                    title="Renovar token Meta"
+                    className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors disabled:opacity-40"
+                  >
+                    {renovando === conta.id ? (
+                      <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                      </svg>
+                    ) : (
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                       </svg>
                     )}
                   </button>
@@ -222,7 +287,7 @@ export function ListaContas({ contasIniciais }: ListaContasProps) {
                 </div>
               </div>
 
-              <div className="mt-3 pt-3 border-t border-[#e5e5e5] flex items-center justify-between">
+              <div className="mt-3 pt-3 border-t border-[#e5e5e5] flex items-center justify-between gap-4 flex-wrap">
                 <span
                   className={`text-xs font-medium ${
                     conta.compartilhamentoAtivo ? "text-green-600" : "text-gray-400"
@@ -230,20 +295,32 @@ export function ListaContas({ contasIniciais }: ListaContasProps) {
                 >
                   {conta.compartilhamentoAtivo ? "Link público ativo" : "Link público inativo"}
                 </span>
-                {conta.ultimaSincronizacao ? (
-                  <span className="text-xs text-gray-400">
-                    Última sinc.:{" "}
-                    {new Date(conta.ultimaSincronizacao).toLocaleDateString("pt-BR", {
-                      day: "2-digit",
-                      month: "2-digit",
-                      year: "numeric",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </span>
-                ) : (
-                  <span className="text-xs text-gray-400">Nunca sincronizado</span>
-                )}
+                <div className="flex items-center gap-3 text-xs text-gray-400">
+                  {conta.tokenExpiraEm && (
+                    <span>
+                      Token expira em:{" "}
+                      {new Date(conta.tokenExpiraEm).toLocaleDateString("pt-BR", {
+                        day: "2-digit",
+                        month: "2-digit",
+                        year: "numeric",
+                      })}
+                    </span>
+                  )}
+                  {conta.ultimaSincronizacao ? (
+                    <span>
+                      Sinc.:{" "}
+                      {new Date(conta.ultimaSincronizacao).toLocaleDateString("pt-BR", {
+                        day: "2-digit",
+                        month: "2-digit",
+                        year: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </span>
+                  ) : (
+                    <span>Nunca sincronizado</span>
+                  )}
+                </div>
               </div>
             </div>
           ))}

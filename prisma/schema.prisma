@@ -43,6 +43,13 @@ enum TipoDispositivo {
   desconhecido
 }
 
+enum TokenStatus {
+  ok
+  expirando
+  expirado
+  erro
+}
+
 model Usuario {
   id           String            @id @default(uuid())
   nome         String
@@ -52,9 +59,10 @@ model Usuario {
   ativo        Boolean           @default(true)
   criadoEm     DateTime          @default(now()) @map("criado_em")
   atualizadoEm DateTime          @updatedAt @map("atualizado_em")
-  contas       ContaAnuncio[]
-  relatorios   RelatorioGerado[]
-  gestorContas GestorConta[]
+  contas              ContaAnuncio[]
+  relatorios          RelatorioGerado[]
+  gestorContas        GestorConta[]
+  configuracaoMetaApp ConfiguracaoMetaApp?
 
   @@map("usuarios")
 }
@@ -72,6 +80,8 @@ model ContaAnuncio {
   labelCustoPorResultado String            @map("label_custo_por_resultado")
   compartilhamentoAtivo  Boolean           @default(false) @map("compartilhamento_ativo")
   ultimaSincronizacao    DateTime?         @map("ultima_sincronizacao")
+  tokenExpiraEm          DateTime?         @map("token_expira_em")
+  tokenStatus            TokenStatus       @default(ok) @map("token_status")
   ativo                  Boolean           @default(true)
   criadoEm               DateTime          @default(now()) @map("criado_em")
   atualizadoEm           DateTime          @updatedAt @map("atualizado_em")
@@ -231,6 +241,18 @@ model RelatorioGerado {
   geradoPor      Usuario      @relation(fields: [geradoPorId], references: [id])
 
   @@map("relatorios_gerados")
+}
+
+model ConfiguracaoMetaApp {
+  id           String   @id @default(uuid())
+  usuarioId    String   @unique @map("usuario_id")
+  appId        String   @map("app_id") @db.VarChar(100)
+  appSecret    String   @map("app_secret") @db.Text
+  criadoEm     DateTime @default(now()) @map("criado_em")
+  atualizadoEm DateTime @updatedAt @map("atualizado_em")
+  usuario      Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@map("configuracoes_meta_app")
 }
 
 model ConfiguracaoGtm {

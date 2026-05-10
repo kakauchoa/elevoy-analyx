@@ -11,6 +11,8 @@ export interface ContaAnuncio {
   labelCustoPorResultado: string;
   compartilhamentoAtivo: boolean;
   ultimaSincronizacao: string | null;
+  tokenExpiraEm: string | null;
+  tokenStatus: "ok" | "expirando" | "expirado" | "erro";
   criadoEm: string;
 }
 

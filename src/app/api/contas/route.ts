@@ -28,6 +28,8 @@ export async function GET() {
         labelCustoPorResultado: true,
         compartilhamentoAtivo: true,
         ultimaSincronizacao: true,
+        tokenExpiraEm: true,
+        tokenStatus: true,
         criadoEm: true,
       },
       orderBy: { criadoEm: "desc" },
@@ -88,6 +90,8 @@ export async function POST(req: NextRequest) {
         metricaPrincipal: config.metricaPrincipal,
         labelMetricaPrincipal: config.labelMetricaPrincipal,
         labelCustoPorResultado: config.labelCustoPorResultado,
+        tokenExpiraEm: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000),
+        tokenStatus: "ok",
       },
       select: {
         id: true,
@@ -100,6 +104,8 @@ export async function POST(req: NextRequest) {
         labelCustoPorResultado: true,
         compartilhamentoAtivo: true,
         ultimaSincronizacao: true,
+        tokenExpiraEm: true,
+        tokenStatus: true,
         criadoEm: true,
       },
     });

@@ -20,6 +20,8 @@ export default async function ContasPage() {
       labelCustoPorResultado: true,
       compartilhamentoAtivo: true,
       ultimaSincronizacao: true,
+      tokenExpiraEm: true,
+      tokenStatus: true,
       criadoEm: true,
     },
     orderBy: { criadoEm: "desc" },
@@ -29,7 +31,9 @@ export default async function ContasPage() {
   const contasSerializadas: ContaAnuncio[] = contas.map((c) => ({
     ...c,
     tipoFunil: c.tipoFunil as ContaAnuncio["tipoFunil"],
+    tokenStatus: c.tokenStatus as ContaAnuncio["tokenStatus"],
     ultimaSincronizacao: c.ultimaSincronizacao?.toISOString() ?? null,
+    tokenExpiraEm: c.tokenExpiraEm?.toISOString() ?? null,
     criadoEm: c.criadoEm.toISOString(),
   }));
 
