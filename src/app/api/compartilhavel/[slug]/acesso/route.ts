@@ -61,19 +61,26 @@ export async function POST(
         ? await geolocalizarIp(ip)
         : null;
 
-    await prisma.acessoDashboard.create({
-      data: {
-        contaAnuncioId: conta.id,
-        slug,
-        nomeVisitante: body.nome?.trim() || null,
-        ipVisitante: ip,
-        userAgent: userAgent || null,
-        referrer: body.referrer ?? null,
-        pais,
-        dispositivo,
-        duracaoSegundos: body.duracao ?? null,
-      },
-    });
+    const dadosBase = {
+      contaAnuncioId: conta.id,
+      slug,
+      ipVisitante: ip,
+      userAgent: userAgent || null,
+      referrer: body.referrer ?? null,
+      pais,
+      dispositivo,
+      duracaoSegundos: body.duracao ?? null,
+    };
+
+    try {
+      // Tenta salvar com nomeVisitante (requer migration 20260510200000)
+      await prisma.acessoDashboard.create({
+        data: { ...dadosBase, nomeVisitante: body.nome?.trim() || null },
+      });
+    } catch {
+      // Migration ainda não aplicada na DB — salva sem o campo
+      await prisma.acessoDashboard.create({ data: dadosBase });
+    }
 
     return NextResponse.json({ ok: true });
   } catch (erro) {

@@ -37,6 +37,8 @@ export default function DashboardCompartilhavel({ params }: PageProps) {
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const acessoRegistrado = useRef(false);
   const inicioRef = useRef<number>(Date.now());
+  // Garante que a sincronização é disparada apenas UMA vez por período
+  const sincronizacaoDisparada = useRef<boolean>(false);
 
   function limparPolling() {
     if (pollingRef.current) { clearInterval(pollingRef.current); pollingRef.current = null; }
@@ -82,12 +84,17 @@ export default function DashboardCompartilhavel({ params }: PageProps) {
 
       if (json.datasFaltando.length > 0) {
         setSincronizando(true);
-        await fetch(`/api/compartilhavel/${slug}/sincronizar`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ inicio, fim }),
-        });
+        // Dispara a sincronização apenas uma vez por período — impede loop em re-renders
+        if (!sincronizacaoDisparada.current) {
+          sincronizacaoDisparada.current = true;
+          await fetch(`/api/compartilhavel/${slug}/sincronizar`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ inicio, fim }),
+          });
+        }
         pollingRef.current = setInterval(() => { verificarSincronizacao(inicio, fim); }, 10_000);
+        // Após 3 min, para o polling e mostra o que houver
         timeoutRef.current = setTimeout(() => { limparPolling(); setSincronizando(false); }, 3 * 60 * 1000);
       } else {
         carregarCampanhas(inicio, fim);
@@ -153,6 +160,7 @@ export default function DashboardCompartilhavel({ params }: PageProps) {
   const periodoIniciado = useRef(false);
   useEffect(() => {
     if (!periodoIniciado.current) { periodoIniciado.current = true; return; }
+    sincronizacaoDisparada.current = false; // novo período permite nova sincronização
     carregarDados(periodo);
   }, [periodo]); // eslint-disable-line react-hooks/exhaustive-deps
 
