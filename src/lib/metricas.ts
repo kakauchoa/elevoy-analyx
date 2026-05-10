@@ -22,7 +22,7 @@ export const CONFIGURACOES_FUNIL: Record<TipoFunil, ConfiguracaoFunil> = {
     labelMetricaPrincipal: "Conversas no WhatsApp",
     labelCustoPorResultado: "Custo por Conversa",
     metricasDestaque: ["spend", "whatsappClicks", "whatsappCost", "cpm", "ctr", "taxaConversaWhatsapp"],
-    submetricas: ["impressions", "reach", "clicks", "whatsappClicks", "outboundClicks", "frequency"],
+    submetricas: ["impressions", "reach", "inlineLinkClicks", "whatsappClicks", "outboundClicks", "frequency"],
     metricasGrafico: ["spend", "whatsappClicks", "whatsappCost", "cpm", "ctr", "reach", "impressions"],
   },
   landing_page_lead: {
@@ -30,7 +30,7 @@ export const CONFIGURACOES_FUNIL: Record<TipoFunil, ConfiguracaoFunil> = {
     labelMetricaPrincipal: "Leads",
     labelCustoPorResultado: "Custo por Lead",
     metricasDestaque: ["spend", "leadCount", "costPerLead", "cpm", "ctr", "taxaConversaoLead"],
-    submetricas: ["impressions", "reach", "clicks", "landingPageViews", "landingPageViewRate", "frequency"],
+    submetricas: ["impressions", "reach", "inlineLinkClicks", "landingPageViews", "landingPageViewRate", "frequency"],
     metricasGrafico: ["spend", "leadCount", "costPerLead", "cpm", "ctr", "landingPageViews", "reach"],
   },
   landing_page_contato: {
@@ -38,7 +38,7 @@ export const CONFIGURACOES_FUNIL: Record<TipoFunil, ConfiguracaoFunil> = {
     labelMetricaPrincipal: "Contatos",
     labelCustoPorResultado: "Custo por Contato",
     metricasDestaque: ["spend", "contactCount", "costPerContact", "cpm", "ctr", "taxaConversaoContato"],
-    submetricas: ["impressions", "reach", "clicks", "landingPageViews", "landingPageViewRate", "frequency"],
+    submetricas: ["impressions", "reach", "inlineLinkClicks", "landingPageViews", "landingPageViewRate", "frequency"],
     metricasGrafico: ["spend", "contactCount", "costPerContact", "cpm", "ctr", "landingPageViews"],
   },
   ecommerce: {
@@ -46,7 +46,7 @@ export const CONFIGURACOES_FUNIL: Record<TipoFunil, ConfiguracaoFunil> = {
     labelMetricaPrincipal: "Compras",
     labelCustoPorResultado: "Custo por Compra",
     metricasDestaque: ["spend", "purchaseCount", "costPerPurchase", "purchaseRoas", "ctr", "taxaConversaoCompra"],
-    submetricas: ["impressions", "reach", "clicks", "addToCart", "initiateCheckout", "purchaseValue", "frequency"],
+    submetricas: ["impressions", "reach", "inlineLinkClicks", "addToCart", "initiateCheckout", "purchaseValue", "frequency"],
     metricasGrafico: ["spend", "purchaseCount", "purchaseRoas", "cpm", "ctr", "addToCart", "costPerPurchase"],
   },
   conteudo: {
@@ -70,7 +70,7 @@ export const CONFIGURACOES_FUNIL: Record<TipoFunil, ConfiguracaoFunil> = {
     labelMetricaPrincipal: "Resultado",
     labelCustoPorResultado: "Custo por Resultado",
     metricasDestaque: ["spend", "resultadoPrincipal", "custoPorResultado", "cpm", "ctr", "taxaConversao"],
-    submetricas: ["impressions", "reach", "clicks", "frequency", "cpc", "uniqueCtr"],
+    submetricas: ["impressions", "reach", "inlineLinkClicks", "frequency", "cpc", "uniqueCtr"],
     metricasGrafico: ["spend", "resultadoPrincipal", "custoPorResultado", "cpm", "ctr"],
   },
 };
@@ -89,7 +89,7 @@ export const LABELS_METRICAS: Record<string, string> = {
   spend: "Valor Gasto",
   impressions: "Impressões",
   reach: "Alcance",
-  clicks: "Cliques",
+  clicks: "Cliques Totais",
   inlineLinkClicks: "Cliques no Link",
   uniqueClicks: "Cliques Únicos",
   outboundClicks: "Cliques de Saída",

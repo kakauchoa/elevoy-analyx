@@ -35,7 +35,7 @@ export async function GET(
     const dataInicio = new Date(`${inicio}T00:00:00Z`);
     const dataFim = new Date(`${fim}T00:00:00Z`);
 
-    // Busca hierarquia completa
+    // Busca hierarquia completa de entidades sincronizadas
     const campanhas = await prisma.campanha.findMany({
       where: { contaAnuncioId: conta.id },
       include: {
@@ -46,64 +46,108 @@ export async function GET(
       orderBy: { nome: "asc" },
     });
 
-    // Busca todos os insights do período de uma vez (mais eficiente que N queries)
+    // Coleta todos os Meta IDs de cada nível para filtrar os insights exatamente
+    const campanhaMetaIds = campanhas.map((c) => c.campanhaIdMeta);
+    const conjuntoMetaIds = campanhas.flatMap((c) =>
+      c.conjuntos.map((cs) => cs.adsetIdMeta)
+    );
+    const anuncioMetaIds = campanhas.flatMap((c) =>
+      c.conjuntos.flatMap((cs) => cs.anuncios.map((a) => a.anuncioIdMeta))
+    );
+
+    // Parâmetros de período compartilhados
+    const filtroBase = {
+      contaAnuncioId: conta.id,
+      data: { gte: dataInicio, lte: dataFim },
+    };
+
+    // Busca insights por nível filtrando explicitamente pelos referenciaMetaId do nível correto.
+    // A coluna referencia_meta_id guarda o Meta ID do objeto (campaign_id, adset_id, ad_id)
+    // conforme salvo pelo meta-insights.service.ts.
     const [insightsCampanha, insightsConjunto, insightsAnuncio] = await Promise.all([
-      prisma.insightDiario.findMany({
-        where: { contaAnuncioId: conta.id, nivel: "campanha", data: { gte: dataInicio, lte: dataFim } },
-      }),
-      prisma.insightDiario.findMany({
-        where: { contaAnuncioId: conta.id, nivel: "conjunto", data: { gte: dataInicio, lte: dataFim } },
-      }),
-      prisma.insightDiario.findMany({
-        where: { contaAnuncioId: conta.id, nivel: "anuncio", data: { gte: dataInicio, lte: dataFim } },
-      }),
+      campanhaMetaIds.length > 0
+        ? prisma.insightDiario.findMany({
+            where: {
+              ...filtroBase,
+              nivel: "campanha",
+              referenciaMetaId: { in: campanhaMetaIds },
+            },
+          })
+        : Promise.resolve([]),
+
+      conjuntoMetaIds.length > 0
+        ? prisma.insightDiario.findMany({
+            where: {
+              ...filtroBase,
+              nivel: "conjunto",
+              referenciaMetaId: { in: conjuntoMetaIds },
+            },
+          })
+        : Promise.resolve([]),
+
+      anuncioMetaIds.length > 0
+        ? prisma.insightDiario.findMany({
+            where: {
+              ...filtroBase,
+              nivel: "anuncio",
+              referenciaMetaId: { in: anuncioMetaIds },
+            },
+          })
+        : Promise.resolve([]),
     ]);
 
-    // Agrupa insights por referenciaMetaId para lookup rápido
-    const insightsPorCampanha = new Map<string, typeof insightsCampanha>();
-    for (const i of insightsCampanha) {
-      const arr = insightsPorCampanha.get(i.referenciaMetaId) ?? [];
-      arr.push(i);
-      insightsPorCampanha.set(i.referenciaMetaId, arr);
+    // Agrupa por referenciaMetaId para lookup O(1) ao montar a hierarquia
+    function agruparPorMetaId<T extends { referenciaMetaId: string }>(
+      lista: T[]
+    ): Map<string, T[]> {
+      const mapa = new Map<string, T[]>();
+      for (const item of lista) {
+        const arr = mapa.get(item.referenciaMetaId) ?? [];
+        arr.push(item);
+        mapa.set(item.referenciaMetaId, arr);
+      }
+      return mapa;
     }
 
-    const insightsPorConjunto = new Map<string, typeof insightsConjunto>();
-    for (const i of insightsConjunto) {
-      const arr = insightsPorConjunto.get(i.referenciaMetaId) ?? [];
-      arr.push(i);
-      insightsPorConjunto.set(i.referenciaMetaId, arr);
-    }
-
-    const insightsPorAnuncio = new Map<string, typeof insightsAnuncio>();
-    for (const i of insightsAnuncio) {
-      const arr = insightsPorAnuncio.get(i.referenciaMetaId) ?? [];
-      arr.push(i);
-      insightsPorAnuncio.set(i.referenciaMetaId, arr);
-    }
+    const porCampanha = agruparPorMetaId(insightsCampanha);
+    const porConjunto = agruparPorMetaId(insightsConjunto);
+    const porAnuncio = agruparPorMetaId(insightsAnuncio);
 
     const resultado: CampanhaHierarquica[] = campanhas.map((c) => ({
       id: c.id,
       campanhaIdMeta: c.campanhaIdMeta,
       nome: c.nome,
       status: c.status,
-      metricas: agregarInsights(insightsPorCampanha.get(c.campanhaIdMeta) ?? []),
+      // Lookup: referencia_meta_id = campanha_id_meta (Meta campaign ID)
+      metricas: agregarInsights(porCampanha.get(c.campanhaIdMeta) ?? []),
       conjuntos: c.conjuntos.map((cs) => ({
         id: cs.id,
         adsetIdMeta: cs.adsetIdMeta,
         nome: cs.nome,
         status: cs.status,
-        metricas: agregarInsights(insightsPorConjunto.get(cs.adsetIdMeta) ?? []),
+        // Lookup: referencia_meta_id = adset_id_meta (Meta adset ID)
+        metricas: agregarInsights(porConjunto.get(cs.adsetIdMeta) ?? []),
         anuncios: cs.anuncios.map((a) => ({
           id: a.id,
           anuncioIdMeta: a.anuncioIdMeta,
           nome: a.nome,
           status: a.status,
-          metricas: agregarInsights(insightsPorAnuncio.get(a.anuncioIdMeta) ?? []),
+          // Lookup: referencia_meta_id = anuncio_id_meta (Meta ad ID)
+          metricas: agregarInsights(porAnuncio.get(a.anuncioIdMeta) ?? []),
         })),
       })),
     }));
 
-    return NextResponse.json({ campanhas: resultado });
+    // Inclui contagens de debug para facilitar diagnóstico
+    return NextResponse.json({
+      campanhas: resultado,
+      _debug: {
+        insightsCampanha: insightsCampanha.length,
+        insightsConjunto: insightsConjunto.length,
+        insightsAnuncio: insightsAnuncio.length,
+        campanhasComDados: resultado.filter((c) => c.metricas.spend > 0).length,
+      },
+    });
   } catch (erro) {
     console.error("[GET /api/compartilhavel/[slug]/campanhas]", erro);
     return NextResponse.json({ erro: "Erro interno do servidor" }, { status: 500 });

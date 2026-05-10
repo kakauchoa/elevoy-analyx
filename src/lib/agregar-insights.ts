@@ -12,7 +12,7 @@ function f(v: { toNumber: () => number } | null | undefined): number {
 /** Calcula as taxas de conversão por funil a partir dos valores já somados */
 function calcularTaxasConversao(v: {
   whatsappClicks: number;
-  clicks: number;
+  inlineLinkClicks: number;
   leadCount: number;
   contactCount: number;
   purchaseCount: number;
@@ -28,12 +28,12 @@ function calcularTaxasConversao(v: {
   taxaConversao: number;
 } {
   return {
-    taxaConversaWhatsapp: v.clicks > 0 ? (v.whatsappClicks / v.clicks) * 100 : 0,
-    taxaConversaoLead: v.clicks > 0 ? (v.leadCount / v.clicks) * 100 : 0,
-    taxaConversaoContato: v.clicks > 0 ? (v.contactCount / v.clicks) * 100 : 0,
-    taxaConversaoCompra: v.clicks > 0 ? (v.purchaseCount / v.clicks) * 100 : 0,
+    taxaConversaWhatsapp: v.inlineLinkClicks > 0 ? (v.whatsappClicks / v.inlineLinkClicks) * 100 : 0,
+    taxaConversaoLead: v.inlineLinkClicks > 0 ? (v.leadCount / v.inlineLinkClicks) * 100 : 0,
+    taxaConversaoContato: v.inlineLinkClicks > 0 ? (v.contactCount / v.inlineLinkClicks) * 100 : 0,
+    taxaConversaoCompra: v.inlineLinkClicks > 0 ? (v.purchaseCount / v.inlineLinkClicks) * 100 : 0,
     taxaConversaoThruplay: v.videoView3s > 0 ? (v.videoThruplay / v.videoView3s) * 100 : 0,
-    taxaConversao: v.clicks > 0 ? (v.resultadoPrincipal / v.clicks) * 100 : 0,
+    taxaConversao: v.inlineLinkClicks > 0 ? (v.resultadoPrincipal / v.inlineLinkClicks) * 100 : 0,
   };
 }
 
@@ -41,6 +41,7 @@ function calcularTaxasConversao(v: {
 export function serializarDia(i: InsightDiario): InsightDiarioSerializado {
   const whatsappClicks = n(i.whatsappClicks);
   const clicks = n(i.clicks);
+  const inlineLinkClicks = n(i.inlineLinkClicks);
   const leadCount = n(i.leadCount);
   const contactCount = n(i.contactCount);
   const purchaseCount = n(i.purchaseCount);
@@ -54,7 +55,7 @@ export function serializarDia(i: InsightDiario): InsightDiarioSerializado {
     impressions: n(i.impressions),
     reach: n(i.reach),
     clicks,
-    inlineLinkClicks: n(i.inlineLinkClicks),
+    inlineLinkClicks,
     uniqueClicks: n(i.uniqueClicks),
     outboundClicks: n(i.outboundClicks),
     landingPageViews: n(i.landingPageViews),
@@ -96,7 +97,7 @@ export function serializarDia(i: InsightDiario): InsightDiarioSerializado {
     costPerThruplay: f(i.costPerThruplay),
     resultadoPrincipal,
     custoPorResultado: f(i.custoPorResultado),
-    ...calcularTaxasConversao({ whatsappClicks, clicks, leadCount, contactCount, purchaseCount, videoThruplay, videoView3s, resultadoPrincipal }),
+    ...calcularTaxasConversao({ whatsappClicks, inlineLinkClicks, leadCount, contactCount, purchaseCount, videoThruplay, videoView3s, resultadoPrincipal }),
   };
 }
 
@@ -151,13 +152,13 @@ export function agregarInsights(insights: InsightDiario[]): InsightNumericos {
   }
 
   const cpm = impressions > 0 ? (spend * 1000) / impressions : 0;
-  const ctr = impressions > 0 ? (clicks * 100) / impressions : 0;
-  const cpc = clicks > 0 ? spend / clicks : 0;
+  const ctr = impressions > 0 ? (inlineLinkClicks * 100) / impressions : 0;
+  const cpc = inlineLinkClicks > 0 ? spend / inlineLinkClicks : 0;
   const cpp = reach > 0 ? (spend * 1000) / reach : 0;
   const frequency = reach > 0 ? impressions / reach : 0;
   const uniqueCtr = impressions > 0 ? (uniqueClicks * 100) / impressions : 0;
   const outboundCtr = impressions > 0 ? (outboundClicks * 100) / impressions : 0;
-  const landingPageViewRate = clicks > 0 ? (landingPageViews * 100) / clicks : 0;
+  const landingPageViewRate = inlineLinkClicks > 0 ? (landingPageViews * 100) / inlineLinkClicks : 0;
   const whatsappCost = whatsappClicks > 0 ? spend / whatsappClicks : 0;
   const costPerLead = leadCount > 0 ? spend / leadCount : 0;
   const costPerPurchase = purchaseCount > 0 ? spend / purchaseCount : 0;
@@ -179,7 +180,7 @@ export function agregarInsights(insights: InsightDiario[]): InsightNumericos {
     videoView75pct, videoView95pct, videoView100pct, videoAvgTimeWatched,
     videoPlayActions, videoThruplay, costPerThruplay,
     resultadoPrincipal, custoPorResultado,
-    ...calcularTaxasConversao({ whatsappClicks, clicks, leadCount, contactCount, purchaseCount, videoThruplay, videoView3s, resultadoPrincipal }),
+    ...calcularTaxasConversao({ whatsappClicks, inlineLinkClicks, leadCount, contactCount, purchaseCount, videoThruplay, videoView3s, resultadoPrincipal }),
   };
 }
 
