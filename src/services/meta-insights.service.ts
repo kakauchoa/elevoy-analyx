@@ -137,6 +137,7 @@ function transformarInsight(record: MetaInsightBruto): Record<string, bigint | n
   const impressions = dados.impressions as bigint | undefined;
   const reach = dados.reach as bigint | undefined;
   const clicks = dados.clicks as bigint | undefined;
+  const inlineLinkClicks = dados.inlineLinkClicks as bigint | undefined;
   const uniqueClicks = dados.uniqueClicks as bigint | undefined;
   const outboundClicks = dados.outboundClicks as bigint | undefined;
   const landingPageViews = dados.landingPageViews as bigint | undefined;
@@ -145,10 +146,10 @@ function transformarInsight(record: MetaInsightBruto): Record<string, bigint | n
   const cpm = div(spend !== undefined ? spend * 1000 : undefined, impressions);
   if (cpm !== null) dados.cpm = parseFloat(cpm.toFixed(4));
 
-  const cpc = div(spend, clicks);
+  const cpc = div(spend, inlineLinkClicks);
   if (cpc !== null) dados.cpc = parseFloat(cpc.toFixed(4));
 
-  const ctr = div(clicks !== undefined ? Number(clicks) * 100 : undefined, impressions);
+  const ctr = div(inlineLinkClicks !== undefined ? Number(inlineLinkClicks) * 100 : undefined, impressions);
   if (ctr !== null) dados.ctr = parseFloat(ctr.toFixed(6));
 
   const cpp = div(spend !== undefined ? spend * 1000 : undefined, reach);
@@ -163,7 +164,7 @@ function transformarInsight(record: MetaInsightBruto): Record<string, bigint | n
   const outboundCtr = div(outboundClicks !== undefined ? Number(outboundClicks) * 100 : undefined, impressions);
   if (outboundCtr !== null) dados.outboundCtr = parseFloat(outboundCtr.toFixed(6));
 
-  const landingPageViewRate = div(landingPageViews !== undefined ? Number(landingPageViews) * 100 : undefined, clicks);
+  const landingPageViewRate = div(landingPageViews !== undefined ? Number(landingPageViews) * 100 : undefined, inlineLinkClicks);
   if (landingPageViewRate !== null) dados.landingPageViewRate = parseFloat(landingPageViewRate.toFixed(6));
 
   const custoPorResultado = div(spend, resultadoPrincipal);
@@ -256,6 +257,25 @@ async function sincronizarAnuncios(
   return mapa;
 }
 
+/** Deleta todos os insights do período antes de re-sincronizar para garantir dados limpos */
+async function limparInsightsPeriodo(
+  contaAnuncioId: string,
+  dataInicio: string,
+  dataFim: string
+): Promise<number> {
+  const inicio = new Date(`${dataInicio}T00:00:00.000Z`);
+  const fim = new Date(`${dataFim}T00:00:00.000Z`);
+
+  const { count } = await prisma.insightDiario.deleteMany({
+    where: {
+      contaAnuncioId,
+      data: { gte: inicio, lte: fim },
+    },
+  });
+
+  return count;
+}
+
 /** Sincroniza insights de um único nível e retorna contadores */
 async function sincronizarInsightsNivel(params: {
   nivel: "conta" | "campanha" | "conjunto" | "anuncio";
@@ -271,6 +291,7 @@ async function sincronizarInsightsNivel(params: {
     params;
 
   const registros = await buscarInsights(accountIdMeta, token, nivelMeta, dataInicio, dataFim);
+  console.log(`[meta-insights] ${nivel}: ${registros.length} registros recebidos da API Meta (${dataInicio} → ${dataFim})`);
 
   let sincronizados = 0;
   const erros: string[] = [];
@@ -286,34 +307,28 @@ async function sincronizarInsightsNivel(params: {
           ? (registro.adset_id ?? "")
           : (registro.ad_id ?? "");
 
-      if (!metaId) continue;
+      if (!metaId) {
+        console.warn(`[meta-insights] ${nivel}: registro sem metaId em ${registro.date_start}, pulando`);
+        continue;
+      }
 
       // referenciaId é o UUID interno do objeto relacionado (null para conta)
       const referenciaId = nivel === "conta" ? null : (mapaIdInterno?.get(metaId) ?? null);
 
+      if (nivel !== "conta" && referenciaId === null) {
+        console.warn(`[meta-insights] ${nivel}: metaId ${metaId} não encontrado no mapa interno — registro salvo sem referenciaId`);
+      }
+
       const dataInsight = new Date(`${registro.date_start}T00:00:00.000Z`);
       const dadosMetricas = transformarInsight(registro);
 
-      await prisma.insightDiario.upsert({
-        where: {
-          contaAnuncioId_nivel_referenciaMetaId_data: {
-            contaAnuncioId,
-            nivel,
-            referenciaMetaId: metaId,
-            data: dataInsight,
-          },
-        },
-        create: {
+      await prisma.insightDiario.create({
+        data: {
           contaAnuncioId,
           nivel,
           referenciaId,
           referenciaMetaId: metaId,
           data: dataInsight,
-          sincronizadoEm: new Date(),
-          ...dadosMetricas,
-        },
-        update: {
-          referenciaId,
           sincronizadoEm: new Date(),
           ...dadosMetricas,
         },
@@ -327,12 +342,14 @@ async function sincronizarInsightsNivel(params: {
     }
   }
 
+  console.log(`[meta-insights] ${nivel}: ${sincronizados}/${registros.length} registros salvos${erros.length > 0 ? `, ${erros.length} erros` : ""}`);
+
   return { sincronizados, erros };
 }
 
 /**
  * Ponto de entrada principal do serviço.
- * Sincroniza uma conta de anúncio completa: entidades + insights em todos os níveis.
+ * Apaga os insights do período e re-sincroniza tudo da Meta API.
  */
 export async function sincronizarContaAnuncio(params: {
   contaAnuncioId: string;
@@ -346,10 +363,16 @@ export async function sincronizarContaAnuncio(params: {
   let sincronizados = 0;
   const erros: string[] = [];
 
+  // Limpa todos os insights do período antes de buscar da API
+  const deletados = await limparInsightsPeriodo(contaAnuncioId, dataInicio, dataFim);
+  console.log(`[meta-insights] ${deletados} insights deletados para o período ${dataInicio} → ${dataFim} (conta ${contaAnuncioId})`);
+
   // Sincroniza entidades primeiro para ter os IDs internos disponíveis nos insights
   const mapaIdCampanha = await sincronizarCampanhas(accountIdMeta, tokenAcesso, contaAnuncioId);
   const mapaIdConjunto = await sincronizarConjuntos(accountIdMeta, tokenAcesso, contaAnuncioId, mapaIdCampanha);
   const mapaIdAnuncio = await sincronizarAnuncios(accountIdMeta, tokenAcesso, mapaIdConjunto);
+
+  console.log(`[meta-insights] entidades: ${mapaIdCampanha.size} campanhas, ${mapaIdConjunto.size} conjuntos, ${mapaIdAnuncio.size} anúncios`);
 
   const niveis: Array<{
     nivel: "conta" | "campanha" | "conjunto" | "anuncio";
@@ -377,6 +400,8 @@ export async function sincronizarContaAnuncio(params: {
     sincronizados += resultado.sincronizados;
     erros.push(...resultado.erros);
   }
+
+  console.log(`[meta-insights] sincronização concluída: ${sincronizados} registros salvos no total`);
 
   // Atualiza timestamp da última sincronização bem-sucedida (mesmo com erros parciais)
   await prisma.contaAnuncio.update({
