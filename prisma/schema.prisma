@@ -54,6 +54,7 @@ model Usuario {
   atualizadoEm DateTime          @updatedAt @map("atualizado_em")
   contas       ContaAnuncio[]
   relatorios   RelatorioGerado[]
+  gestorContas GestorConta[]
 
   @@map("usuarios")
 }
@@ -80,8 +81,21 @@ model ContaAnuncio {
   acessos                AcessoDashboard[]
   relatorios             RelatorioGerado[]
   configuracaoGtm        ConfiguracaoGtm?
+  gestorContas           GestorConta[]
 
   @@map("contas_anuncio")
+}
+
+model GestorConta {
+  id             String       @id @default(uuid())
+  usuarioId      String       @map("usuario_id")
+  contaAnuncioId String       @map("conta_anuncio_id")
+  criadoEm       DateTime     @default(now()) @map("criado_em")
+  usuario        Usuario      @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  conta          ContaAnuncio @relation(fields: [contaAnuncioId], references: [id], onDelete: Cascade)
+
+  @@unique([usuarioId, contaAnuncioId])
+  @@map("gestor_contas")
 }
 
 model Campanha {

@@ -1,6 +1,7 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
+import { prisma } from "@/lib/prisma";
 import { SignOutButton } from "@/components/layout/SignOutButton";
 
 export default async function DashboardLayout({
@@ -14,6 +15,18 @@ export default async function DashboardLayout({
     redirect("/login");
   }
 
+  // Admin: quem criou pelo menos uma conta de anúncio
+  const isAdmin =
+    (await prisma.contaAnuncio.count({
+      where: { usuarioId: session.user.id, ativo: true },
+    })) > 0;
+
+  const navLinks = [
+    { href: "/",        label: "Dashboard" },
+    { href: "/contas",  label: "Contas"    },
+    { href: "/acessos", label: "Acessos"   },
+  ];
+
   return (
     <div className="flex h-screen bg-gray-50">
       <aside className="w-64 bg-white border-r border-gray-200 flex flex-col shrink-0">
@@ -23,29 +36,31 @@ export default async function DashboardLayout({
         </div>
 
         <nav className="flex-1 p-4 flex flex-col gap-1">
+          {navLinks.map(({ href, label }) => (
+            <a
+              key={href}
+              href={href}
+              className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 rounded-lg hover:bg-gray-100 transition-colors"
+            >
+              {label}
+            </a>
+          ))}
+
+          {/* Apenas o admin vê a página de usuários */}
+          {isAdmin && (
+            <a
+              href="/usuarios"
+              className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 rounded-lg hover:bg-gray-100 transition-colors"
+            >
+              Usuários
+            </a>
+          )}
+
           <a
-            href="/"
+            href="/perfil"
             className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 rounded-lg hover:bg-gray-100 transition-colors"
           >
-            Dashboard
-          </a>
-          <a
-            href="/contas"
-            className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 rounded-lg hover:bg-gray-100 transition-colors"
-          >
-            Contas
-          </a>
-          <a
-            href="/relatorios"
-            className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 rounded-lg hover:bg-gray-100 transition-colors"
-          >
-            Relatórios
-          </a>
-          <a
-            href="/acessos"
-            className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 rounded-lg hover:bg-gray-100 transition-colors"
-          >
-            Acessos
+            Perfil
           </a>
         </nav>
 
@@ -60,7 +75,9 @@ export default async function DashboardLayout({
               <span className="text-sm font-medium text-gray-900 truncate">
                 {session.user.name}
               </span>
-              <span className="text-xs text-gray-500">Gestor</span>
+              <span className="text-xs text-gray-500">
+                {isAdmin ? "Administrador" : "Gestor"}
+              </span>
             </div>
           </div>
           <SignOutButton />

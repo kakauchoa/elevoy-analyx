@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { CONFIGURACOES_FUNIL, TipoFunil } from "@/lib/metricas";
 import { criptografar } from "@/lib/cripto";
+import { resolverAcesso } from "@/lib/acesso-contas";
 
 export async function GET() {
   try {
@@ -12,8 +13,10 @@ export async function GET() {
       return NextResponse.json({ erro: "Não autorizado" }, { status: 401 });
     }
 
+    const { contaIds } = await resolverAcesso(session.user.id);
+
     const contas = await prisma.contaAnuncio.findMany({
-      where: { usuarioId: session.user.id, ativo: true },
+      where: { id: { in: contaIds }, ativo: true },
       select: {
         id: true,
         nomeCliente: true,

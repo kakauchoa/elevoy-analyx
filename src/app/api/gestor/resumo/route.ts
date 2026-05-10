@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { agregarInsights } from "@/lib/agregar-insights";
+import { verificarAcessoConta } from "@/lib/acesso-contas";
 import type { InsightNumericos } from "@/types/dashboard";
 import type { InsightDiario } from "@prisma/client";
 
@@ -36,8 +37,13 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ erro: "contaId é obrigatório" }, { status: 400 });
     }
 
+    const temAcesso = await verificarAcessoConta(session.user.id, contaId);
+    if (!temAcesso) {
+      return NextResponse.json({ erro: "Conta não encontrada" }, { status: 404 });
+    }
+
     const conta = await prisma.contaAnuncio.findFirst({
-      where: { id: contaId, usuarioId: session.user.id, ativo: true },
+      where: { id: contaId, ativo: true },
       select: {
         id: true,
         nomeCliente: true,

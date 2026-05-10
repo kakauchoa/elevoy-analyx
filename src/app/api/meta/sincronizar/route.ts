@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { descriptografar } from "@/lib/cripto";
 import { sincronizarContaAnuncio } from "@/services/meta-insights.service";
+import { verificarAcessoConta } from "@/lib/acesso-contas";
 
 function ontem(): string {
   const d = new Date();
@@ -28,9 +29,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ erro: "contaAnuncioId é obrigatório" }, { status: 400 });
     }
 
-    // Garante que o gestor é dono da conta antes de sincronizar
+    // Verifica acesso: criador ou gestor vinculado via gestor_contas
+    const temAcesso = await verificarAcessoConta(session.user.id, body.contaAnuncioId);
+    if (!temAcesso) {
+      return NextResponse.json({ erro: "Conta não encontrada" }, { status: 404 });
+    }
+
     const conta = await prisma.contaAnuncio.findFirst({
-      where: { id: body.contaAnuncioId, usuarioId: session.user.id, ativo: true },
+      where: { id: body.contaAnuncioId, ativo: true },
       select: { id: true, accountIdMeta: true, tokenAcesso: true },
     });
 
