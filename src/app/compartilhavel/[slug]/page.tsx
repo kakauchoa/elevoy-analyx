@@ -28,13 +28,42 @@ export default function DashboardCompartilhavel({ params }: PageProps) {
   const [erro, setErro] = useState<string | null>(null);
 
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const acessoRegistrado = useRef(false);
   const inicioRef = useRef<number>(Date.now());
+  const [verificandoManual, setVerificandoManual] = useState(false);
 
   function limparPolling() {
     if (pollingRef.current) {
       clearInterval(pollingRef.current);
       pollingRef.current = null;
+    }
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+  }
+
+  async function verificarSincronizacao(inicio: string, fim: string) {
+    const r = await fetch(`/api/compartilhavel/${slug}?inicio=${inicio}&fim=${fim}`);
+    if (!r.ok) return;
+    const atualizado: DashboardData = await r.json();
+    setDados(atualizado);
+
+    if (atualizado.datasFaltando.length === 0) {
+      setSincronizando(false);
+      limparPolling();
+      await carregarCampanhas(inicio, fim);
+    }
+  }
+
+  async function verificarAgora() {
+    const { inicio, fim } = calcularPeriodo(periodo);
+    setVerificandoManual(true);
+    try {
+      await verificarSincronizacao(inicio, fim);
+    } finally {
+      setVerificandoManual(false);
     }
   }
 
@@ -65,18 +94,16 @@ export default function DashboardCompartilhavel({ params }: PageProps) {
           body: JSON.stringify({ inicio, fim }),
         });
 
-        pollingRef.current = setInterval(async () => {
-          const r = await fetch(`/api/compartilhavel/${slug}?inicio=${inicio}&fim=${fim}`);
-          if (!r.ok) return;
-          const atualizado: DashboardData = await r.json();
-          setDados(atualizado);
+        // Verifica a cada 10 segundos
+        pollingRef.current = setInterval(() => {
+          verificarSincronizacao(inicio, fim);
+        }, 10_000);
 
-          if (atualizado.datasFaltando.length === 0) {
-            setSincronizando(false);
-            limparPolling();
-            carregarCampanhas(inicio, fim);
-          }
-        }, 30_000);
+        // Timeout de 3 minutos — para o polling e exibe o que houver
+        timeoutRef.current = setTimeout(() => {
+          limparPolling();
+          setSincronizando(false);
+        }, 3 * 60 * 1000);
       } else {
         carregarCampanhas(inicio, fim);
       }
@@ -194,16 +221,27 @@ export default function DashboardCompartilhavel({ params }: PageProps) {
         )}
 
         {/* Sem nenhum dado ainda e sincronizando — tela de espera */}
-        {sincronizando && dados && dados.porDia.length === 0 && <LoadingSync />}
+        {sincronizando && dados && dados.porDia.length === 0 && (
+          <LoadingSync onAtualizar={verificarAgora} verificando={verificandoManual} />
+        )}
 
         {/* Há dados parciais e ainda sincronizando — banner discreto */}
         {sincronizando && dados && dados.porDia.length > 0 && dados.datasFaltando.length > 0 && (
-          <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 flex items-center gap-3">
-            <div className="w-4 h-4 rounded-full border-2 border-amber-500 border-t-transparent animate-spin shrink-0" />
-            <p className="text-sm text-amber-700">
-              Sincronizando {dados.datasFaltando.length} dia{dados.datasFaltando.length !== 1 ? "s" : ""} ainda sem dados.
-              A página atualiza automaticamente a cada 30 segundos.
-            </p>
+          <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="w-4 h-4 rounded-full border-2 border-amber-500 border-t-transparent animate-spin shrink-0" />
+              <p className="text-sm text-amber-700">
+                Sincronizando {dados.datasFaltando.length} dia{dados.datasFaltando.length !== 1 ? "s" : ""} ainda sem dados.
+                Verificando a cada 10 segundos.
+              </p>
+            </div>
+            <button
+              onClick={verificarAgora}
+              disabled={verificandoManual}
+              className="shrink-0 text-xs font-medium text-amber-700 underline underline-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {verificandoManual ? "Verificando..." : "Atualizar agora"}
+            </button>
           </div>
         )}
 
