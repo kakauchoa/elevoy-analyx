@@ -293,6 +293,11 @@ async function sincronizarInsightsNivel(params: {
   const registros = await buscarInsights(accountIdMeta, token, nivelMeta, dataInicio, dataFim);
   console.log(`[meta-insights] ${nivel}: ${registros.length} registros recebidos da API Meta (${dataInicio} → ${dataFim})`);
 
+  // Log do primeiro registro bruto para confirmar os campos retornados pela API
+  if (registros.length > 0) {
+    console.log(`[meta-insights] ${nivel}: campos do 1º registro bruto:`, JSON.stringify(registros[0] as unknown));
+  }
+
   let sincronizados = 0;
   const erros: string[] = [];
 

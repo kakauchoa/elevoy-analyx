@@ -105,6 +105,13 @@ async function buscarTodasPaginas<T>(urlInicial: string): Promise<T[]> {
   return todos;
 }
 
+/** Campos de ID específicos por nível — devem ser explicitamente solicitados à API */
+const CAMPO_ID_POR_NIVEL: Record<string, string> = {
+  campaign: "campaign_id",
+  adset: "adset_id",
+  ad: "ad_id",
+};
+
 /** Busca insights de uma conta para um período e nível específico */
 export async function buscarInsights(
   accountIdMeta: string,
@@ -114,8 +121,13 @@ export async function buscarInsights(
   dataFim: string
 ): Promise<MetaInsightBruto[]> {
   const timeRange = JSON.stringify({ since: dataInicio, until: dataFim });
+
+  // A Meta API exige que o campo de ID do nível seja explicitamente listado em fields
+  const campoId = CAMPO_ID_POR_NIVEL[nivel];
+  const fields = campoId ? `${campoId},${CAMPOS_INSIGHTS}` : CAMPOS_INSIGHTS;
+
   const params = new URLSearchParams({
-    fields: CAMPOS_INSIGHTS,
+    fields,
     level: nivel,
     time_increment: "1",
     time_range: timeRange,
