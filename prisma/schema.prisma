@@ -50,12 +50,19 @@ enum TokenStatus {
   erro
 }
 
+enum PerfilUsuario {
+  admin
+  gestor
+  comercial
+}
+
 model Usuario {
   id           String            @id @default(uuid())
   nome         String
   email        String            @unique
   senhaHash    String            @map("senha_hash") @db.Text
   tipo         TipoUsuario       @default(gestor)
+  perfil       PerfilUsuario     @default(gestor) @map("perfil")
   ativo        Boolean           @default(true)
   criadoEm     DateTime          @default(now()) @map("criado_em")
   atualizadoEm DateTime          @updatedAt @map("atualizado_em")
@@ -63,6 +70,9 @@ model Usuario {
   relatorios          RelatorioGerado[]
   gestorContas        GestorConta[]
   configuracaoMetaApp ConfiguracaoMetaApp?
+  permissoes          UsuarioPermissao[]
+  etapasCrm           CrmEtapa[]
+  contatosCrm         CrmContato[]
 
   @@map("usuarios")
 }
@@ -253,6 +263,57 @@ model ConfiguracaoMetaApp {
   usuario      Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
 
   @@map("configuracoes_meta_app")
+}
+
+model UsuarioPermissao {
+  id        String  @id @default(uuid())
+  usuarioId String  @map("usuario_id")
+  secao     String  @db.VarChar(50)
+  usuario   Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@unique([usuarioId, secao])
+  @@map("usuario_permissoes")
+}
+
+model CrmEtapa {
+  id        String       @id @default(uuid())
+  usuarioId String       @map("usuario_id")
+  nome      String       @db.VarChar(100)
+  cor       String       @db.VarChar(20)
+  ordem     Int
+  criadoEm  DateTime     @default(now()) @map("criado_em")
+  usuario   Usuario      @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  contatos  CrmContato[]
+
+  @@map("crm_etapas")
+}
+
+model CrmContato {
+  id           String               @id @default(uuid())
+  etapaId      String               @map("etapa_id")
+  usuarioId    String               @map("usuario_id")
+  nome         String               @db.VarChar(255)
+  telefone     String?              @db.VarChar(30)
+  empresa      String?              @db.VarChar(255)
+  email        String?              @db.VarChar(255)
+  notas        String?              @db.Text
+  criadoEm     DateTime             @default(now()) @map("criado_em")
+  atualizadoEm DateTime             @updatedAt @map("atualizado_em")
+  etapa        CrmEtapa             @relation(fields: [etapaId], references: [id], onDelete: Cascade)
+  usuario      Usuario              @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  campos       CrmCampoCustomizado[]
+
+  @@map("crm_contatos")
+}
+
+model CrmCampoCustomizado {
+  id        String     @id @default(uuid())
+  contatoId String     @map("contato_id")
+  chave     String     @db.VarChar(100)
+  valor     String     @db.Text
+  contato   CrmContato @relation(fields: [contatoId], references: [id], onDelete: Cascade)
+
+  @@map("crm_campos_customizados")
 }
 
 model ConfiguracaoGtm {

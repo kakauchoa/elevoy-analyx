@@ -9,6 +9,7 @@ interface SidebarProps {
   isAdmin: boolean;
   userName: string;
   userEmail: string;
+  permissoes: string[];
 }
 
 // ── Icons ──────────────────────────────────────────────────────────────────
@@ -87,6 +88,24 @@ function IconKey() {
   );
 }
 
+function IconKanban() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="3" width="5" height="18" rx="1" />
+      <rect x="10" y="3" width="5" height="12" rx="1" />
+      <rect x="17" y="3" width="5" height="15" rx="1" />
+    </svg>
+  );
+}
+
+function IconWrench() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z" />
+    </svg>
+  );
+}
+
 function IconChevron({ open }: { open: boolean }) {
   return (
     <svg
@@ -118,6 +137,7 @@ interface NavSection {
   id: string;
   label: string;
   adminOnly?: boolean;
+  permission?: string;
   items: NavItem[];
 }
 
@@ -130,16 +150,29 @@ const SECTIONS: NavSection[] = [
   {
     id: "clientes",
     label: "Clientes",
+    permission: "Clientes",
     items: [
       { href: "/contas", label: "Contas de Anúncio", icon: <IconStore /> },
       { href: "/acessos", label: "Acessos", icon: <IconEye /> },
     ],
   },
   {
+    id: "vendas",
+    label: "Vendas",
+    permission: "Vendas",
+    items: [{ href: "/vendas/crm", label: "CRM", icon: <IconKanban /> }],
+  },
+  {
     id: "equipe",
     label: "Equipe",
     adminOnly: true,
     items: [{ href: "/usuarios", label: "Usuários", icon: <IconUsers /> }],
+  },
+  {
+    id: "ferramentas",
+    label: "Ferramentas",
+    adminOnly: true,
+    items: [{ href: "/ferramentas", label: "Ferramentas", icon: <IconWrench /> }],
   },
   {
     id: "configuracoes",
@@ -153,13 +186,15 @@ const SECTIONS: NavSection[] = [
 
 // ── Component ──────────────────────────────────────────────────────────────
 
-export function Sidebar({ isAdmin, userName, userEmail }: SidebarProps) {
+export function Sidebar({ isAdmin, userName, permissoes }: SidebarProps) {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
     visaoGeral: true,
     clientes: true,
+    vendas: true,
     equipe: true,
+    ferramentas: true,
     configuracoes: true,
   });
 
@@ -170,6 +205,13 @@ export function Sidebar({ isAdmin, userName, userEmail }: SidebarProps) {
   function isActive(href: string) {
     if (href === "/") return pathname === "/";
     return pathname.startsWith(href);
+  }
+
+  function sectionVisible(section: NavSection): boolean {
+    if (isAdmin) return true;
+    if (section.adminOnly) return false;
+    if (section.permission) return permissoes.includes(section.permission);
+    return true;
   }
 
   const initial = userName?.charAt(0).toUpperCase() ?? "?";
@@ -197,12 +239,15 @@ export function Sidebar({ isAdmin, userName, userEmail }: SidebarProps) {
       {/* Nav */}
       <nav className="flex-1 py-3 overflow-y-auto overflow-x-hidden">
         {SECTIONS.map((section) => {
-          if (section.adminOnly && !isAdmin) return null;
+          if (!sectionVisible(section)) return null;
           const open = openSections[section.id] ?? true;
+          const visibleItems = section.items.filter(
+            (item) => !item.adminOnly || isAdmin
+          );
+          if (visibleItems.length === 0) return null;
 
           return (
             <div key={section.id} className="mb-1">
-              {/* Section label — hidden in icon mode */}
               {!collapsed && (
                 <button
                   onClick={() => toggleSection(section.id)}
@@ -213,10 +258,9 @@ export function Sidebar({ isAdmin, userName, userEmail }: SidebarProps) {
                 </button>
               )}
 
-              {/* Items */}
               {(collapsed || open) && (
                 <div className="mt-0.5">
-                  {section.items.filter((item) => !item.adminOnly || isAdmin).map((item) => {
+                  {visibleItems.map((item) => {
                     const active = isActive(item.href);
                     return (
                       <Link

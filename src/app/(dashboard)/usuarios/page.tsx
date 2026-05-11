@@ -16,12 +16,15 @@ interface GestorItem {
   criadoEm: string;
   isAdmin: boolean;
   contasComAcesso: ContaSimples[];
+  permissoes?: string[];
 }
 
 interface ApiResponse {
   gestores: GestorItem[];
   contasAdmin: ContaSimples[];
 }
+
+const SECOES_DISPONIVEIS = ["Clientes", "Vendas"];
 
 // ── Modal de Novo Gestor ───────────────────────────────────────────────────
 
@@ -35,8 +38,17 @@ function ModalNovoGestor({
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
+  const [secoes, setSecoes] = useState<Set<string>>(new Set(["Clientes"]));
   const [erro, setErro] = useState("");
   const [salvando, setSalvando] = useState(false);
+
+  function toggleSecao(s: string) {
+    setSecoes((prev) => {
+      const n = new Set(prev);
+      n.has(s) ? n.delete(s) : n.add(s);
+      return n;
+    });
+  }
 
   async function salvar() {
     setErro("");
@@ -44,6 +56,7 @@ function ModalNovoGestor({
       setErro("Todos os campos são obrigatórios.");
       return;
     }
+    if (senha.length < 6) { setErro("A senha deve ter pelo menos 6 caracteres."); return; }
     setSalvando(true);
     try {
       const res = await fetch("/api/usuarios", {
@@ -52,8 +65,20 @@ function ModalNovoGestor({
         body: JSON.stringify({ nome: nome.trim(), email: email.trim(), senha }),
       });
       const data = await res.json();
-      if (!res.ok) { setErro(data.erro ?? "Erro ao criar gestor."); return; }
-      onCriado(data as GestorItem);
+      if (!res.ok) { setErro((data as { erro?: string }).erro ?? "Erro ao criar gestor."); return; }
+
+      const gestor = data as GestorItem;
+
+      // Salva permissões de seção
+      if (secoes.size > 0) {
+        await fetch(`/api/usuarios/${gestor.id}/permissoes`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ secoes: [...secoes] }),
+        });
+      }
+
+      onCriado({ ...gestor, permissoes: [...secoes] });
     } finally {
       setSalvando(false);
     }
@@ -85,15 +110,29 @@ function ModalNovoGestor({
           ))}
         </div>
 
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Seções visíveis</label>
+          <div className="flex flex-col gap-2">
+            {SECOES_DISPONIVEIS.map((s) => (
+              <label key={s} className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={secoes.has(s)}
+                  onChange={() => toggleSecao(s)}
+                  className="w-4 h-4 rounded accent-black"
+                />
+                <span className="text-sm text-gray-800">{s}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+
         <div className="flex gap-3 pt-2">
-          <button
-            onClick={onClose}
-            className="flex-1 px-4 py-2 text-sm text-gray-700 border border-[#e5e5e5] rounded-lg hover:bg-gray-50"
-          >
+          <button onClick={onClose} className="flex-1 px-4 py-2 text-sm text-gray-700 border border-[#e5e5e5] rounded-lg hover:bg-gray-50">
             Cancelar
           </button>
           <button
-            onClick={salvar}
+            onClick={() => void salvar()}
             disabled={salvando}
             className="flex-1 px-4 py-2 text-sm font-medium text-white bg-black rounded-lg hover:bg-gray-900 disabled:opacity-50"
           >
@@ -105,7 +144,7 @@ function ModalNovoGestor({
   );
 }
 
-// ── Modal de Edição de Acessos ─────────────────────────────────────────────
+// ── Modal de Edição de Acessos e Permissões ────────────────────────────────
 
 function ModalAcessos({
   gestor,
@@ -116,15 +155,27 @@ function ModalAcessos({
   gestor: GestorItem;
   todasContas: ContaSimples[];
   onClose: () => void;
-  onSalvo: (gestorId: string, contas: ContaSimples[]) => void;
+  onSalvo: (gestorId: string, contas: ContaSimples[], permissoes: string[]) => void;
 }) {
   const [selecionadas, setSelecionadas] = useState<Set<string>>(
     new Set(gestor.contasComAcesso.map((c) => c.id))
   );
+  const [secoes, setSecoes] = useState<Set<string>>(
+    new Set(gestor.permissoes ?? [])
+  );
+  const [carregandoPermissoes, setCarregandoPermissoes] = useState(!gestor.permissoes);
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState("");
 
-  function toggle(id: string) {
+  useEffect(() => {
+    if (gestor.permissoes) return;
+    fetch(`/api/usuarios/${gestor.id}/permissoes`)
+      .then((r) => r.json())
+      .then((data: string[]) => setSecoes(new Set(data)))
+      .finally(() => setCarregandoPermissoes(false));
+  }, [gestor.id, gestor.permissoes]);
+
+  function toggleConta(id: string) {
     setSelecionadas((prev) => {
       const novo = new Set(prev);
       novo.has(id) ? novo.delete(id) : novo.add(id);
@@ -132,22 +183,43 @@ function ModalAcessos({
     });
   }
 
+  function toggleSecao(s: string) {
+    setSecoes((prev) => {
+      const n = new Set(prev);
+      n.has(s) ? n.delete(s) : n.add(s);
+      return n;
+    });
+  }
+
   async function salvar() {
     setErro("");
     setSalvando(true);
     try {
-      const res = await fetch(`/api/usuarios/${gestor.id}/contas`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ contaIds: [...selecionadas] }),
-      });
-      if (!res.ok) {
-        const data = await res.json();
-        setErro(data.erro ?? "Erro ao salvar acessos.");
+      const [resContas, resPermissoes] = await Promise.all([
+        fetch(`/api/usuarios/${gestor.id}/contas`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ contaIds: [...selecionadas] }),
+        }),
+        fetch(`/api/usuarios/${gestor.id}/permissoes`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ secoes: [...secoes] }),
+        }),
+      ]);
+
+      if (!resContas.ok) {
+        const data = await resContas.json();
+        setErro((data as { erro?: string }).erro ?? "Erro ao salvar acessos.");
         return;
       }
+      if (!resPermissoes.ok) {
+        setErro("Erro ao salvar permissões.");
+        return;
+      }
+
       const contasSelecionadas = todasContas.filter((c) => selecionadas.has(c.id));
-      onSalvo(gestor.id, contasSelecionadas);
+      onSalvo(gestor.id, contasSelecionadas, [...secoes]);
     } finally {
       setSalvando(false);
     }
@@ -157,46 +229,66 @@ function ModalAcessos({
     <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 space-y-4">
         <div>
-          <h2 className="text-lg font-semibold text-gray-900">Acessos de {gestor.nome}</h2>
-          <p className="text-sm text-gray-500 mt-0.5">Selecione as contas que este gestor pode visualizar</p>
+          <h2 className="text-lg font-semibold text-gray-900">Editar gestor: {gestor.nome}</h2>
+          <p className="text-sm text-gray-500 mt-0.5">Contas e seções visíveis</p>
         </div>
 
         {erro && <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{erro}</p>}
 
-        {todasContas.length === 0 ? (
-          <p className="text-sm text-gray-500 py-4 text-center">Nenhuma conta disponível.</p>
-        ) : (
-          <div className="space-y-2 max-h-72 overflow-y-auto">
-            {todasContas.map((conta) => (
-              <label
-                key={conta.id}
-                className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-gray-50 cursor-pointer"
-              >
-                <input
-                  type="checkbox"
-                  checked={selecionadas.has(conta.id)}
-                  onChange={() => toggle(conta.id)}
-                  className="w-4 h-4 rounded accent-black"
-                />
-                <span className="text-sm text-gray-800">{conta.nomeCliente}</span>
-              </label>
-            ))}
-          </div>
-        )}
+        {/* Contas */}
+        <div>
+          <p className="text-sm font-medium text-gray-700 mb-2">Contas de anúncio</p>
+          {todasContas.length === 0 ? (
+            <p className="text-sm text-gray-500 py-2">Nenhuma conta disponível.</p>
+          ) : (
+            <div className="space-y-1 max-h-40 overflow-y-auto">
+              {todasContas.map((conta) => (
+                <label key={conta.id} className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={selecionadas.has(conta.id)}
+                    onChange={() => toggleConta(conta.id)}
+                    className="w-4 h-4 rounded accent-black"
+                  />
+                  <span className="text-sm text-gray-800">{conta.nomeCliente}</span>
+                </label>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Seções */}
+        <div>
+          <p className="text-sm font-medium text-gray-700 mb-2">Seções visíveis</p>
+          {carregandoPermissoes ? (
+            <div className="h-12 bg-gray-100 rounded-lg animate-pulse" />
+          ) : (
+            <div className="space-y-1">
+              {SECOES_DISPONIVEIS.map((s) => (
+                <label key={s} className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={secoes.has(s)}
+                    onChange={() => toggleSecao(s)}
+                    className="w-4 h-4 rounded accent-black"
+                  />
+                  <span className="text-sm text-gray-800">{s}</span>
+                </label>
+              ))}
+            </div>
+          )}
+        </div>
 
         <div className="flex gap-3 pt-2">
-          <button
-            onClick={onClose}
-            className="flex-1 px-4 py-2 text-sm text-gray-700 border border-[#e5e5e5] rounded-lg hover:bg-gray-50"
-          >
+          <button onClick={onClose} className="flex-1 px-4 py-2 text-sm text-gray-700 border border-[#e5e5e5] rounded-lg hover:bg-gray-50">
             Cancelar
           </button>
           <button
-            onClick={salvar}
+            onClick={() => void salvar()}
             disabled={salvando}
             className="flex-1 px-4 py-2 text-sm font-medium text-white bg-black rounded-lg hover:bg-gray-900 disabled:opacity-50"
           >
-            {salvando ? "Salvando..." : "Salvar acessos"}
+            {salvando ? "Salvando..." : "Salvar"}
           </button>
         </div>
       </div>
@@ -231,9 +323,9 @@ export default function UsuariosPage() {
     setModalNovo(false);
   }
 
-  function handleAcessosSalvos(gestorId: string, contas: ContaSimples[]) {
+  function handleAcessosSalvos(gestorId: string, contas: ContaSimples[], permissoes: string[]) {
     setGestores((prev) =>
-      prev.map((g) => (g.id === gestorId ? { ...g, contasComAcesso: contas } : g))
+      prev.map((g) => (g.id === gestorId ? { ...g, contasComAcesso: contas, permissoes } : g))
     );
     setGestorEditando(null);
   }
@@ -283,13 +375,18 @@ export default function UsuariosPage() {
               className="bg-white border border-[#e5e5e5] rounded-xl px-5 py-4 flex items-center justify-between gap-4"
             >
               <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <p className="text-sm font-semibold text-gray-900 truncate">{g.nome}</p>
                   {g.isAdmin && (
                     <span className="shrink-0 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-black text-white">
                       Admin
                     </span>
                   )}
+                  {!g.isAdmin && g.permissoes && g.permissoes.length > 0 && g.permissoes.map((s) => (
+                    <span key={s} className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-600">
+                      {s}
+                    </span>
+                  ))}
                 </div>
                 <p className="text-xs text-gray-500 mt-0.5 truncate">{g.email}</p>
                 <p className="text-xs text-gray-400 mt-1">
