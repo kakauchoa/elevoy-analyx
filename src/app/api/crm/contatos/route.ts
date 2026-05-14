@@ -2,6 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { criarEventoCalendario } from "@/lib/google-calendar";
+
+const includeCompleto = {
+  campos: true,
+  tags: { include: { tag: true } },
+};
 
 export async function GET() {
   try {
@@ -10,7 +16,7 @@ export async function GET() {
 
     const contatos = await prisma.crmContato.findMany({
       where: { usuarioId: session.user.id },
-      include: { campos: true },
+      include: includeCompleto,
       orderBy: { criadoEm: "asc" },
     });
 
@@ -32,6 +38,7 @@ export async function POST(req: NextRequest) {
       empresa?: string;
       email?: string;
       notas?: string;
+      dataFollowUp?: string | null;
     };
 
     if (!body.etapaId || !body.nome?.trim()) {
@@ -43,6 +50,8 @@ export async function POST(req: NextRequest) {
     });
     if (!etapa) return NextResponse.json({ erro: "Etapa não encontrada" }, { status: 404 });
 
+    const dataFollowUp = body.dataFollowUp ? new Date(body.dataFollowUp) : null;
+
     const contato = await prisma.crmContato.create({
       data: {
         etapaId: body.etapaId,
@@ -52,9 +61,26 @@ export async function POST(req: NextRequest) {
         empresa: body.empresa?.trim() || null,
         email: body.email?.trim() || null,
         notas: body.notas?.trim() || null,
+        dataFollowUp,
       },
-      include: { campos: true },
+      include: includeCompleto,
     });
+
+    // Criar evento no Google Calendar se tiver data
+    if (dataFollowUp) {
+      const eventId = await criarEventoCalendario({
+        usuarioId: session.user.id,
+        summary: contato.nome,
+        description: contato.notas ?? undefined,
+        dataFollowUp,
+      });
+      if (eventId) {
+        await prisma.crmContato.update({
+          where: { id: contato.id },
+          data: { googleCalendarEventId: eventId },
+        });
+      }
+    }
 
     return NextResponse.json(contato, { status: 201 });
   } catch {

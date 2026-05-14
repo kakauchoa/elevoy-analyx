@@ -8,18 +8,12 @@ export async function GET() {
     const session = await getServerSession(authOptions);
     if (!session) return NextResponse.json({ erro: "Não autorizado" }, { status: 401 });
 
-    const etapas = await prisma.crmEtapa.findMany({
+    const tags = await prisma.crmTag.findMany({
       where: { usuarioId: session.user.id },
-      include: {
-        contatos: {
-          include: { campos: true, tags: { include: { tag: true } } },
-          orderBy: { criadoEm: "asc" },
-        },
-      },
-      orderBy: { ordem: "asc" },
+      orderBy: { criadoEm: "asc" },
     });
 
-    return NextResponse.json(etapas);
+    return NextResponse.json(tags);
   } catch {
     return NextResponse.json({ erro: "Erro interno do servidor" }, { status: 500 });
   }
@@ -31,29 +25,17 @@ export async function POST(req: NextRequest) {
     if (!session) return NextResponse.json({ erro: "Não autorizado" }, { status: 401 });
 
     const body = (await req.json()) as { nome?: string; cor?: string };
-    const { nome, cor } = body;
+    if (!body.nome?.trim()) return NextResponse.json({ erro: "Nome é obrigatório" }, { status: 400 });
 
-    if (!nome?.trim()) {
-      return NextResponse.json({ erro: "Nome é obrigatório" }, { status: 400 });
-    }
-
-    const ultima = await prisma.crmEtapa.findFirst({
-      where: { usuarioId: session.user.id },
-      orderBy: { ordem: "desc" },
-      select: { ordem: true },
-    });
-
-    const etapa = await prisma.crmEtapa.create({
+    const tag = await prisma.crmTag.create({
       data: {
         usuarioId: session.user.id,
-        nome: nome.trim(),
-        cor: cor ?? "#6366f1",
-        ordem: (ultima?.ordem ?? 0) + 1,
+        nome: body.nome.trim(),
+        cor: body.cor ?? "#6366f1",
       },
-      include: { contatos: { include: { campos: true } } },
     });
 
-    return NextResponse.json(etapa, { status: 201 });
+    return NextResponse.json(tag, { status: 201 });
   } catch {
     return NextResponse.json({ erro: "Erro interno do servidor" }, { status: 500 });
   }

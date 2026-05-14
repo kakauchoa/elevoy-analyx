@@ -73,6 +73,8 @@ model Usuario {
   permissoes          UsuarioPermissao[]
   etapasCrm           CrmEtapa[]
   contatosCrm         CrmContato[]
+  tagsCrm             CrmTag[]
+  integracaoGoogle    IntegracaoGoogle?
 
   @@map("usuarios")
 }
@@ -289,19 +291,22 @@ model CrmEtapa {
 }
 
 model CrmContato {
-  id           String               @id @default(uuid())
-  etapaId      String               @map("etapa_id")
-  usuarioId    String               @map("usuario_id")
-  nome         String               @db.VarChar(255)
-  telefone     String?              @db.VarChar(30)
-  empresa      String?              @db.VarChar(255)
-  email        String?              @db.VarChar(255)
-  notas        String?              @db.Text
-  criadoEm     DateTime             @default(now()) @map("criado_em")
-  atualizadoEm DateTime             @updatedAt @map("atualizado_em")
-  etapa        CrmEtapa             @relation(fields: [etapaId], references: [id], onDelete: Cascade)
-  usuario      Usuario              @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
-  campos       CrmCampoCustomizado[]
+  id                   String               @id @default(uuid())
+  etapaId              String               @map("etapa_id")
+  usuarioId            String               @map("usuario_id")
+  nome                 String               @db.VarChar(255)
+  telefone             String?              @db.VarChar(30)
+  empresa              String?              @db.VarChar(255)
+  email                String?              @db.VarChar(255)
+  notas                String?              @db.Text
+  dataFollowUp         DateTime?            @map("data_follow_up")
+  googleCalendarEventId String?             @map("google_calendar_event_id") @db.VarChar(255)
+  criadoEm             DateTime             @default(now()) @map("criado_em")
+  atualizadoEm         DateTime             @updatedAt @map("atualizado_em")
+  etapa                CrmEtapa             @relation(fields: [etapaId], references: [id], onDelete: Cascade)
+  usuario              Usuario              @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  campos               CrmCampoCustomizado[]
+  tags                 CrmContatoTag[]
 
   @@map("crm_contatos")
 }
@@ -314,6 +319,42 @@ model CrmCampoCustomizado {
   contato   CrmContato @relation(fields: [contatoId], references: [id], onDelete: Cascade)
 
   @@map("crm_campos_customizados")
+}
+
+model CrmTag {
+  id        String          @id @default(uuid())
+  usuarioId String          @map("usuario_id")
+  nome      String          @db.VarChar(50)
+  cor       String          @db.VarChar(20)
+  criadoEm  DateTime        @default(now()) @map("criado_em")
+  usuario   Usuario         @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  contatos  CrmContatoTag[]
+
+  @@map("crm_tags")
+}
+
+model CrmContatoTag {
+  id        String     @id @default(uuid())
+  contatoId String     @map("contato_id")
+  tagId     String     @map("tag_id")
+  contato   CrmContato @relation(fields: [contatoId], references: [id], onDelete: Cascade)
+  tag       CrmTag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@unique([contatoId, tagId])
+  @@map("crm_contato_tags")
+}
+
+model IntegracaoGoogle {
+  id           String   @id @default(uuid())
+  usuarioId    String   @unique @map("usuario_id")
+  accessToken  String   @db.Text @map("access_token")
+  refreshToken String   @db.Text @map("refresh_token")
+  expiresAt    DateTime @map("expires_at")
+  criadoEm     DateTime @default(now()) @map("criado_em")
+  atualizadoEm DateTime @updatedAt @map("atualizado_em")
+  usuario      Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@map("integracoes_google")
 }
 
 model ConfiguracaoGtm {

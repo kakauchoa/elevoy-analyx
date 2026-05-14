@@ -2,11 +2,17 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { criarEventoCalendario, atualizarEventoCalendario, deletarEventoCalendario } from "@/lib/google-calendar";
 
 type Params = Promise<{ id: string }>;
 
+const includeCompleto = {
+  campos: true,
+  tags: { include: { tag: true } },
+};
+
 async function verificarContato(id: string, usuarioId: string) {
-  return prisma.crmContato.findFirst({ where: { id, usuarioId }, include: { campos: true } });
+  return prisma.crmContato.findFirst({ where: { id, usuarioId }, include: includeCompleto });
 }
 
 export async function PATCH(req: NextRequest, { params }: { params: Params }) {
@@ -24,20 +30,45 @@ export async function PATCH(req: NextRequest, { params }: { params: Params }) {
       empresa?: string | null;
       email?: string | null;
       notas?: string | null;
+      dataFollowUp?: string | null;
     };
 
-    const dados: Record<string, string | null | undefined> = {};
+    const dados: Record<string, string | Date | null | undefined> = {};
     if (body.nome?.trim()) dados.nome = body.nome.trim();
     if ("telefone" in body) dados.telefone = body.telefone?.trim() || null;
     if ("empresa" in body) dados.empresa = body.empresa?.trim() || null;
     if ("email" in body) dados.email = body.email?.trim() || null;
     if ("notas" in body) dados.notas = body.notas?.trim() || null;
 
+    const mudouData = "dataFollowUp" in body;
+    const novaData = mudouData ? (body.dataFollowUp ? new Date(body.dataFollowUp) : null) : undefined;
+    if (mudouData) dados.dataFollowUp = novaData ?? null;
+
     const atualizado = await prisma.crmContato.update({
       where: { id },
       data: dados,
-      include: { campos: true },
+      include: includeCompleto,
     });
+
+    // Sincronizar com Google Calendar
+    if (mudouData) {
+      if (!novaData && contato.googleCalendarEventId) {
+        await deletarEventoCalendario(session.user.id, contato.googleCalendarEventId);
+        await prisma.crmContato.update({ where: { id }, data: { googleCalendarEventId: null } });
+      } else if (novaData && contato.googleCalendarEventId) {
+        await atualizarEventoCalendario(session.user.id, contato.googleCalendarEventId, atualizado.nome, novaData);
+      } else if (novaData && !contato.googleCalendarEventId) {
+        const eventId = await criarEventoCalendario({
+          usuarioId: session.user.id,
+          summary: atualizado.nome,
+          description: atualizado.notas ?? undefined,
+          dataFollowUp: novaData,
+        });
+        if (eventId) {
+          await prisma.crmContato.update({ where: { id }, data: { googleCalendarEventId: eventId } });
+        }
+      }
+    }
 
     return NextResponse.json(atualizado);
   } catch {
@@ -53,6 +84,10 @@ export async function DELETE(_req: NextRequest, { params }: { params: Params }) 
     const { id } = await params;
     const contato = await verificarContato(id, session.user.id);
     if (!contato) return NextResponse.json({ erro: "Contato não encontrado" }, { status: 404 });
+
+    if (contato.googleCalendarEventId) {
+      await deletarEventoCalendario(session.user.id, contato.googleCalendarEventId);
+    }
 
     await prisma.crmContato.delete({ where: { id } });
     return NextResponse.json({ ok: true });

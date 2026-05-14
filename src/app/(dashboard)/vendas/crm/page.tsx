@@ -10,6 +10,18 @@ interface CampoCustomizado {
   valor: string;
 }
 
+interface CrmTag {
+  id: string;
+  nome: string;
+  cor: string;
+}
+
+interface CrmContatoTag {
+  id: string;
+  tagId: string;
+  tag: CrmTag;
+}
+
 interface CrmContato {
   id: string;
   etapaId: string;
@@ -18,7 +30,9 @@ interface CrmContato {
   empresa: string | null;
   email: string | null;
   notas: string | null;
+  dataFollowUp: string | null;
   campos: CampoCustomizado[];
+  tags: CrmContatoTag[];
 }
 
 interface CrmEtapa {
@@ -35,25 +49,200 @@ function telefoneSemFormatacao(tel: string): string {
   return tel.replace(/\D/g, "");
 }
 
+function estaAtrasado(dataFollowUp: string | null): boolean {
+  if (!dataFollowUp) return false;
+  return new Date(dataFollowUp) < new Date();
+}
+
+function formatarData(iso: string): string {
+  const d = new Date(iso);
+  return d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
+}
+
+// Ordena contatos: atrasados primeiro (mais antigo primeiro), depois futuros, depois sem data
+function ordenarContatos(contatos: CrmContato[]): CrmContato[] {
+  const agora = new Date();
+  const comData = contatos.filter((c) => c.dataFollowUp !== null);
+  const semData = contatos.filter((c) => c.dataFollowUp === null);
+
+  const atrasados = comData
+    .filter((c) => new Date(c.dataFollowUp!) < agora)
+    .sort((a, b) => new Date(a.dataFollowUp!).getTime() - new Date(b.dataFollowUp!).getTime());
+
+  const futuros = comData
+    .filter((c) => new Date(c.dataFollowUp!) >= agora)
+    .sort((a, b) => new Date(a.dataFollowUp!).getTime() - new Date(b.dataFollowUp!).getTime());
+
+  return [...atrasados, ...futuros, ...semData];
+}
+
+// ── Seletor de tags no modal ────────────────────────────────────────────────
+
+interface SeletorTagsProps {
+  todasTags: CrmTag[];
+  tagsSelecionadas: CrmContatoTag[];
+  contatoId: string | null;
+  onAdicionarTag: (tag: CrmTag) => void;
+  onRemoverTag: (tagId: string) => void;
+  onCriarTag: (nome: string, cor: string) => Promise<void>;
+}
+
+const CORES_TAG = ["#6366f1", "#0ea5e9", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899", "#14b8a6", "#f97316", "#84cc16"];
+
+function SeletorTags({ todasTags, tagsSelecionadas, contatoId, onAdicionarTag, onRemoverTag, onCriarTag }: SeletorTagsProps) {
+  const [aberto, setAberto] = useState(false);
+  const [novaTagNome, setNovaTagNome] = useState("");
+  const [novaTagCor, setNovaTagCor] = useState(CORES_TAG[0]);
+  const [criando, setCriando] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function fechar(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setAberto(false);
+    }
+    document.addEventListener("mousedown", fechar);
+    return () => document.removeEventListener("mousedown", fechar);
+  }, []);
+
+  const tagsSelecionadasIds = new Set(tagsSelecionadas.map((t) => t.tagId));
+
+  async function criarTag() {
+    if (!novaTagNome.trim()) return;
+    setCriando(true);
+    try {
+      await onCriarTag(novaTagNome.trim(), novaTagCor);
+      setNovaTagNome("");
+    } finally {
+      setCriando(false);
+    }
+  }
+
+  return (
+    <div ref={ref} className="relative">
+      <p className="text-xs font-medium text-gray-600 mb-2">Tags</p>
+
+      {/* Tags selecionadas */}
+      <div className="flex flex-wrap gap-1.5 mb-2">
+        {tagsSelecionadas.map((ct) => (
+          <span
+            key={ct.id}
+            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium text-white"
+            style={{ backgroundColor: ct.tag.cor }}
+          >
+            {ct.tag.nome}
+            {contatoId && (
+              <button
+                onClick={() => onRemoverTag(ct.tagId)}
+                className="hover:opacity-70 transition-opacity"
+              >
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            )}
+          </span>
+        ))}
+        <button
+          onClick={() => setAberto(!aberto)}
+          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium text-gray-600 border border-dashed border-gray-300 hover:border-gray-400 transition-colors"
+        >
+          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+          </svg>
+          Adicionar tag
+        </button>
+      </div>
+
+      {/* Dropdown */}
+      {aberto && (
+        <div className="absolute left-0 top-full mt-1 z-50 w-64 bg-white border border-[#e5e5e5] rounded-xl shadow-lg p-3 space-y-3">
+          {/* Tags existentes */}
+          {todasTags.length > 0 && (
+            <div className="space-y-1">
+              {todasTags.map((tag) => {
+                const selecionada = tagsSelecionadasIds.has(tag.id);
+                return (
+                  <button
+                    key={tag.id}
+                    onClick={() => {
+                      if (selecionada) onRemoverTag(tag.id);
+                      else onAdicionarTag(tag);
+                    }}
+                    className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-gray-50 transition-colors text-left"
+                  >
+                    <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: tag.cor }} />
+                    <span className="flex-1 text-sm text-gray-900">{tag.nome}</span>
+                    {selecionada && (
+                      <svg className="w-3.5 h-3.5 text-gray-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                      </svg>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Criar nova tag */}
+          <div className="border-t border-[#e5e5e5] pt-2 space-y-2">
+            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Nova tag</p>
+            <input
+              value={novaTagNome}
+              onChange={(e) => setNovaTagNome(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") void criarTag(); }}
+              placeholder="Nome da tag"
+              className="w-full border border-[#e5e5e5] rounded-lg px-2.5 py-1.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-black"
+            />
+            <div className="flex flex-wrap gap-1.5">
+              {CORES_TAG.map((c) => (
+                <button
+                  key={c}
+                  onClick={() => setNovaTagCor(c)}
+                  className={`w-5 h-5 rounded-full transition-transform ${novaTagCor === c ? "ring-2 ring-offset-1 ring-gray-700 scale-110" : ""}`}
+                  style={{ backgroundColor: c }}
+                />
+              ))}
+            </div>
+            <button
+              onClick={() => void criarTag()}
+              disabled={criando || !novaTagNome.trim()}
+              className="w-full px-3 py-1.5 text-xs font-medium text-white bg-black rounded-lg hover:bg-gray-900 disabled:opacity-50 transition-colors"
+            >
+              {criando ? "Criando..." : "Criar tag"}
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Modal de contato (slide-in lateral) ────────────────────────────────────
 
 interface ModalContatoProps {
   contato: CrmContato | null;
   etapaId: string | null;
   etapas: CrmEtapa[];
+  todasTags: CrmTag[];
   onClose: () => void;
   onSalvo: (contato: CrmContato) => void;
   onExcluido: (contatoId: string) => void;
+  onTagCriada: (tag: CrmTag) => void;
 }
 
-function ModalContato({ contato, etapaId, etapas, onClose, onSalvo, onExcluido }: ModalContatoProps) {
+function ModalContato({ contato, etapaId, etapas, todasTags, onClose, onSalvo, onExcluido, onTagCriada }: ModalContatoProps) {
   const isNovo = contato === null;
   const [nome, setNome] = useState(contato?.nome ?? "");
   const [telefone, setTelefone] = useState(contato?.telefone ?? "");
   const [empresa, setEmpresa] = useState(contato?.empresa ?? "");
   const [email, setEmail] = useState(contato?.email ?? "");
   const [notas, setNotas] = useState(contato?.notas ?? "");
+  const [dataFollowUp, setDataFollowUp] = useState(
+    contato?.dataFollowUp ? new Date(contato.dataFollowUp).toISOString().slice(0, 16) : ""
+  );
+  const [etapaSelecionada, setEtapaSelecionada] = useState(etapaId ?? etapas[0]?.id ?? "");
   const [campos, setCampos] = useState<CampoCustomizado[]>(contato?.campos ?? []);
+  const [tagsSelecionadas, setTagsSelecionadas] = useState<CrmContatoTag[]>(contato?.tags ?? []);
   const [novaCampoChave, setNovaCampoChave] = useState("");
   const [novaCampoValor, setNovaCampoValor] = useState("");
   const [salvando, setSalvando] = useState(false);
@@ -70,20 +259,43 @@ function ModalContato({ contato, etapaId, etapas, onClose, onSalvo, onExcluido }
         const res = await fetch("/api/crm/contatos", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ etapaId, nome, telefone: telefone || null, empresa: empresa || null, email: email || null, notas: notas || null }),
+          body: JSON.stringify({
+            etapaId: etapaSelecionada,
+            nome,
+            telefone: telefone || null,
+            empresa: empresa || null,
+            email: email || null,
+            notas: notas || null,
+            dataFollowUp: dataFollowUp || null,
+          }),
         });
         const data = (await res.json()) as CrmContato;
         if (!res.ok) { setErro((data as unknown as { erro?: string }).erro ?? "Erro ao salvar"); return; }
-        onSalvo(data);
+        // Aplicar tags após criar
+        for (const ct of tagsSelecionadas) {
+          await fetch(`/api/crm/contatos/${data.id}/tags`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ tagId: ct.tagId }),
+          });
+        }
+        onSalvo({ ...data, tags: tagsSelecionadas, etapaId: etapaSelecionada });
       } else {
         const res = await fetch(`/api/crm/contatos/${contato.id}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ nome, telefone: telefone || null, empresa: empresa || null, email: email || null, notas: notas || null }),
+          body: JSON.stringify({
+            nome,
+            telefone: telefone || null,
+            empresa: empresa || null,
+            email: email || null,
+            notas: notas || null,
+            dataFollowUp: dataFollowUp || null,
+          }),
         });
         const data = (await res.json()) as CrmContato;
         if (!res.ok) { setErro((data as unknown as { erro?: string }).erro ?? "Erro ao salvar"); return; }
-        onSalvo({ ...data, campos });
+        onSalvo({ ...data, campos, tags: tagsSelecionadas });
       }
     } finally {
       setSalvando(false);
@@ -126,6 +338,52 @@ function ModalContato({ contato, etapaId, etapas, onClose, onSalvo, onExcluido }
     setCampos((prev) => prev.filter((c) => c.id !== campoId));
   }
 
+  async function adicionarTag(tag: CrmTag) {
+    if (!contato) {
+      // Modo novo — apenas atualiza estado local
+      setTagsSelecionadas((prev) => [
+        ...prev,
+        { id: `temp-${tag.id}`, tagId: tag.id, tag },
+      ]);
+      return;
+    }
+    const res = await fetch(`/api/crm/contatos/${contato.id}/tags`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ tagId: tag.id }),
+    });
+    const data = (await res.json()) as CrmContatoTag & { tag: CrmTag };
+    if (res.ok) {
+      setTagsSelecionadas((prev) => [...prev, { ...data, tag }]);
+    }
+  }
+
+  async function removerTag(tagId: string) {
+    if (!contato) {
+      setTagsSelecionadas((prev) => prev.filter((t) => t.tagId !== tagId));
+      return;
+    }
+    await fetch(`/api/crm/contatos/${contato.id}/tags`, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ tagId }),
+    });
+    setTagsSelecionadas((prev) => prev.filter((t) => t.tagId !== tagId));
+  }
+
+  async function criarTag(nome: string, cor: string) {
+    const res = await fetch("/api/crm/tags", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ nome, cor }),
+    });
+    const tag = (await res.json()) as CrmTag;
+    if (res.ok) {
+      onTagCriada(tag);
+      await adicionarTag(tag);
+    }
+  }
+
   return (
     <div className="fixed inset-0 z-40 flex">
       <div className="flex-1 bg-black/30" onClick={onClose} />
@@ -133,7 +391,7 @@ function ModalContato({ contato, etapaId, etapas, onClose, onSalvo, onExcluido }
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-[#e5e5e5]">
           <h2 className="text-base font-semibold text-gray-900">
-            {isNovo ? "Novo contato" : "Editar contato"}
+            {isNovo ? "Novo lead" : "Editar lead"}
           </h2>
           <button onClick={onClose} className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -142,10 +400,23 @@ function ModalContato({ contato, etapaId, etapas, onClose, onSalvo, onExcluido }
           </button>
         </div>
 
-        {/* Etapa info (somente edição) */}
-        {!isNovo && (
-          <div className="px-6 pt-4">
-            {(() => {
+        {/* Etapa info / seletor */}
+        <div className="px-6 pt-4">
+          {isNovo ? (
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Etapa</label>
+              <select
+                value={etapaSelecionada}
+                onChange={(e) => setEtapaSelecionada(e.target.value)}
+                className="w-full border border-[#e5e5e5] rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-black"
+              >
+                {etapas.map((e) => (
+                  <option key={e.id} value={e.id}>{e.nome}</option>
+                ))}
+              </select>
+            </div>
+          ) : (
+            (() => {
               const etapa = etapas.find((e) => e.id === contato?.etapaId);
               return etapa ? (
                 <div className="flex items-center gap-1.5">
@@ -153,9 +424,9 @@ function ModalContato({ contato, etapaId, etapas, onClose, onSalvo, onExcluido }
                   <span className="text-xs text-gray-500">{etapa.nome}</span>
                 </div>
               ) : null;
-            })()}
-          </div>
-        )}
+            })()
+          )}
+        </div>
 
         {/* Form */}
         <div className="flex-1 px-6 py-4 space-y-4">
@@ -176,19 +447,48 @@ function ModalContato({ contato, etapaId, etapas, onClose, onSalvo, onExcluido }
                 value={value}
                 onChange={(e) => setter(e.target.value)}
                 placeholder={placeholder}
-                className="w-full border border-[#e5e5e5] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+                className="w-full border border-[#e5e5e5] rounded-lg px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-black"
               />
             </div>
           ))}
+
+          {/* Data de follow-up */}
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Data de follow-up</label>
+            <input
+              type="datetime-local"
+              value={dataFollowUp}
+              onChange={(e) => setDataFollowUp(e.target.value)}
+              className="w-full border border-[#e5e5e5] rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-black"
+            />
+            {dataFollowUp && (
+              <button
+                onClick={() => setDataFollowUp("")}
+                className="mt-1 text-xs text-gray-400 hover:text-red-500 transition-colors"
+              >
+                Limpar data
+              </button>
+            )}
+          </div>
+
+          {/* Tags */}
+          <SeletorTags
+            todasTags={todasTags}
+            tagsSelecionadas={tagsSelecionadas}
+            contatoId={contato?.id ?? null}
+            onAdicionarTag={(tag) => void adicionarTag(tag)}
+            onRemoverTag={(tagId) => void removerTag(tagId)}
+            onCriarTag={(nome, cor) => criarTag(nome, cor)}
+          />
 
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">Notas</label>
             <textarea
               value={notas}
               onChange={(e) => setNotas(e.target.value)}
-              placeholder="Observações sobre o contato..."
+              placeholder="Observações sobre o lead..."
               rows={3}
-              className="w-full border border-[#e5e5e5] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black resize-none"
+              className="w-full border border-[#e5e5e5] rounded-lg px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-black resize-none"
             />
           </div>
 
@@ -202,7 +502,7 @@ function ModalContato({ contato, etapaId, etapas, onClose, onSalvo, onExcluido }
                     <div key={c.id} className="flex items-start gap-2 p-2 bg-gray-50 rounded-lg">
                       <div className="flex-1 min-w-0">
                         <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide">{c.chave}</p>
-                        <p className="text-sm text-gray-800 mt-0.5 break-words">{c.valor}</p>
+                        <p className="text-sm text-gray-900 mt-0.5 break-words">{c.valor}</p>
                       </div>
                       <button
                         onClick={() => void removerCampo(c.id)}
@@ -221,13 +521,13 @@ function ModalContato({ contato, etapaId, etapas, onClose, onSalvo, onExcluido }
                   value={novaCampoChave}
                   onChange={(e) => setNovaCampoChave(e.target.value)}
                   placeholder="Chave"
-                  className="flex-1 border border-[#e5e5e5] rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+                  className="flex-1 border border-[#e5e5e5] rounded-lg px-3 py-1.5 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-black"
                 />
                 <input
                   value={novaCampoValor}
                   onChange={(e) => setNovaCampoValor(e.target.value)}
                   placeholder="Valor"
-                  className="flex-1 border border-[#e5e5e5] rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+                  className="flex-1 border border-[#e5e5e5] rounded-lg px-3 py-1.5 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-black"
                 />
                 <button
                   onClick={() => void adicionarCampo()}
@@ -276,7 +576,7 @@ function ModalContato({ contato, etapaId, etapas, onClose, onSalvo, onExcluido }
             disabled={salvando}
             className="px-4 py-2 bg-black text-white text-sm font-medium rounded-lg hover:bg-gray-900 disabled:opacity-50 transition-colors"
           >
-            {salvando ? "Salvando..." : isNovo ? "Criar contato" : "Salvar"}
+            {salvando ? "Salvando..." : isNovo ? "Criar lead" : "Salvar"}
           </button>
         </div>
       </div>
@@ -331,7 +631,7 @@ function ModalNovaEtapa({
             onChange={(e) => setNome(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter") void salvar(); }}
             placeholder="Ex: Em contato, Proposta enviada..."
-            className="w-full border border-[#e5e5e5] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+            className="w-full border border-[#e5e5e5] rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-black"
           />
         </div>
         <div>
@@ -373,17 +673,57 @@ interface CardContatoProps {
 }
 
 function CardContato({ contato, onDragStart, onClick }: CardContatoProps) {
+  const atrasado = estaAtrasado(contato.dataFollowUp);
+
   return (
     <div
       draggable
       onDragStart={() => onDragStart(contato.id)}
       onClick={() => onClick(contato)}
-      className="bg-white border border-[#e5e5e5] rounded-xl p-3.5 cursor-grab active:cursor-grabbing hover:border-gray-300 hover:shadow-sm transition-all select-none"
+      className={`bg-white border rounded-xl p-3.5 cursor-grab active:cursor-grabbing hover:shadow-sm transition-all select-none ${
+        atrasado ? "border-red-300 bg-red-50/30" : "border-[#e5e5e5] hover:border-gray-300"
+      }`}
     >
+      {/* Indicador atrasado */}
+      {atrasado && (
+        <div className="flex items-center gap-1 mb-2">
+          <svg className="w-3 h-3 text-red-500 shrink-0" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" />
+          </svg>
+          <span className="text-[10px] font-semibold text-red-600 uppercase tracking-wide">Atrasado</span>
+        </div>
+      )}
+
       <p className="text-sm font-medium text-gray-900 truncate">{contato.nome}</p>
       {contato.empresa && (
         <p className="text-xs text-gray-500 mt-0.5 truncate">{contato.empresa}</p>
       )}
+
+      {/* Data de follow-up */}
+      {contato.dataFollowUp && (
+        <div className={`mt-2 flex items-center gap-1 ${atrasado ? "text-red-600" : "text-gray-500"}`}>
+          <svg className="w-3 h-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
+          <span className="text-[11px]">{formatarData(contato.dataFollowUp)}</span>
+        </div>
+      )}
+
+      {/* Tags */}
+      {contato.tags.length > 0 && (
+        <div className="mt-2 flex flex-wrap gap-1">
+          {contato.tags.map((ct) => (
+            <span
+              key={ct.id}
+              className="inline-block px-1.5 py-0.5 rounded-full text-[10px] font-medium text-white"
+              style={{ backgroundColor: ct.tag.cor }}
+            >
+              {ct.tag.nome}
+            </span>
+          ))}
+        </div>
+      )}
+
       {contato.telefone && (
         <div className="mt-2 flex items-center justify-between gap-2">
           <p className="text-xs text-gray-400 truncate">{contato.telefone}</p>
@@ -428,6 +768,8 @@ function Coluna({
   onClickContato,
   onAdicionarContato,
 }: ColunaProps) {
+  const contatosOrdenados = ordenarContatos(etapa.contatos);
+
   return (
     <div
       className={`flex flex-col w-72 shrink-0 rounded-xl transition-colors ${
@@ -447,7 +789,7 @@ function Coluna({
         <button
           onClick={() => onAdicionarContato(etapa.id)}
           className="p-1 text-gray-400 hover:text-gray-700 hover:bg-gray-200 rounded-lg transition-colors"
-          title="Adicionar contato"
+          title="Adicionar lead"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -457,7 +799,7 @@ function Coluna({
 
       {/* Cards */}
       <div className="flex-1 px-3 pb-3 space-y-2 overflow-y-auto max-h-[calc(100vh-14rem)]">
-        {etapa.contatos.map((contato) => (
+        {contatosOrdenados.map((contato) => (
           <CardContato
             key={contato.id}
             contato={contato}
@@ -475,10 +817,44 @@ function Coluna({
   );
 }
 
+// ── Banner de notificação de atrasos ───────────────────────────────────────
+
+function BannerAtrasos({ etapas }: { etapas: CrmEtapa[] }) {
+  const [fechado, setFechado] = useState(false);
+
+  const atrasados = etapas.flatMap((e) =>
+    e.contatos.filter((c) => estaAtrasado(c.dataFollowUp))
+  );
+
+  if (atrasados.length === 0 || fechado) return null;
+
+  return (
+    <div className="mx-6 mt-4 flex items-center gap-3 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
+      <svg className="w-4 h-4 text-red-500 shrink-0" fill="currentColor" viewBox="0 0 24 24">
+        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" />
+      </svg>
+      <p className="flex-1 text-sm text-red-700">
+        <span className="font-semibold">{atrasados.length} lead{atrasados.length !== 1 ? "s" : ""}</span> com follow-up atrasado:{" "}
+        {atrasados.slice(0, 3).map((c) => c.nome).join(", ")}
+        {atrasados.length > 3 ? ` e mais ${atrasados.length - 3}` : ""}
+      </p>
+      <button
+        onClick={() => setFechado(true)}
+        className="p-1 text-red-400 hover:text-red-600 transition-colors"
+      >
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+    </div>
+  );
+}
+
 // ── Página principal ───────────────────────────────────────────────────────
 
 export default function CrmPage() {
   const [etapas, setEtapas] = useState<CrmEtapa[]>([]);
+  const [todasTags, setTodasTags] = useState<CrmTag[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [modalNovaEtapa, setModalNovaEtapa] = useState(false);
   const [contatoModal, setContatoModal] = useState<CrmContato | null | "novo">(null);
@@ -488,11 +864,12 @@ export default function CrmPage() {
   const [dragOverEtapaId, setDragOverEtapaId] = useState<string | null>(null);
 
   const carregar = useCallback(async () => {
-    const res = await fetch("/api/crm/etapas");
-    if (res.ok) {
-      const data = (await res.json()) as CrmEtapa[];
-      setEtapas(data);
-    }
+    const [resEtapas, resTags] = await Promise.all([
+      fetch("/api/crm/etapas"),
+      fetch("/api/crm/tags"),
+    ]);
+    if (resEtapas.ok) setEtapas((await resEtapas.json()) as CrmEtapa[]);
+    if (resTags.ok) setTodasTags((await resTags.json()) as CrmTag[]);
     setCarregando(false);
   }, []);
 
@@ -516,7 +893,6 @@ export default function CrmPage() {
 
     const contato = etapaOrigem.contatos.find((c) => c.id === contatoId)!;
 
-    // Atualiza estado otimisticamente
     setEtapas((prev) =>
       prev.map((e) => {
         if (e.id === etapaOrigem.id) return { ...e, contatos: e.contatos.filter((c) => c.id !== contatoId) };
@@ -525,7 +901,6 @@ export default function CrmPage() {
       })
     );
 
-    // Persiste
     void fetch(`/api/crm/contatos/${contatoId}/mover`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -538,7 +913,7 @@ export default function CrmPage() {
     setModalNovaEtapa(false);
   }
 
-  function abrirModalNovoContato(etapaId: string) {
+  function abrirModalNovoContato(etapaId: string | null) {
     setEtapaNovoContato(etapaId);
     setContatoModal("novo");
   }
@@ -567,6 +942,12 @@ export default function CrmPage() {
     setContatoModal(null);
   }
 
+  function handleTagCriada(tag: CrmTag) {
+    setTodasTags((prev) => [...prev, tag]);
+  }
+
+  const totalAtrasados = etapas.flatMap((e) => e.contatos.filter((c) => estaAtrasado(c.dataFollowUp))).length;
+
   if (carregando) {
     return (
       <div className="p-8 flex gap-4">
@@ -581,20 +962,33 @@ export default function CrmPage() {
     <div className="flex flex-col h-full">
       {/* Header */}
       <div className="flex items-center justify-between px-8 py-5 border-b border-[#e5e5e5]">
-        <div>
-          <h1 className="text-xl font-bold text-gray-900">CRM</h1>
-          <p className="text-sm text-gray-500 mt-0.5">
-            {etapas.length} etapa{etapas.length !== 1 ? "s" : ""} ·{" "}
-            {etapas.reduce((acc, e) => acc + e.contatos.length, 0)} contato{etapas.reduce((acc, e) => acc + e.contatos.length, 0) !== 1 ? "s" : ""}
-          </p>
+        <div className="flex items-center gap-3">
+          <div>
+            <h1 className="text-xl font-bold text-gray-900">CRM</h1>
+            <p className="text-sm text-gray-500 mt-0.5">
+              {etapas.length} etapa{etapas.length !== 1 ? "s" : ""} ·{" "}
+              {etapas.reduce((acc, e) => acc + e.contatos.length, 0)} lead{etapas.reduce((acc, e) => acc + e.contatos.length, 0) !== 1 ? "s" : ""}
+            </p>
+          </div>
+          {totalAtrasados > 0 && (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-red-100 text-red-700 text-xs font-semibold rounded-full">
+              <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" />
+              </svg>
+              {totalAtrasados} atrasado{totalAtrasados !== 1 ? "s" : ""}
+            </span>
+          )}
         </div>
         <button
-          onClick={() => setModalNovaEtapa(true)}
+          onClick={() => abrirModalNovoContato(null)}
           className="bg-black hover:bg-gray-900 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
         >
-          + Nova etapa
+          + Adicionar lead
         </button>
       </div>
+
+      {/* Banner de atrasos */}
+      <BannerAtrasos etapas={etapas} />
 
       {/* Board */}
       <div className="flex-1 overflow-x-auto overflow-y-hidden">
@@ -612,19 +1006,33 @@ export default function CrmPage() {
               </div>
             </div>
           ) : (
-            etapas.map((etapa) => (
-              <Coluna
-                key={etapa.id}
-                etapa={etapa}
-                isDragOver={dragOverEtapaId === etapa.id}
-                onDragOver={(id) => setDragOverEtapaId(id)}
-                onDragLeave={() => setDragOverEtapaId(null)}
-                onDrop={handleDrop}
-                onDragStart={handleDragStart}
-                onClickContato={(c) => setContatoModal(c)}
-                onAdicionarContato={abrirModalNovoContato}
-              />
-            ))
+            <>
+              {etapas.map((etapa) => (
+                <Coluna
+                  key={etapa.id}
+                  etapa={etapa}
+                  isDragOver={dragOverEtapaId === etapa.id}
+                  onDragOver={(id) => setDragOverEtapaId(id)}
+                  onDragLeave={() => setDragOverEtapaId(null)}
+                  onDrop={handleDrop}
+                  onDragStart={handleDragStart}
+                  onClickContato={(c) => setContatoModal(c)}
+                  onAdicionarContato={abrirModalNovoContato}
+                />
+              ))}
+              {/* Botão nova etapa no final do board */}
+              <div className="shrink-0 w-64 flex items-start pt-2">
+                <button
+                  onClick={() => setModalNovaEtapa(true)}
+                  className="w-full flex items-center gap-2 px-4 py-3 rounded-xl text-sm text-gray-500 border-2 border-dashed border-gray-200 hover:border-gray-300 hover:text-gray-700 hover:bg-gray-50 transition-all"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                  Nova etapa
+                </button>
+              </div>
+            </>
           )}
         </div>
       </div>
@@ -642,9 +1050,11 @@ export default function CrmPage() {
           contato={contatoModal === "novo" ? null : contatoModal}
           etapaId={etapaNovoContato}
           etapas={etapas}
+          todasTags={todasTags}
           onClose={() => { setContatoModal(null); setEtapaNovoContato(null); }}
           onSalvo={handleContatoSalvo}
           onExcluido={handleContatoExcluido}
+          onTagCriada={handleTagCriada}
         />
       )}
     </div>
