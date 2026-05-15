@@ -103,7 +103,7 @@ export default function ConfiguracaoMetaPage() {
               onChange={(e) => setAppId(e.target.value)}
               placeholder="123456789012345"
               required
-              className="w-full border border-[#e5e5e5] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
+              className="w-full border border-[#e5e5e5] rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
             />
             <p className="mt-1 text-xs text-gray-400">
               Encontre em developers.facebook.com → Meus Apps → seu app.
@@ -119,7 +119,7 @@ export default function ConfiguracaoMetaPage() {
               onFocus={() => { if (appSecret === "••••••••") setAppSecret(""); }}
               placeholder="Insira a chave secreta do app"
               required
-              className="w-full border border-[#e5e5e5] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
+              className="w-full border border-[#e5e5e5] rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
             />
             <p className="mt-1 text-xs text-gray-400">
               Armazenada de forma criptografada. Nunca é exposta após salvar.

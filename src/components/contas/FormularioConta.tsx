@@ -144,7 +144,7 @@ export function FormularioConta({ conta, onSalvar, onFechar }: FormularioContaPr
               onChange={(e) => setForm((prev) => ({ ...prev, nomeCliente: e.target.value }))}
               placeholder="Ex: Loja da Maria"
               required
-              className="border border-[#e5e5e5] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black transition-shadow"
+              className="border border-[#e5e5e5] rounded-lg px-3 py-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-black transition-shadow"
             />
           </div>
 
@@ -167,7 +167,7 @@ export function FormularioConta({ conta, onSalvar, onFechar }: FormularioContaPr
                 }}
                 placeholder="loja-da-maria"
                 required
-                className="flex-1 px-3 py-2.5 text-sm outline-none bg-white"
+                className="flex-1 px-3 py-2.5 text-sm text-gray-900 outline-none bg-white"
               />
             </div>
           </div>
@@ -187,7 +187,7 @@ export function FormularioConta({ conta, onSalvar, onFechar }: FormularioContaPr
                 }
                 placeholder="1128982335101932"
                 required
-                className="flex-1 px-3 py-2.5 text-sm font-mono outline-none bg-white"
+                className="flex-1 px-3 py-2.5 text-sm text-gray-900 font-mono outline-none bg-white"
               />
             </div>
             <p className="text-xs text-gray-400">
@@ -209,7 +209,7 @@ export function FormularioConta({ conta, onSalvar, onFechar }: FormularioContaPr
               onChange={(e) => setForm((prev) => ({ ...prev, tokenAcesso: e.target.value }))}
               placeholder={modoEdicao ? "••••••••" : "EAAxxxxxxxxxxxx"}
               required={!modoEdicao}
-              className="border border-[#e5e5e5] rounded-lg px-3 py-2.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-black transition-shadow"
+              className="border border-[#e5e5e5] rounded-lg px-3 py-2.5 text-sm font-mono text-gray-900 focus:outline-none focus:ring-2 focus:ring-black transition-shadow"
             />
             <p className="text-xs text-gray-400">
               Token de longa duração da Graph API. Criptografado antes de ser salvo.
@@ -280,7 +280,7 @@ export function FormularioConta({ conta, onSalvar, onFechar }: FormularioContaPr
                   value={form.orcamentoMensal}
                   onChange={(e) => setForm((prev) => ({ ...prev, orcamentoMensal: e.target.value }))}
                   placeholder="1500.00"
-                  className="flex-1 px-3 py-2.5 text-sm outline-none bg-white"
+                  className="flex-1 px-3 py-2.5 text-sm text-gray-900 outline-none bg-white"
                 />
               </div>
               <p className="text-xs text-gray-400">

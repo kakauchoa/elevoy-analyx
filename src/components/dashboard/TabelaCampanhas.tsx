@@ -183,7 +183,7 @@ export function TabelaCampanhas({
             placeholder={`Buscar por ${nivelFiltro === "publico" ? "público" : nivelFiltro}...`}
             value={textoBusca}
             onChange={(e) => setTextoBusca(e.target.value)}
-            className="sm:ml-auto text-sm border border-gray-300 rounded-lg px-3 py-1.5 w-full sm:w-56 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="sm:ml-auto text-sm text-gray-900 border border-gray-300 rounded-lg px-3 py-1.5 w-full sm:w-56 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
 
