@@ -12,12 +12,17 @@ interface TokenResponse {
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const code = searchParams.get("code");
-  const usuarioId = searchParams.get("state");
+  const rawState = searchParams.get("state") ?? "";
   const erro = searchParams.get("error");
 
   const appUrl = process.env.NEXTAUTH_URL ?? "";
 
+  // State pode ser "userId" ou "userId:popup"
+  const isPopup = rawState.endsWith(":popup");
+  const usuarioId = isPopup ? rawState.slice(0, -":popup".length) : rawState;
+
   if (erro || !code || !usuarioId) {
+    if (isPopup) return popupResponse("erro");
     return NextResponse.redirect(`${appUrl}/perfil?google=erro`);
   }
 
@@ -41,6 +46,7 @@ export async function GET(req: NextRequest) {
     const tokens = (await tokenRes.json()) as TokenResponse;
 
     if (tokens.error || !tokens.access_token) {
+      if (isPopup) return popupResponse("erro");
       return NextResponse.redirect(`${appUrl}/perfil?google=erro`);
     }
 
@@ -61,8 +67,19 @@ export async function GET(req: NextRequest) {
       },
     });
 
+    if (isPopup) return popupResponse("conectado");
     return NextResponse.redirect(`${appUrl}/perfil?google=conectado`);
   } catch {
+    if (isPopup) return popupResponse("erro");
     return NextResponse.redirect(`${appUrl}/perfil?google=erro`);
   }
+}
+
+// Retorna página HTML que notifica a janela pai e fecha o popup
+function popupResponse(status: "conectado" | "erro") {
+  const html = `<!DOCTYPE html><html><body><script>
+    try { window.opener.postMessage({ google: '${status}' }, '*'); } catch(_) {}
+    window.close();
+  </script></body></html>`;
+  return new Response(html, { headers: { "Content-Type": "text/html" } });
 }

@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
 import { Suspense } from "react";
 
 interface StatusGoogle {
@@ -10,7 +9,6 @@ interface StatusGoogle {
 }
 
 function PerfilContent() {
-  const searchParams = useSearchParams();
   const [senhaAtual, setSenhaAtual] = useState("");
   const [novaSenha, setNovaSenha] = useState("");
   const [confirmarSenha, setConfirmarSenha] = useState("");
@@ -20,23 +18,47 @@ function PerfilContent() {
 
   const [statusGoogle, setStatusGoogle] = useState<StatusGoogle | null>(null);
   const [desconectando, setDesconectando] = useState(false);
-  const [googleConfigurado, setGoogleConfigurado] = useState(true);
-
-  const googleParam = searchParams.get("google");
+  const [googleConfigurado, setGoogleConfigurado] = useState<boolean | null>(null);
+  const [googleMsg, setGoogleMsg] = useState<"conectado" | "erro" | null>(null);
+  const popupRef = useRef<Window | null>(null);
 
   useEffect(() => {
     void carregarStatusGoogle();
   }, []);
 
-  async function carregarStatusGoogle() {
-    const res = await fetch("/api/google/status");
-    if (res.ok) {
-      const data = (await res.json()) as StatusGoogle;
-      setStatusGoogle(data);
+  // Escuta mensagem do popup OAuth do Google
+  useEffect(() => {
+    function onMessage(e: MessageEvent) {
+      if (!e.data || typeof e.data.google !== "string") return;
+      const status = e.data.google as "conectado" | "erro";
+      setGoogleMsg(status);
+      popupRef.current = null;
+      if (status === "conectado") void carregarStatusGoogle();
     }
-    // Verifica se as credenciais estão configuradas
-    const authRes = await fetch("/api/google/auth", { method: "HEAD" }).catch(() => null);
-    if (authRes?.status === 503) setGoogleConfigurado(false);
+    window.addEventListener("message", onMessage);
+    return () => window.removeEventListener("message", onMessage);
+  }, []);
+
+  async function carregarStatusGoogle() {
+    const [statusRes, authRes] = await Promise.all([
+      fetch("/api/google/status"),
+      fetch("/api/google/auth", { method: "HEAD" }).catch(() => null),
+    ]);
+    if (statusRes.ok) setStatusGoogle((await statusRes.json()) as StatusGoogle);
+    setGoogleConfigurado(authRes?.status !== 503);
+  }
+
+  function conectarGoogle() {
+    const largura = 500;
+    const altura = 620;
+    const left = window.screenX + (window.outerWidth - largura) / 2;
+    const top = window.screenY + (window.outerHeight - altura) / 2;
+    const popup = window.open(
+      "/api/google/auth?popup=1",
+      "google-oauth",
+      `width=${largura},height=${altura},left=${left},top=${top},scrollbars=yes`
+    );
+    popupRef.current = popup;
   }
 
   async function salvar() {
@@ -103,22 +125,23 @@ function PerfilContent() {
           <h2 className="text-base font-semibold text-gray-900">Google Calendar</h2>
         </div>
 
-        {/* Feedback do redirect OAuth */}
-        {googleParam === "conectado" && (
+        {googleMsg === "conectado" && (
           <p className="text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
             Google Calendar conectado com sucesso!
           </p>
         )}
-        {googleParam === "erro" && (
+        {googleMsg === "erro" && (
           <p className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
             Erro ao conectar com o Google. Tente novamente.
           </p>
         )}
 
-        {!googleConfigurado ? (
+        {googleConfigurado === null ? (
+          <div className="h-10 bg-gray-100 rounded-lg animate-pulse" />
+        ) : !googleConfigurado ? (
           <div className="space-y-3">
             <p className="text-sm text-gray-600">
-              Para ativar, adicione as credenciais OAuth2 no arquivo <code className="text-xs bg-gray-100 px-1 py-0.5 rounded">.env.local</code>:
+              Para ativar, adicione as variáveis de ambiente no EasyPanel:
             </p>
             <div className="bg-gray-50 rounded-lg p-3 font-mono text-xs text-gray-700 space-y-1">
               <p>GOOGLE_CLIENT_ID=seu-client-id</p>
@@ -165,8 +188,8 @@ function PerfilContent() {
             <p className="text-sm text-gray-600">
               Conecte sua conta Google para criar eventos de follow-up automaticamente no Calendar quando você definir datas nos leads do CRM.
             </p>
-            <a
-              href="/api/google/auth"
+            <button
+              onClick={conectarGoogle}
               className="inline-flex items-center gap-2 px-4 py-2.5 bg-white border border-[#e5e5e5] rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium text-gray-700 shadow-sm"
             >
               <svg className="w-4 h-4" viewBox="0 0 24 24">
@@ -176,7 +199,7 @@ function PerfilContent() {
                 <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
               </svg>
               Conectar com Google Calendar
-            </a>
+            </button>
           </div>
         )}
       </div>
