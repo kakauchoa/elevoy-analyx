@@ -299,6 +299,28 @@ function InputHistorico({
 
 // ── Card de pesquisa (expansível) ─────────────────────────────────────────────
 
+type SortField = "nome" | "avaliacao" | "qtdAvaliacoes" | "telefone";
+type SortDir = "asc" | "desc";
+
+function IconSort({ field, current, dir }: { field: SortField; current: SortField; dir: SortDir }) {
+  if (field !== current) {
+    return (
+      <svg className="w-3 h-3 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4M17 8v12m0 0l4-4m-4 4l-4-4" />
+      </svg>
+    );
+  }
+  return dir === "asc" ? (
+    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+    </svg>
+  ) : (
+    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+    </svg>
+  );
+}
+
 function CardPesquisaView({
   card,
   etapas,
@@ -311,6 +333,17 @@ function CardPesquisaView({
   const [carregando, setCarregando] = useState(false);
   const [buscaLocal, setBuscaLocal] = useState("");
   const [prospCrm, setProspCrm] = useState<ProspeccaoGmn | null>(null);
+  const [sortField, setSortField] = useState<SortField>("nome");
+  const [sortDir, setSortDir] = useState<SortDir>("asc");
+
+  function toggleSort(field: SortField) {
+    if (sortField === field) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortField(field);
+      setSortDir("asc");
+    }
+  }
 
   async function abrir() {
     setAberto(true);
@@ -339,13 +372,28 @@ function CardPesquisaView({
     });
   }
 
-  const filtrados = (resultados ?? []).filter(
-    (r) =>
-      !buscaLocal ||
-      r.nome.toLowerCase().includes(buscaLocal.toLowerCase()) ||
-      (r.telefone ?? "").includes(buscaLocal) ||
-      (r.site ?? "").toLowerCase().includes(buscaLocal.toLowerCase())
-  );
+  const filtrados = [...(resultados ?? [])]
+    .filter(
+      (r) =>
+        !buscaLocal ||
+        r.nome.toLowerCase().includes(buscaLocal.toLowerCase()) ||
+        (r.telefone ?? "").includes(buscaLocal) ||
+        (r.site ?? "").toLowerCase().includes(buscaLocal.toLowerCase())
+    )
+    .sort((a, b) => {
+      let va: string | number | null = null;
+      let vb: string | number | null = null;
+      if (sortField === "nome") { va = a.nome.toLowerCase(); vb = b.nome.toLowerCase(); }
+      else if (sortField === "avaliacao") { va = a.avaliacao != null ? Number(a.avaliacao) : null; vb = b.avaliacao != null ? Number(b.avaliacao) : null; }
+      else if (sortField === "qtdAvaliacoes") { va = a.qtdAvaliacoes ?? null; vb = b.qtdAvaliacoes ?? null; }
+      else if (sortField === "telefone") { va = a.telefone ? 1 : 0; vb = b.telefone ? 1 : 0; }
+      if (va === null && vb === null) return 0;
+      if (va === null) return 1;
+      if (vb === null) return -1;
+      if (va < vb) return sortDir === "asc" ? -1 : 1;
+      if (va > vb) return sortDir === "asc" ? 1 : -1;
+      return 0;
+    });
 
   const enviados = (resultados ?? []).filter((r) => r.enviadoCrm).length;
 
@@ -408,14 +456,32 @@ function CardPesquisaView({
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b border-[#e5e5e5] bg-gray-50">
-                        {["Nome", "Telefone", "Site", "★", "Avaliações", ""].map((h) => (
-                          <th
-                            key={h}
-                            className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap"
-                          >
-                            {h}
-                          </th>
-                        ))}
+                        {(
+                          [
+                            { label: "Nome", field: "nome" as SortField },
+                            { label: "Telefone", field: "telefone" as SortField },
+                            { label: "Site", field: null },
+                            { label: "★", field: "avaliacao" as SortField },
+                            { label: "Avaliações", field: "qtdAvaliacoes" as SortField },
+                            { label: "", field: null },
+                          ] as { label: string; field: SortField | null }[]
+                        ).map(({ label, field }, i) =>
+                          field ? (
+                            <th key={i} className="text-left px-4 py-3 whitespace-nowrap">
+                              <button
+                                onClick={() => toggleSort(field)}
+                                className="flex items-center gap-1 text-xs font-semibold text-gray-500 uppercase tracking-wide hover:text-gray-800 transition-colors"
+                              >
+                                {label}
+                                <IconSort field={field} current={sortField} dir={sortDir} />
+                              </button>
+                            </th>
+                          ) : (
+                            <th key={i} className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">
+                              {label}
+                            </th>
+                          )
+                        )}
                       </tr>
                     </thead>
                     <tbody>
