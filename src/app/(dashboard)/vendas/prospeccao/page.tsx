@@ -463,7 +463,7 @@ function CardPesquisaView({
                               )}
                             </td>
                             <td className="px-4 py-3 text-gray-600 whitespace-nowrap">
-                              {r.avaliacao ? r.avaliacao.toFixed(1) : "—"}
+                              {r.avaliacao ? Number(r.avaliacao).toFixed(1) : "—"}
                             </td>
                             <td className="px-4 py-3 text-gray-500 whitespace-nowrap">
                               {r.qtdAvaliacoes
