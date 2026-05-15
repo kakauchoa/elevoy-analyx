@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { signOut } from "next-auth/react";
@@ -248,7 +248,6 @@ const SECTIONS: NavSection[] = [
       { href: "/ferramentas", label: "Verificação de Saldo", icon: <IconShield />, exact: true },
       { href: "/ferramentas/rastreamento-whatsapp", label: "Rastreamento WhatsApp", icon: <IconWhatsApp /> },
       { href: "/ferramentas/construtor-dashboard", label: "Construtor de Dashboard", icon: <IconLayout /> },
-      { href: "/ferramentas/mapa-evolucao", label: "Mapa de Evolução", icon: <IconTrendingUp /> },
     ],
   },
   {
@@ -257,14 +256,7 @@ const SECTIONS: NavSection[] = [
     adminOnly: true,
     items: [
       { href: "/administrativo/mapa-cliente", label: "Mapa do Cliente", icon: <IconMapPin /> },
-    ],
-  },
-  {
-    id: "configuracoes",
-    label: "Configurações",
-    items: [
-      { href: "/perfil", label: "Perfil", icon: <IconUser /> },
-      { href: "/configuracoes/meta", label: "App Meta", icon: <IconKey />, adminOnly: true },
+      { href: "/administrativo/mapa-evolucao", label: "Mapa de Evolução", icon: <IconTrendingUp /> },
     ],
   },
 ];
@@ -275,14 +267,25 @@ export function Sidebar({ isAdmin, userName, permissoes }: SidebarProps) {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
-    visaoGeral: true,
-    clientes: true,
-    vendas: true,
-    equipe: true,
-    ferramentas: true,
-    administrativo: true,
-    configuracoes: true,
+    visaoGeral: false,
+    clientes: false,
+    vendas: false,
+    equipe: false,
+    ferramentas: false,
+    administrativo: false,
   });
+  const [popupAberto, setPopupAberto] = useState(false);
+  const popupRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickFora(e: MouseEvent) {
+      if (popupRef.current && !popupRef.current.contains(e.target as Node)) {
+        setPopupAberto(false);
+      }
+    }
+    if (popupAberto) document.addEventListener("mousedown", handleClickFora);
+    return () => document.removeEventListener("mousedown", handleClickFora);
+  }, [popupAberto]);
 
   function toggleSection(id: string) {
     setOpenSections((prev) => ({ ...prev, [id]: !prev[id] }));
@@ -423,7 +426,47 @@ export function Sidebar({ isAdmin, userName, permissoes }: SidebarProps) {
       </nav>
 
       {/* Footer */}
-      <div className="border-t border-white/20 p-3">
+      <div ref={popupRef} className="relative border-t border-white/20 p-3">
+        {/* Popup de configurações */}
+        {popupAberto && !collapsed && (
+          <div className="absolute bottom-full left-3 right-3 mb-2 bg-white rounded-xl shadow-xl border border-gray-200 overflow-hidden z-50">
+            <Link
+              href="/perfil"
+              onClick={() => setPopupAberto(false)}
+              className="flex items-center gap-2.5 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+            >
+              <IconUser />
+              <span>Perfil</span>
+            </Link>
+            <Link
+              href="/configuracoes/meta"
+              onClick={() => setPopupAberto(false)}
+              className="flex items-center gap-2.5 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+            >
+              <IconKey />
+              <span>Tokens</span>
+            </Link>
+            {isAdmin && (
+              <Link
+                href="/usuarios"
+                onClick={() => setPopupAberto(false)}
+                className="flex items-center gap-2.5 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                <IconUsers />
+                <span>Usuários</span>
+              </Link>
+            )}
+            <div className="border-t border-gray-100" />
+            <button
+              onClick={() => signOut({ callbackUrl: "/login" })}
+              className="w-full flex items-center gap-2.5 px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition-colors"
+            >
+              <IconLogOut />
+              <span>Sair</span>
+            </button>
+          </div>
+        )}
+
         {collapsed ? (
           <button
             onClick={() => signOut({ callbackUrl: "/login" })}
@@ -433,23 +476,19 @@ export function Sidebar({ isAdmin, userName, permissoes }: SidebarProps) {
             <IconLogOut />
           </button>
         ) : (
-          <>
-            <div className="flex items-center gap-2.5 px-2 py-2 mb-1">
-              <div className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center shrink-0">
-                <span className="text-xs font-semibold text-white">{initial}</span>
-              </div>
-              <div className="flex flex-col min-w-0">
-                <span className="text-xs font-medium text-white truncate">{userName}</span>
-                <span className="text-[10px] text-white/60">{isAdmin ? "Administrador" : "Gestor"}</span>
-              </div>
+          <button
+            onClick={() => setPopupAberto((v) => !v)}
+            className="w-full flex items-center gap-2.5 px-2 py-2 rounded-lg hover:bg-white/15 transition-colors"
+          >
+            <div className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center shrink-0">
+              <span className="text-xs font-semibold text-white">{initial}</span>
             </div>
-            <button
-              onClick={() => signOut({ callbackUrl: "/login" })}
-              className="w-full text-left px-3 py-1.5 text-xs text-white/50 hover:text-white hover:bg-white/15 rounded-lg transition-colors"
-            >
-              Sair
-            </button>
-          </>
+            <div className="flex flex-col min-w-0 flex-1 text-left">
+              <span className="text-xs font-medium text-white truncate">{userName}</span>
+              <span className="text-[10px] text-white/60">{isAdmin ? "Administrador" : "Gestor"}</span>
+            </div>
+            <IconChevron open={popupAberto} />
+          </button>
         )}
       </div>
     </aside>
