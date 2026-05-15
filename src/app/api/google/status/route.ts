@@ -13,7 +13,11 @@ export async function GET() {
       select: { criadoEm: true },
     });
 
-    return NextResponse.json({ conectado: !!integracao, desde: integracao?.criadoEm ?? null });
+    return NextResponse.json({
+      conectado: !!integracao,
+      desde: integracao?.criadoEm ?? null,
+      configurado: !!process.env.GOOGLE_CLIENT_ID,
+    });
   } catch {
     return NextResponse.json({ erro: "Erro interno do servidor" }, { status: 500 });
   }

@@ -6,6 +6,7 @@ import { Suspense } from "react";
 interface StatusGoogle {
   conectado: boolean;
   desde: string | null;
+  configurado: boolean;
 }
 
 function PerfilContent() {
@@ -40,12 +41,12 @@ function PerfilContent() {
   }, []);
 
   async function carregarStatusGoogle() {
-    const [statusRes, authRes] = await Promise.all([
-      fetch("/api/google/status"),
-      fetch("/api/google/auth", { method: "HEAD" }).catch(() => null),
-    ]);
-    if (statusRes.ok) setStatusGoogle((await statusRes.json()) as StatusGoogle);
-    setGoogleConfigurado(authRes?.status !== 503);
+    const res = await fetch("/api/google/status");
+    if (res.ok) {
+      const data = (await res.json()) as StatusGoogle;
+      setStatusGoogle(data);
+      setGoogleConfigurado(data.configurado);
+    }
   }
 
   function conectarGoogle() {
@@ -103,7 +104,7 @@ function PerfilContent() {
     setDesconectando(true);
     try {
       await fetch("/api/google/disconnect", { method: "POST" });
-      setStatusGoogle({ conectado: false, desde: null });
+      setStatusGoogle((prev) => prev ? { ...prev, conectado: false, desde: null } : null);
     } finally {
       setDesconectando(false);
     }
