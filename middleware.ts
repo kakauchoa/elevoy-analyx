@@ -15,6 +15,6 @@ export default withAuth(
 // Protege todas as rotas exceto login, health check, dashboard compartilhável e assets do Next.js
 export const config = {
   matcher: [
-    "/((?!login|api/health|compartilhavel|api/compartilhavel|api/auth|_next/static|_next/image|favicon.ico|public).*)",
+    "/((?!login|api/health|api/jobs|compartilhavel|api/compartilhavel|api/auth|_next/static|_next/image|favicon.ico|public).*)",
   ],
 };
