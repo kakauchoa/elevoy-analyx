@@ -2,6 +2,13 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
+interface CardPesquisa {
+  cidade: string;
+  nicho: string;
+  ultimaBusca: string;
+  totalResultados: number;
+}
+
 interface ProspeccaoGmn {
   id: string;
   placeId: string;
@@ -24,7 +31,7 @@ interface CrmEtapa {
   fixo: boolean;
 }
 
-// ── Modal de configuração da API Key ──────────────────────────────────────
+// ── Modal de configuração da API Key ─────────────────────────────────────────
 
 function ModalApiKey({ onClose, onSalvo }: { onClose: () => void; onSalvo: () => void }) {
   const [key, setKey] = useState("");
@@ -52,8 +59,13 @@ function ModalApiKey({ onClose, onSalvo }: { onClose: () => void; onSalvo: () =>
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 space-y-4">
         <h2 className="text-base font-semibold text-gray-900">Configurar Google Places API</h2>
         <p className="text-sm text-gray-500">
-          Acesse{" "}
-          <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+          Acesse o{" "}
+          <a
+            href="https://console.cloud.google.com/apis/credentials"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-600 hover:underline"
+          >
             Google Cloud Console
           </a>
           , crie uma chave de API com acesso à <strong>Places API (New)</strong> e cole abaixo.
@@ -67,7 +79,10 @@ function ModalApiKey({ onClose, onSalvo }: { onClose: () => void; onSalvo: () =>
           className="w-full border border-[#e5e5e5] rounded-lg px-3 py-2 text-sm font-mono text-gray-900 focus:outline-none focus:ring-2 focus:ring-black"
         />
         <div className="flex gap-3">
-          <button onClick={onClose} className="flex-1 px-4 py-2 text-sm text-gray-700 border border-[#e5e5e5] rounded-lg hover:bg-gray-50">
+          <button
+            onClick={onClose}
+            className="flex-1 px-4 py-2 text-sm text-gray-700 border border-[#e5e5e5] rounded-lg hover:bg-gray-50"
+          >
             Cancelar
           </button>
           <button
@@ -83,7 +98,7 @@ function ModalApiKey({ onClose, onSalvo }: { onClose: () => void; onSalvo: () =>
   );
 }
 
-// ── Modal enviar para CRM ─────────────────────────────────────────────────
+// ── Modal enviar para CRM ─────────────────────────────────────────────────────
 
 function ModalEnviarCrm({
   prospeccao,
@@ -102,7 +117,9 @@ function ModalEnviarCrm({
   const [telefone, setTelefone] = useState(prospeccao.telefone ?? "");
   const [empresa, setEmpresa] = useState(prospeccao.nome);
   const [email, setEmail] = useState("");
-  const [notas, setNotas] = useState(prospeccao.endereco ? `Endereço: ${prospeccao.endereco}` : "");
+  const [notas, setNotas] = useState(
+    prospeccao.endereco ? `Endereço: ${prospeccao.endereco}` : ""
+  );
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState("");
 
@@ -126,7 +143,6 @@ function ModalEnviarCrm({
       const data = (await res.json()) as { id?: string; erro?: string };
       if (!res.ok) { setErro(data.erro ?? "Erro ao salvar"); return; }
 
-      // Marcar como enviado ao CRM
       await fetch(`/api/prospeccao/${prospeccao.id}/enviar-crm`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -145,14 +161,19 @@ function ModalEnviarCrm({
       <div className="w-full max-w-md bg-white h-full overflow-y-auto shadow-2xl flex flex-col">
         <div className="flex items-center justify-between px-6 py-4 border-b border-[#e5e5e5]">
           <h2 className="text-base font-semibold text-gray-900">Enviar para CRM</h2>
-          <button onClick={onClose} className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
+          <button
+            onClick={onClose}
+            className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+          >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
         </div>
         <div className="flex-1 px-6 py-4 space-y-4">
-          {erro && <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{erro}</p>}
+          {erro && (
+            <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{erro}</p>
+          )}
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">Etapa</label>
             <select
@@ -161,22 +182,25 @@ function ModalEnviarCrm({
               className="w-full border border-[#e5e5e5] rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-black"
             >
               {etapas.map((e) => (
-                <option key={e.id} value={e.id}>{e.nome}{e.fixo ? " ★" : ""}</option>
+                <option key={e.id} value={e.id}>
+                  {e.nome}{e.fixo ? " ★" : ""}
+                </option>
               ))}
             </select>
           </div>
-          {[
-            { label: "Nome *", value: nome, setter: setNome, placeholder: prospeccao.nome },
-            { label: "Empresa", value: empresa, setter: setEmpresa, placeholder: "" },
-            { label: "Telefone", value: telefone, setter: setTelefone, placeholder: "" },
-            { label: "Email", value: email, setter: setEmail, placeholder: "" },
-          ].map(({ label, value, setter, placeholder }) => (
+          {(
+            [
+              { label: "Nome *", value: nome, setter: setNome },
+              { label: "Empresa", value: empresa, setter: setEmpresa },
+              { label: "Telefone", value: telefone, setter: setTelefone },
+              { label: "Email", value: email, setter: setEmail },
+            ] as { label: string; value: string; setter: (v: string) => void }[]
+          ).map(({ label, value, setter }) => (
             <div key={label}>
               <label className="block text-xs font-medium text-gray-600 mb-1">{label}</label>
               <input
                 value={value}
                 onChange={(e) => setter(e.target.value)}
-                placeholder={placeholder}
                 className="w-full border border-[#e5e5e5] rounded-lg px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-black"
               />
             </div>
@@ -190,19 +214,18 @@ function ModalEnviarCrm({
               className="w-full border border-[#e5e5e5] rounded-lg px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-black resize-none"
             />
           </div>
-          {prospeccao.site && (
-            <div className="text-xs text-gray-400">
-              Site: <span className="text-gray-700">{prospeccao.site}</span>
-            </div>
-          )}
           {prospeccao.avaliacao && (
-            <div className="text-xs text-gray-400">
-              Avaliação Google: <span className="text-gray-700">★ {prospeccao.avaliacao} ({prospeccao.qtdAvaliacoes} avaliações)</span>
-            </div>
+            <p className="text-xs text-gray-400">
+              Avaliação Google: ★ {prospeccao.avaliacao}
+              {prospeccao.qtdAvaliacoes ? ` (${prospeccao.qtdAvaliacoes.toLocaleString("pt-BR")} avaliações)` : ""}
+            </p>
           )}
         </div>
         <div className="px-6 py-4 border-t border-[#e5e5e5] flex gap-3">
-          <button onClick={onClose} className="flex-1 text-sm text-gray-500 hover:text-gray-700 transition-colors">
+          <button
+            onClick={onClose}
+            className="flex-1 text-sm text-gray-500 hover:text-gray-700 transition-colors"
+          >
             Cancelar
           </button>
           <button
@@ -218,22 +241,26 @@ function ModalEnviarCrm({
   );
 }
 
-// ── Input com histórico (autocomplete) ───────────────────────────────────
+// ── Input com autocomplete do histórico ───────────────────────────────────────
 
 function InputHistorico({
   value,
   onChange,
   historico,
   placeholder,
+  onEnter,
 }: {
   value: string;
   onChange: (v: string) => void;
   historico: string[];
   placeholder: string;
+  onEnter?: () => void;
 }) {
   const [aberto, setAberto] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
-  const filtrados = historico.filter((h) => h.toLowerCase().includes(value.toLowerCase()) && h !== value);
+  const filtrados = historico.filter(
+    (h) => h.toLowerCase().includes(value.toLowerCase()) && h !== value
+  );
 
   useEffect(() => {
     function fechar(e: MouseEvent) {
@@ -249,6 +276,7 @@ function InputHistorico({
         value={value}
         onChange={(e) => { onChange(e.target.value); setAberto(true); }}
         onFocus={() => setAberto(true)}
+        onKeyDown={(e) => { if (e.key === "Enter") { setAberto(false); onEnter?.(); } }}
         placeholder={placeholder}
         className="w-full border border-[#e5e5e5] rounded-lg px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-black"
       />
@@ -269,62 +297,263 @@ function InputHistorico({
   );
 }
 
-// ── Página principal ──────────────────────────────────────────────────────
+// ── Card de pesquisa (expansível) ─────────────────────────────────────────────
+
+function CardPesquisaView({
+  card,
+  etapas,
+}: {
+  card: CardPesquisa;
+  etapas: CrmEtapa[];
+}) {
+  const [aberto, setAberto] = useState(false);
+  const [resultados, setResultados] = useState<ProspeccaoGmn[] | null>(null);
+  const [carregando, setCarregando] = useState(false);
+  const [buscaLocal, setBuscaLocal] = useState("");
+  const [prospCrm, setProspCrm] = useState<ProspeccaoGmn | null>(null);
+
+  async function abrir() {
+    setAberto(true);
+    if (resultados !== null) return;
+    setCarregando(true);
+    try {
+      const res = await fetch(
+        `/api/prospeccao/resultados?cidade=${encodeURIComponent(card.cidade)}&nicho=${encodeURIComponent(card.nicho)}`
+      );
+      if (res.ok) setResultados((await res.json()) as ProspeccaoGmn[]);
+    } finally {
+      setCarregando(false);
+    }
+  }
+
+  function toggle() {
+    if (aberto) setAberto(false);
+    else void abrir();
+  }
+
+  function formatarData(iso: string) {
+    return new Date(iso).toLocaleDateString("pt-BR", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
+  }
+
+  const filtrados = (resultados ?? []).filter(
+    (r) =>
+      !buscaLocal ||
+      r.nome.toLowerCase().includes(buscaLocal.toLowerCase()) ||
+      (r.telefone ?? "").includes(buscaLocal) ||
+      (r.site ?? "").toLowerCase().includes(buscaLocal.toLowerCase())
+  );
+
+  const enviados = (resultados ?? []).filter((r) => r.enviadoCrm).length;
+
+  return (
+    <>
+      <div className="bg-white border border-[#e5e5e5] rounded-xl overflow-hidden">
+        {/* Header do card */}
+        <button
+          onClick={toggle}
+          className="w-full flex items-center justify-between px-5 py-4 hover:bg-gray-50 transition-colors text-left"
+        >
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-sm font-semibold text-gray-900">{card.cidade}</span>
+                <span className="text-gray-300">·</span>
+                <span className="text-sm text-gray-600 capitalize">{card.nicho}</span>
+              </div>
+              <div className="flex items-center gap-2 mt-0.5 text-xs text-gray-400">
+                <span>{card.totalResultados} fichas</span>
+                {enviados > 0 && (
+                  <>
+                    <span>·</span>
+                    <span className="text-green-600">{enviados} no CRM</span>
+                  </>
+                )}
+                <span>·</span>
+                <span>extraído em {formatarData(card.ultimaBusca)}</span>
+              </div>
+            </div>
+          </div>
+          <svg
+            className={`w-4 h-4 text-gray-400 transition-transform shrink-0 ml-4 ${aberto ? "rotate-180" : ""}`}
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+
+        {/* Conteúdo expandido */}
+        {aberto && (
+          <div className="border-t border-[#e5e5e5]">
+            {carregando ? (
+              <div className="py-10 text-center text-sm text-gray-400">Carregando fichas...</div>
+            ) : (
+              <>
+                {(resultados ?? []).length > 5 && (
+                  <div className="px-5 py-3 border-b border-[#f0f0f0]">
+                    <input
+                      value={buscaLocal}
+                      onChange={(e) => setBuscaLocal(e.target.value)}
+                      placeholder="Buscar por nome, telefone ou site..."
+                      className="w-full max-w-sm border border-[#e5e5e5] rounded-lg px-3 py-1.5 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-black"
+                    />
+                  </div>
+                )}
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-[#e5e5e5] bg-gray-50">
+                        {["Nome", "Telefone", "Site", "★", "Avaliações", ""].map((h) => (
+                          <th
+                            key={h}
+                            className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap"
+                          >
+                            {h}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filtrados.length === 0 ? (
+                        <tr>
+                          <td colSpan={6} className="px-4 py-8 text-center text-sm text-gray-400">
+                            {buscaLocal ? `Nenhum resultado para "${buscaLocal}".` : "Sem fichas nesta busca."}
+                          </td>
+                        </tr>
+                      ) : (
+                        filtrados.map((r) => (
+                          <tr
+                            key={r.id}
+                            className={`border-b border-[#f0f0f0] hover:bg-gray-50 transition-colors ${r.enviadoCrm ? "opacity-55" : ""}`}
+                          >
+                            <td className="px-4 py-3 font-medium text-gray-900 max-w-52 truncate">
+                              {r.nome}
+                            </td>
+                            <td className="px-4 py-3 text-gray-600 whitespace-nowrap">
+                              {r.telefone ? (
+                                <a
+                                  href={`https://wa.me/${r.telefone.replace(/\D/g, "")}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-green-600 hover:underline"
+                                >
+                                  {r.telefone}
+                                </a>
+                              ) : (
+                                "—"
+                              )}
+                            </td>
+                            <td className="px-4 py-3 text-gray-600 max-w-40 truncate">
+                              {r.site ? (
+                                <a
+                                  href={r.site}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-blue-600 hover:underline"
+                                >
+                                  {r.site.replace(/^https?:\/\/(www\.)?/, "").split("/")[0]}
+                                </a>
+                              ) : (
+                                "—"
+                              )}
+                            </td>
+                            <td className="px-4 py-3 text-gray-600 whitespace-nowrap">
+                              {r.avaliacao ? r.avaliacao.toFixed(1) : "—"}
+                            </td>
+                            <td className="px-4 py-3 text-gray-500 whitespace-nowrap">
+                              {r.qtdAvaliacoes
+                                ? r.qtdAvaliacoes.toLocaleString("pt-BR")
+                                : "—"}
+                            </td>
+                            <td className="px-4 py-3 whitespace-nowrap">
+                              {r.enviadoCrm ? (
+                                <span className="text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded-full">
+                                  No CRM
+                                </span>
+                              ) : (
+                                <button
+                                  onClick={() => setProspCrm(r)}
+                                  className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-white bg-black rounded-lg hover:bg-gray-900 transition-colors"
+                                >
+                                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                                  </svg>
+                                  CRM
+                                </button>
+                              )}
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+      </div>
+
+      {prospCrm && (
+        <ModalEnviarCrm
+          prospeccao={prospCrm}
+          etapas={etapas}
+          onClose={() => setProspCrm(null)}
+          onEnviado={(id) => {
+            setResultados((prev) =>
+              prev?.map((r) => (r.id === id ? { ...r, enviadoCrm: true } : r)) ?? null
+            );
+            setProspCrm(null);
+          }}
+        />
+      )}
+    </>
+  );
+}
+
+// ── Página principal ──────────────────────────────────────────────────────────
 
 export default function ProspeccaoPage() {
-  const [resultados, setResultados] = useState<ProspeccaoGmn[]>([]);
+  const [cards, setCards] = useState<CardPesquisa[]>([]);
   const [etapas, setEtapas] = useState<CrmEtapa[]>([]);
   const [apiConfigurada, setApiConfigurada] = useState<boolean | null>(null);
-  const [historicoCidades, setHistoricoCidades] = useState<string[]>([]);
-  const [historicoNichos, setHistoricoNichos] = useState<string[]>([]);
 
   const [cidade, setCidade] = useState("");
   const [nicho, setNicho] = useState("");
   const [buscando, setBuscando] = useState(false);
   const [msgBusca, setMsgBusca] = useState("");
-
-  const [filtroCidade, setFiltroCidade] = useState("");
-  const [filtroNicho, setFiltroNicho] = useState("");
-  const [filtroBusca, setFiltroBusca] = useState("");
-  const [filtroDe, setFiltroDe] = useState("");
-  const [filtroAte, setFiltroAte] = useState("");
+  const [filtroCards, setFiltroCards] = useState("");
 
   const [modalApiKey, setModalApiKey] = useState(false);
-  const [prospeccaoParaCrm, setProspeccaoParaCrm] = useState<ProspeccaoGmn | null>(null);
 
   const carregarDados = useCallback(async () => {
-    const params = new URLSearchParams();
-    if (filtroCidade) params.set("cidade", filtroCidade);
-    if (filtroNicho) params.set("nicho", filtroNicho);
-    if (filtroBusca) params.set("busca", filtroBusca);
-    if (filtroDe) params.set("de", filtroDe);
-    if (filtroAte) params.set("ate", filtroAte);
-
-    const [resRes, configRes, histRes, etapasRes] = await Promise.all([
-      fetch(`/api/prospeccao/resultados?${params.toString()}`),
-      fetch("/api/prospeccao/config"),
+    const [cardsRes, configRes, etapasRes] = await Promise.all([
       fetch("/api/prospeccao/historico"),
+      fetch("/api/prospeccao/config"),
       fetch("/api/crm/etapas"),
     ]);
-
-    if (resRes.ok) setResultados((await resRes.json()) as ProspeccaoGmn[]);
-    if (configRes.ok) setApiConfigurada(((await configRes.json()) as { configurado: boolean }).configurado);
-    if (histRes.ok) {
-      const h = (await histRes.json()) as { cidades: string[]; nichos: string[] };
-      setHistoricoCidades(h.cidades);
-      setHistoricoNichos(h.nichos);
-    }
+    if (cardsRes.ok) setCards((await cardsRes.json()) as CardPesquisa[]);
+    if (configRes.ok)
+      setApiConfigurada(((await configRes.json()) as { configurado: boolean }).configurado);
     if (etapasRes.ok) setEtapas((await etapasRes.json()) as CrmEtapa[]);
-  }, [filtroCidade, filtroNicho, filtroBusca, filtroDe, filtroAte]);
+  }, []);
 
   useEffect(() => {
     void carregarDados();
   }, [carregarDados]);
 
   async function buscar() {
-    if (!cidade.trim() || !nicho.trim()) { setMsgBusca("Preencha cidade e nicho."); return; }
+    if (!cidade.trim() || !nicho.trim()) {
+      setMsgBusca("Preencha cidade e nicho antes de buscar.");
+      return;
+    }
     setBuscando(true);
-    setMsgBusca("");
+    setMsgBusca("Buscando e paginando resultados, aguarde...");
     try {
       const res = await fetch("/api/prospeccao/buscar", {
         method: "POST",
@@ -333,20 +562,28 @@ export default function ProspeccaoPage() {
       });
       const data = (await res.json()) as { total?: number; novos?: number; erro?: string };
       if (!res.ok) {
-        if (res.status === 503) { setModalApiKey(true); return; }
+        if (res.status === 503) { setModalApiKey(true); setMsgBusca(""); return; }
         setMsgBusca(data.erro ?? "Erro ao buscar.");
         return;
       }
-      setMsgBusca(`${data.novos} novos de ${data.total} encontrados.`);
+      setMsgBusca(`${data.total} encontrados · ${data.novos} novos adicionados.`);
       void carregarDados();
     } finally {
       setBuscando(false);
     }
   }
 
-  function formatarData(iso: string) {
-    return new Date(iso).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" });
-  }
+  const historicoCidades = [...new Set(cards.map((c) => c.cidade))];
+  const historicoNichos = [...new Set(cards.map((c) => c.nicho))];
+
+  const cardsFiltrados = cards.filter(
+    (c) =>
+      !filtroCards ||
+      c.cidade.toLowerCase().includes(filtroCards.toLowerCase()) ||
+      c.nicho.toLowerCase().includes(filtroCards.toLowerCase())
+  );
+
+  const totalFichas = cards.reduce((acc, c) => acc + c.totalResultados, 0);
 
   return (
     <div className="flex flex-col h-full">
@@ -354,36 +591,47 @@ export default function ProspeccaoPage() {
       <div className="flex items-center justify-between px-8 py-5 border-b border-[#e5e5e5]">
         <div>
           <h1 className="text-xl font-bold text-gray-900">Prospecção GMN</h1>
-          <p className="text-sm text-gray-500 mt-0.5">{resultados.length} fichas extraídas</p>
+          <p className="text-sm text-gray-500 mt-0.5">
+            {totalFichas.toLocaleString("pt-BR")} fichas · {cards.length}{" "}
+            {cards.length === 1 ? "busca" : "buscas"}
+          </p>
         </div>
         <button
           onClick={() => setModalApiKey(true)}
           className={`flex items-center gap-2 px-3 py-2 text-sm rounded-lg border transition-colors ${
-            apiConfigurada ? "border-green-200 text-green-700 bg-green-50 hover:bg-green-100" : "border-orange-200 text-orange-700 bg-orange-50 hover:bg-orange-100"
+            apiConfigurada
+              ? "border-green-200 text-green-700 bg-green-50 hover:bg-green-100"
+              : "border-orange-200 text-orange-700 bg-orange-50 hover:bg-orange-100"
           }`}
         >
-          <div className={`w-2 h-2 rounded-full ${apiConfigurada ? "bg-green-500" : "bg-orange-400"}`} />
+          <div
+            className={`w-2 h-2 rounded-full ${apiConfigurada ? "bg-green-500" : "bg-orange-400"}`}
+          />
           {apiConfigurada ? "API conectada" : "Configurar API Key"}
         </button>
       </div>
 
       <div className="flex-1 overflow-y-auto">
-        <div className="px-8 py-5 space-y-5">
+        <div className="px-8 py-5 space-y-4">
           {/* Barra de busca */}
           <div className="bg-white border border-[#e5e5e5] rounded-xl p-4 space-y-3">
-            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Nova busca no Google Meu Negócio</p>
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+              Nova busca no Google Meu Negócio
+            </p>
             <div className="flex gap-3 flex-wrap">
               <InputHistorico
                 value={cidade}
                 onChange={setCidade}
                 historico={historicoCidades}
                 placeholder="Cidade (ex: Ribeirão Preto)"
+                onEnter={() => void buscar()}
               />
               <InputHistorico
                 value={nicho}
                 onChange={setNicho}
                 historico={historicoNichos}
                 placeholder="Nicho (ex: banho e tosa)"
+                onEnter={() => void buscar()}
               />
               <button
                 onClick={() => void buscar()}
@@ -394,159 +642,63 @@ export default function ProspeccaoPage() {
               </button>
             </div>
             {msgBusca && (
-              <p className="text-sm text-gray-600">{msgBusca}</p>
+              <p className={`text-sm ${buscando ? "text-gray-400" : "text-gray-600"}`}>
+                {msgBusca}
+              </p>
             )}
           </div>
 
-          {/* Filtros */}
-          <div className="flex gap-3 flex-wrap items-end">
-            <div className="flex flex-col gap-1">
-              <label className="text-xs font-medium text-gray-500">De</label>
+          {/* Filtro de cards */}
+          {cards.length > 2 && (
+            <div className="flex items-center gap-3">
               <input
-                type="date"
-                value={filtroDe}
-                onChange={(e) => setFiltroDe(e.target.value)}
-                className="border border-[#e5e5e5] rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-black"
+                value={filtroCards}
+                onChange={(e) => setFiltroCards(e.target.value)}
+                placeholder="Filtrar por cidade ou nicho..."
+                className="flex-1 max-w-xs border border-[#e5e5e5] rounded-lg px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-black"
               />
+              {filtroCards && (
+                <button
+                  onClick={() => setFiltroCards("")}
+                  className="text-sm text-gray-400 hover:text-gray-700 transition-colors"
+                >
+                  Limpar
+                </button>
+              )}
             </div>
-            <div className="flex flex-col gap-1">
-              <label className="text-xs font-medium text-gray-500">Até</label>
-              <input
-                type="date"
-                value={filtroAte}
-                onChange={(e) => setFiltroAte(e.target.value)}
-                className="border border-[#e5e5e5] rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-black"
-              />
-            </div>
-            <div className="flex flex-col gap-1 flex-1 min-w-32">
-              <label className="text-xs font-medium text-gray-500">Cidade</label>
-              <select
-                value={filtroCidade}
-                onChange={(e) => setFiltroCidade(e.target.value)}
-                className="border border-[#e5e5e5] rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-black"
-              >
-                <option value="">Todas</option>
-                {historicoCidades.map((c) => <option key={c} value={c}>{c}</option>)}
-              </select>
-            </div>
-            <div className="flex flex-col gap-1 flex-1 min-w-32">
-              <label className="text-xs font-medium text-gray-500">Nicho</label>
-              <select
-                value={filtroNicho}
-                onChange={(e) => setFiltroNicho(e.target.value)}
-                className="border border-[#e5e5e5] rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-black"
-              >
-                <option value="">Todos</option>
-                {historicoNichos.map((n) => <option key={n} value={n}>{n}</option>)}
-              </select>
-            </div>
-            <div className="flex flex-col gap-1 flex-1 min-w-48">
-              <label className="text-xs font-medium text-gray-500">Buscar</label>
-              <input
-                value={filtroBusca}
-                onChange={(e) => setFiltroBusca(e.target.value)}
-                placeholder="Nome, telefone ou site..."
-                className="border border-[#e5e5e5] rounded-lg px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-black"
-              />
-            </div>
-            {(filtroCidade || filtroNicho || filtroBusca || filtroDe || filtroAte) && (
-              <button
-                onClick={() => { setFiltroCidade(""); setFiltroNicho(""); setFiltroBusca(""); setFiltroDe(""); setFiltroAte(""); }}
-                className="self-end px-3 py-2 text-sm text-gray-500 hover:text-gray-700 border border-[#e5e5e5] rounded-lg hover:bg-gray-50 transition-colors"
-              >
-                Limpar
-              </button>
-            )}
-          </div>
+          )}
 
-          {/* Tabela */}
-          <div className="bg-white border border-[#e5e5e5] rounded-xl overflow-hidden">
-            {resultados.length === 0 ? (
-              <div className="py-16 text-center">
-                <p className="text-gray-400 text-sm">Nenhuma ficha encontrada. Use a busca acima para extrair dados do Google Meu Negócio.</p>
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-[#e5e5e5] bg-gray-50">
-                      {["Data", "Nome", "Telefone", "Site", "Av.", "Cidade", "Nicho", ""].map((h) => (
-                        <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">
-                          {h}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {resultados.map((r) => (
-                      <tr key={r.id} className={`border-b border-[#f0f0f0] hover:bg-gray-50 transition-colors ${r.enviadoCrm ? "opacity-60" : ""}`}>
-                        <td className="px-4 py-3 text-gray-500 whitespace-nowrap">{formatarData(r.extraidoEm)}</td>
-                        <td className="px-4 py-3 font-medium text-gray-900 max-w-52 truncate">{r.nome}</td>
-                        <td className="px-4 py-3 text-gray-600 whitespace-nowrap">
-                          {r.telefone ? (
-                            <a
-                              href={`https://wa.me/${r.telefone.replace(/\D/g, "")}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-green-600 hover:underline"
-                            >
-                              {r.telefone}
-                            </a>
-                          ) : "—"}
-                        </td>
-                        <td className="px-4 py-3 text-gray-600 max-w-36 truncate">
-                          {r.site ? (
-                            <a href={r.site} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
-                              {r.site.replace(/^https?:\/\/(www\.)?/, "").split("/")[0]}
-                            </a>
-                          ) : "—"}
-                        </td>
-                        <td className="px-4 py-3 text-gray-600 whitespace-nowrap">
-                          {r.avaliacao ? `★ ${r.avaliacao}` : "—"}
-                        </td>
-                        <td className="px-4 py-3 text-gray-600 whitespace-nowrap">{r.cidade}</td>
-                        <td className="px-4 py-3 text-gray-600 whitespace-nowrap">{r.nicho}</td>
-                        <td className="px-4 py-3 whitespace-nowrap">
-                          {r.enviadoCrm ? (
-                            <span className="text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded-full">No CRM</span>
-                          ) : (
-                            <button
-                              onClick={() => setProspeccaoParaCrm(r)}
-                              className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-white bg-black rounded-lg hover:bg-gray-900 transition-colors"
-                            >
-                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                              </svg>
-                              CRM
-                            </button>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
+          {/* Lista de cards */}
+          {cards.length === 0 ? (
+            <div className="py-16 text-center">
+              <p className="text-gray-400 text-sm">
+                Nenhuma busca realizada ainda. Use o formulário acima para extrair dados do Google
+                Meu Negócio.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {cardsFiltrados.map((card) => (
+                <CardPesquisaView
+                  key={`${card.cidade}||${card.nicho}`}
+                  card={card}
+                  etapas={etapas}
+                />
+              ))}
+              {cardsFiltrados.length === 0 && filtroCards && (
+                <div className="py-8 text-center text-sm text-gray-400">
+                  Nenhuma busca encontrada para &quot;{filtroCards}&quot;.
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
       {modalApiKey && (
         <ModalApiKey
           onClose={() => setModalApiKey(false)}
-          onSalvo={() => { setApiConfigurada(true); void carregarDados(); }}
-        />
-      )}
-
-      {prospeccaoParaCrm && (
-        <ModalEnviarCrm
-          prospeccao={prospeccaoParaCrm}
-          etapas={etapas}
-          onClose={() => setProspeccaoParaCrm(null)}
-          onEnviado={(id) => {
-            setResultados((prev) => prev.map((r) => r.id === id ? { ...r, enviadoCrm: true } : r));
-            setProspeccaoParaCrm(null);
-          }}
+          onSalvo={() => setApiConfigurada(true)}
         />
       )}
     </div>

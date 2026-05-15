@@ -18,8 +18,8 @@ export async function GET(req: NextRequest) {
     const resultados = await prisma.prospeccaoGmn.findMany({
       where: {
         usuarioId: session.user.id,
-        ...(cidade ? { cidade: { contains: cidade } } : {}),
-        ...(nicho ? { nicho: { contains: nicho } } : {}),
+        ...(cidade ? { cidade } : {}),
+        ...(nicho ? { nicho } : {}),
         ...(busca ? {
           OR: [
             { nome: { contains: busca } },
