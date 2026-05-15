@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -32,6 +33,7 @@ interface CrmContato {
   notas: string | null;
   dataContato: string | null;
   dataMensagem: string | null;
+  dataReuniao: string | null;
   criadoEm: string;
   atualizadoEm: string;
   campos: CampoCustomizado[];
@@ -247,6 +249,9 @@ function ModalContato({ contato, etapaId, etapas, todasTags, onClose, onSalvo, o
   const [dataMensagem, setDataMensagem] = useState(
     contato?.dataMensagem ? new Date(contato.dataMensagem).toISOString().slice(0, 16) : ""
   );
+  const [dataReuniao, setDataReuniao] = useState(
+    contato?.dataReuniao ? new Date(contato.dataReuniao).toISOString().slice(0, 16) : ""
+  );
   const [etapaSelecionada, setEtapaSelecionada] = useState(etapaId ?? etapas[0]?.id ?? "");
   const [campos, setCampos] = useState<CampoCustomizado[]>(contato?.campos ?? []);
   const [tagsSelecionadas, setTagsSelecionadas] = useState<CrmContatoTag[]>(contato?.tags ?? []);
@@ -275,6 +280,7 @@ function ModalContato({ contato, etapaId, etapas, todasTags, onClose, onSalvo, o
             notas: notas || null,
             dataContato: dataContato || null,
             dataMensagem: dataMensagem || null,
+            dataReuniao: dataReuniao || null,
           }),
         });
         const data = (await res.json()) as CrmContato;
@@ -300,6 +306,7 @@ function ModalContato({ contato, etapaId, etapas, todasTags, onClose, onSalvo, o
             notas: notas || null,
             dataContato: dataContato || null,
             dataMensagem: dataMensagem || null,
+            dataReuniao: dataReuniao || null,
           }),
         });
         const data = (await res.json()) as CrmContato;
@@ -402,11 +409,20 @@ function ModalContato({ contato, etapaId, etapas, todasTags, onClose, onSalvo, o
           <h2 className="text-base font-semibold text-gray-900">
             {isNovo ? "Novo lead" : "Editar lead"}
           </h2>
-          <button onClick={onClose} className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => void salvar()}
+              disabled={salvando}
+              className="px-3 py-1.5 bg-black text-white text-xs font-medium rounded-lg hover:bg-gray-900 disabled:opacity-50 transition-colors"
+            >
+              {salvando ? "Salvando..." : isNovo ? "Criar lead" : "Salvar"}
+            </button>
+            <button onClick={onClose} className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
         </div>
 
         {/* Etapa info / seletor */}
@@ -486,11 +502,30 @@ function ModalContato({ contato, etapaId, etapas, todasTags, onClose, onSalvo, o
             )}
           </div>
 
-          {/* Data de contato (vai para atraso) */}
+          {/* Data de reunião (sincroniza com Google Calendar) */}
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">
+              Data de reunião
+              <span className="ml-1 text-[10px] text-blue-500 font-normal">sincroniza Google Calendar</span>
+            </label>
+            <input
+              type="datetime-local"
+              value={dataReuniao}
+              onChange={(e) => setDataReuniao(e.target.value)}
+              className="w-full border border-[#e5e5e5] rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-black"
+            />
+            {dataReuniao && (
+              <button onClick={() => setDataReuniao("")} className="mt-1 text-xs text-gray-400 hover:text-red-500 transition-colors">
+                Limpar
+              </button>
+            )}
+          </div>
+
+          {/* Data de contato (vai para atraso / pendências) */}
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">
               Data de contato
-              <span className="ml-1 text-[10px] text-orange-500 font-normal">entra em atraso</span>
+              <span className="ml-1 text-[10px] text-orange-500 font-normal">aparece nas Pendências se vencer</span>
             </label>
             <input
               type="datetime-local"
@@ -742,6 +777,15 @@ function CardContato({ contato, onDragStart, onClick }: CardContatoProps) {
           <span className="text-[11px]">Contato: {formatarData(contato.dataContato)}</span>
         </div>
       )}
+      {/* Reunião */}
+      {contato.dataReuniao && (
+        <div className="mt-1 flex items-center gap-1 text-blue-600">
+          <svg className="w-3 h-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.069A1 1 0 0121 8.82v6.36a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z" />
+          </svg>
+          <span className="text-[11px]">Reunião: {formatarData(contato.dataReuniao)}</span>
+        </div>
+      )}
       {/* Última mensagem */}
       {contato.dataMensagem && (
         <div className="mt-1 flex items-center gap-1 text-gray-400">
@@ -895,7 +939,11 @@ function BannerAtrasos({ etapas }: { etapas: CrmEtapa[] }) {
 
 // ── Página principal ───────────────────────────────────────────────────────
 
-export default function CrmPage() {
+function CrmPageContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const abrirContatoId = searchParams.get("abrir");
+
   const [etapas, setEtapas] = useState<CrmEtapa[]>([]);
   const [todasTags, setTodasTags] = useState<CrmTag[]>([]);
   const [carregando, setCarregando] = useState(true);
@@ -919,6 +967,16 @@ export default function CrmPage() {
   useEffect(() => {
     void carregar();
   }, [carregar]);
+
+  // Abre o modal do contato quando vindo da página de Pendências (?abrir=ID)
+  useEffect(() => {
+    if (!abrirContatoId || carregando) return;
+    const contato = etapas.flatMap((e) => e.contatos).find((c) => c.id === abrirContatoId);
+    if (contato) {
+      setContatoModal(contato);
+      router.replace("/vendas/crm");
+    }
+  }, [abrirContatoId, carregando, etapas, router]);
 
   function handleDragStart(contatoId: string) {
     draggingContatoId.current = contatoId;
@@ -991,15 +1049,7 @@ export default function CrmPage() {
 
   const totalAtrasados = etapas.flatMap((e) => e.contatos.filter((c) => estaAtrasado(c.dataContato))).length;
 
-  if (carregando) {
-    return (
-      <div className="p-8 flex gap-4">
-        {[1, 2, 3].map((i) => (
-          <div key={i} className="w-72 h-96 bg-gray-100 rounded-xl animate-pulse" />
-        ))}
-      </div>
-    );
-  }
+  if (carregando) return null;
 
   return (
     <div className="flex flex-col h-full">
@@ -1101,5 +1151,19 @@ export default function CrmPage() {
         />
       )}
     </div>
+  );
+}
+
+export default function CrmPage() {
+  return (
+    <Suspense fallback={
+      <div className="p-8 flex gap-4">
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="w-72 h-96 bg-gray-100 rounded-xl animate-pulse" />
+        ))}
+      </div>
+    }>
+      <CrmPageContent />
+    </Suspense>
   );
 }

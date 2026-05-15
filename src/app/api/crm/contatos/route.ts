@@ -40,6 +40,7 @@ export async function POST(req: NextRequest) {
       notas?: string;
       dataContato?: string | null;
       dataMensagem?: string | null;
+      dataReuniao?: string | null;
     };
 
     if (!body.etapaId || !body.nome?.trim()) {
@@ -53,6 +54,7 @@ export async function POST(req: NextRequest) {
 
     const dataContato = body.dataContato ? new Date(body.dataContato) : null;
     const dataMensagem = body.dataMensagem ? new Date(body.dataMensagem) : null;
+    const dataReuniao = body.dataReuniao ? new Date(body.dataReuniao) : null;
 
     const contato = await prisma.crmContato.create({
       data: {
@@ -65,16 +67,18 @@ export async function POST(req: NextRequest) {
         notas: body.notas?.trim() || null,
         dataContato,
         dataMensagem,
+        dataReuniao,
       },
       include: includeCompleto,
     });
 
-    if (dataContato) {
+    // Google Calendar sincroniza com data de reunião (não com data de contato)
+    if (dataReuniao) {
       const eventId = await criarEventoCalendario({
         usuarioId: session.user.id,
-        summary: contato.nome,
+        summary: `Reunião: ${contato.nome}`,
         description: contato.notas ?? undefined,
-        dataFollowUp: dataContato,
+        dataFollowUp: dataReuniao,
       });
       if (eventId) {
         await prisma.crmContato.update({

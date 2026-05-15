@@ -304,6 +304,7 @@ model CrmContato {
   notas                 String?              @db.Text
   dataContato           DateTime?            @map("data_follow_up")
   dataMensagem          DateTime?            @map("data_mensagem")
+  dataReuniao           DateTime?            @map("data_reuniao")
   googleCalendarEventId String?              @map("google_calendar_event_id") @db.VarChar(255)
   criadoEm              DateTime             @default(now()) @map("criado_em")
   atualizadoEm          DateTime             @updatedAt @map("atualizado_em")
