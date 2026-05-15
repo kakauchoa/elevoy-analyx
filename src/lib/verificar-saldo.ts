@@ -71,7 +71,7 @@ export async function verificarSaldoContas(): Promise<ResultadoVerificacao> {
 
       // Atualiza saldoAtual no banco com o valor real da conta
       if (dados.balance !== undefined) {
-        const saldoReal = Number(dados.balance) / 100;
+        const saldoReal = Number(dados.balance);
         await prisma.contaAnuncio.update({
           where: { id: conta.id },
           data: { saldoAtual: saldoReal, saldoAtualizadoEm: new Date() },
@@ -83,7 +83,7 @@ export async function verificarSaldoContas(): Promise<ResultadoVerificacao> {
       let detalhes: Record<string, unknown> = {};
 
       if (conta.tipoPagamento === "boleto" && conta.orcamentoMensal) {
-        const saldo = Number(dados.balance ?? 0) / 100;
+        const saldo = Number(dados.balance ?? 0);
         const orcamento = Number(conta.orcamentoMensal);
         const percentual = orcamento > 0 ? saldo / orcamento : 1;
 

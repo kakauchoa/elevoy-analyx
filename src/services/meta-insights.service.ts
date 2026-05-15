@@ -421,7 +421,7 @@ export async function sincronizarContaAnuncio(params: {
     if (resSaldo.ok) {
       const dados = (await resSaldo.json()) as { balance?: string };
       if (dados.balance !== undefined) {
-        dadosUpdate.saldoAtual = Number(dados.balance) / 100;
+        dadosUpdate.saldoAtual = Number(dados.balance);
         dadosUpdate.saldoAtualizadoEm = new Date();
       }
     }
