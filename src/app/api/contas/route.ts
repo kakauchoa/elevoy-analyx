@@ -30,6 +30,8 @@ export async function GET() {
         ultimaSincronizacao: true,
         tokenExpiraEm: true,
         tokenStatus: true,
+        tipoPagamento: true,
+        orcamentoMensal: true,
         criadoEm: true,
       },
       orderBy: { criadoEm: "desc" },
@@ -54,6 +56,8 @@ export async function POST(req: NextRequest) {
       accountIdMeta?: string;
       tokenAcesso?: string;
       tipoFunil?: TipoFunil;
+      tipoPagamento?: "cartao" | "boleto";
+      orcamentoMensal?: number | null;
     };
 
     const { nomeCliente, slugCompartilhavel, accountIdMeta, tokenAcesso, tipoFunil } = body;
@@ -92,6 +96,8 @@ export async function POST(req: NextRequest) {
         labelCustoPorResultado: config.labelCustoPorResultado,
         tokenExpiraEm: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000),
         tokenStatus: "ok",
+        tipoPagamento: body.tipoPagamento ?? "cartao",
+        orcamentoMensal: body.orcamentoMensal ?? null,
       },
       select: {
         id: true,
@@ -106,6 +112,8 @@ export async function POST(req: NextRequest) {
         ultimaSincronizacao: true,
         tokenExpiraEm: true,
         tokenStatus: true,
+        tipoPagamento: true,
+        orcamentoMensal: true,
         criadoEm: true,
       },
     });

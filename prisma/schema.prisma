@@ -43,6 +43,11 @@ enum TipoDispositivo {
   desconhecido
 }
 
+enum TipoPagamento {
+  cartao
+  boleto
+}
+
 enum TokenStatus {
   ok
   expirando
@@ -96,6 +101,8 @@ model ContaAnuncio {
   ultimaSincronizacao    DateTime?         @map("ultima_sincronizacao")
   tokenExpiraEm          DateTime?         @map("token_expira_em")
   tokenStatus            TokenStatus       @default(ok) @map("token_status")
+  tipoPagamento          TipoPagamento     @default(cartao) @map("tipo_pagamento")
+  orcamentoMensal        Decimal?          @db.Decimal(10, 2) @map("orcamento_mensal")
   ativo                  Boolean           @default(true)
   criadoEm               DateTime          @default(now()) @map("criado_em")
   atualizadoEm           DateTime          @updatedAt @map("atualizado_em")
@@ -106,6 +113,7 @@ model ContaAnuncio {
   relatorios             RelatorioGerado[]
   configuracaoGtm        ConfiguracaoGtm?
   gestorContas           GestorConta[]
+  notificacoes           NotificacaoSaldo[]
 
   @@map("contas_anuncio")
 }
@@ -397,9 +405,26 @@ model HistoricoPesquisaGmn {
 model ConfiguracaoPlataforma {
   id                 String   @id @default(uuid())
   googlePlacesApiKey String?  @map("google_places_api_key") @db.VarChar(500)
+  evolutionApiUrl    String?  @map("evolution_api_url") @db.VarChar(500)
+  evolutionApiKey    String?  @map("evolution_api_key") @db.VarChar(500)
+  evolutionInstance  String?  @map("evolution_instance") @db.VarChar(255)
+  evolutionWhatsapp  String?  @map("evolution_whatsapp") @db.VarChar(50)
   atualizadoEm      DateTime @updatedAt @map("atualizado_em")
 
   @@map("configuracoes_plataforma")
+}
+
+model NotificacaoSaldo {
+  id             String       @id @default(uuid())
+  contaAnuncioId String       @map("conta_anuncio_id")
+  tipo           String       @db.VarChar(50)
+  mensagem       String       @db.Text
+  detalhes       Json?
+  lida           Boolean      @default(false)
+  criadoEm      DateTime     @default(now()) @map("criado_em")
+  conta          ContaAnuncio @relation(fields: [contaAnuncioId], references: [id])
+
+  @@map("notificacoes_saldo")
 }
 
 model ConfiguracaoGtm {

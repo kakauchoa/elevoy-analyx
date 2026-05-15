@@ -16,6 +16,8 @@ type CamposForm = {
   accountIdMeta: string;
   tokenAcesso: string;
   tipoFunil: TipoFunil | "";
+  tipoPagamento: "cartao" | "boleto";
+  orcamentoMensal: string;
 };
 
 const OPCOES_FUNIL = Object.entries(LABELS_FUNIL) as [TipoFunil, string][];
@@ -40,6 +42,8 @@ export function FormularioConta({ conta, onSalvar, onFechar }: FormularioContaPr
     accountIdMeta: conta?.accountIdMeta?.replace(/^act_/, "") ?? "",
     tokenAcesso: "",
     tipoFunil: conta?.tipoFunil ?? "",
+    tipoPagamento: conta?.tipoPagamento ?? "cartao",
+    orcamentoMensal: conta?.orcamentoMensal ? String(Number(conta.orcamentoMensal)) : "",
   });
 
   const [slugManual, setSlugManual] = useState(modoEdicao);
@@ -73,11 +77,15 @@ export function FormularioConta({ conta, onSalvar, onFechar }: FormularioContaPr
     setCarregando(true);
 
     try {
-      const payload: Partial<CamposForm> = {
+      const payload: Record<string, unknown> = {
         nomeCliente: form.nomeCliente,
         slugCompartilhavel: form.slugCompartilhavel,
         accountIdMeta: `act_${form.accountIdMeta}`,
         tipoFunil: form.tipoFunil,
+        tipoPagamento: form.tipoPagamento,
+        orcamentoMensal: form.tipoPagamento === "boleto" && form.orcamentoMensal
+          ? Number(form.orcamentoMensal)
+          : null,
       };
 
       if (form.tokenAcesso) payload.tokenAcesso = form.tokenAcesso;
@@ -91,7 +99,7 @@ export function FormularioConta({ conta, onSalvar, onFechar }: FormularioContaPr
         body: JSON.stringify(payload),
       });
 
-      const dados = (await res.json()) as ContaAnuncio & { erro?: string };
+      const dados = (await res.json()) as ContaAnuncio & { erro?: string; orcamentoMensal?: string | null };
 
       if (!res.ok) {
         setErro(dados.erro ?? "Erro ao salvar conta");
@@ -227,6 +235,59 @@ export function FormularioConta({ conta, onSalvar, onFechar }: FormularioContaPr
               ))}
             </select>
           </div>
+
+          {/* Tipo de pagamento */}
+          <div className="flex flex-col gap-2">
+            <label className="text-sm font-medium text-gray-700">Tipo de pagamento</label>
+            <div className="flex gap-3">
+              {(["cartao", "boleto"] as const).map((tipo) => (
+                <label
+                  key={tipo}
+                  className={`flex-1 flex items-center gap-2.5 border rounded-lg px-3 py-2.5 cursor-pointer transition-colors ${
+                    form.tipoPagamento === tipo
+                      ? "border-black bg-black text-white"
+                      : "border-[#e5e5e5] text-gray-700 hover:border-gray-400"
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="tipoPagamento"
+                    value={tipo}
+                    checked={form.tipoPagamento === tipo}
+                    onChange={() => setForm((prev) => ({ ...prev, tipoPagamento: tipo }))}
+                    className="sr-only"
+                  />
+                  <span className="text-sm font-medium">
+                    {tipo === "cartao" ? "Cartão de crédito" : "Boleto pré-pago"}
+                  </span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {/* Orçamento mensal (só para boleto) */}
+          {form.tipoPagamento === "boleto" && (
+            <div className="flex flex-col gap-1.5">
+              <label className="text-sm font-medium text-gray-700">Orçamento mensal (R$)</label>
+              <div className="flex items-center border border-[#e5e5e5] rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-black transition-shadow">
+                <span className="px-3 py-2.5 bg-gray-50 text-gray-400 text-xs border-r border-[#e5e5e5] whitespace-nowrap select-none">
+                  R$
+                </span>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={form.orcamentoMensal}
+                  onChange={(e) => setForm((prev) => ({ ...prev, orcamentoMensal: e.target.value }))}
+                  placeholder="1500.00"
+                  className="flex-1 px-3 py-2.5 text-sm outline-none bg-white"
+                />
+              </div>
+              <p className="text-xs text-gray-400">
+                Alerta enviado por WhatsApp quando o saldo cair abaixo de 30% deste valor.
+              </p>
+            </div>
+          )}
 
           {/* Painel informativo do funil */}
           {configFunil && (

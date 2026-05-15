@@ -19,6 +19,8 @@ type DadosAtualizacao = {
   metricaPrincipal?: string;
   labelMetricaPrincipal?: string;
   labelCustoPorResultado?: string;
+  tipoPagamento?: "cartao" | "boleto";
+  orcamentoMensal?: number | null;
 };
 
 async function verificarProprietario(id: string, usuarioId: string) {
@@ -47,6 +49,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Params }) {
       accountIdMeta?: string;
       tokenAcesso?: string;
       tipoFunil?: TipoFunil;
+      tipoPagamento?: "cartao" | "boleto";
+      orcamentoMensal?: number | null;
     };
 
     const dados: DadosAtualizacao = {};
@@ -92,6 +96,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Params }) {
       dados.labelCustoPorResultado = config.labelCustoPorResultado;
     }
 
+    if (body.tipoPagamento) dados.tipoPagamento = body.tipoPagamento;
+    if (body.orcamentoMensal !== undefined) dados.orcamentoMensal = body.orcamentoMensal;
+
     const atualizado = await prisma.contaAnuncio.update({
       where: { id },
       data: dados,
@@ -108,6 +115,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Params }) {
         ultimaSincronizacao: true,
         tokenExpiraEm: true,
         tokenStatus: true,
+        tipoPagamento: true,
+        orcamentoMensal: true,
         criadoEm: true,
       },
     });

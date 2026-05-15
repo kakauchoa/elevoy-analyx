@@ -34,7 +34,9 @@
       "Bash(mkdir -p \"/Users/kauanuchoa/Library/Mobile Documents/com~apple~CloudDocs/0-Code-my-apps/Elevoy-Analyx/src/app/api/crm/contatos/[id]/tags\")",
       "Bash(node -e \"const b=require\\('bcryptjs'\\);b.hash\\('Kn@071805',12\\).then\\(h=>console.log\\(h\\)\\)\")",
       "Bash(git commit -m 'fix: remover fetch HEAD que causava CORS no Google OAuth *)",
-      "Bash(git commit -m 'feat: prospecção GMN + melhorias CRM \\(datas, Leads fixo\\) *)"
+      "Bash(git commit -m 'feat: prospecção GMN + melhorias CRM \\(datas, Leads fixo\\) *)",
+      "Bash(git commit *)",
+      "Bash(xargs ls -la)"
     ]
   }
 }
