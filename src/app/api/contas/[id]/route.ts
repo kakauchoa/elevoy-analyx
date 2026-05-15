@@ -21,12 +21,63 @@ type DadosAtualizacao = {
   labelCustoPorResultado?: string;
   tipoPagamento?: "cartao" | "boleto";
   orcamentoMensal?: number | null;
+  ultimaSincronizacao?: null;
+  saldoAtual?: null;
+  saldoAtualizadoEm?: null;
 };
+
+const SELECT_CONTA = {
+  id: true,
+  nomeCliente: true,
+  slugCompartilhavel: true,
+  accountIdMeta: true,
+  tipoFunil: true,
+  metricaPrincipal: true,
+  labelMetricaPrincipal: true,
+  labelCustoPorResultado: true,
+  compartilhamentoAtivo: true,
+  ultimaSincronizacao: true,
+  tokenExpiraEm: true,
+  tokenStatus: true,
+  tipoPagamento: true,
+  orcamentoMensal: true,
+  saldoAtual: true,
+  saldoAtualizadoEm: true,
+  criadoEm: true,
+} as const;
 
 async function verificarProprietario(id: string, usuarioId: string) {
   return prisma.contaAnuncio.findFirst({
     where: { id, usuarioId, ativo: true },
   });
+}
+
+/** Remove todos os dados históricos de uma conta (insights + hierarquia Meta). */
+async function limparDadosConta(contaId: string) {
+  const campanhas = await prisma.campanha.findMany({
+    where: { contaAnuncioId: contaId },
+    select: { id: true },
+  });
+  const campanhaIds = campanhas.map((c) => c.id);
+
+  const conjuntos = campanhaIds.length
+    ? await prisma.conjuntoAnuncio.findMany({
+        where: { campanhaId: { in: campanhaIds } },
+        select: { id: true },
+      })
+    : [];
+  const conjuntoIds = conjuntos.map((c) => c.id);
+
+  await prisma.$transaction([
+    ...(conjuntoIds.length
+      ? [prisma.anuncio.deleteMany({ where: { conjuntoId: { in: conjuntoIds } } })]
+      : []),
+    ...(campanhaIds.length
+      ? [prisma.conjuntoAnuncio.deleteMany({ where: { campanhaId: { in: campanhaIds } } })]
+      : []),
+    prisma.campanha.deleteMany({ where: { contaAnuncioId: contaId } }),
+    prisma.insightDiario.deleteMany({ where: { contaAnuncioId: contaId } }),
+  ]);
 }
 
 export async function PATCH(req: NextRequest, { params }: { params: Params }) {
@@ -78,10 +129,16 @@ export async function PATCH(req: NextRequest, { params }: { params: Params }) {
           { status: 400 }
         );
       }
+      // ID de conta mudou → todos os dados históricos são inválidos para o novo ID
+      if (body.accountIdMeta !== conta.accountIdMeta) {
+        await limparDadosConta(id);
+        dados.ultimaSincronizacao = null;
+        dados.saldoAtual = null;
+        dados.saldoAtualizadoEm = null;
+      }
       dados.accountIdMeta = body.accountIdMeta;
     }
 
-    // Token só é recriptografado quando um novo valor é enviado explicitamente
     if (body.tokenAcesso) {
       dados.tokenAcesso = criptografar(body.tokenAcesso);
       dados.tokenExpiraEm = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000);
@@ -102,23 +159,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Params }) {
     const atualizado = await prisma.contaAnuncio.update({
       where: { id },
       data: dados,
-      select: {
-        id: true,
-        nomeCliente: true,
-        slugCompartilhavel: true,
-        accountIdMeta: true,
-        tipoFunil: true,
-        metricaPrincipal: true,
-        labelMetricaPrincipal: true,
-        labelCustoPorResultado: true,
-        compartilhamentoAtivo: true,
-        ultimaSincronizacao: true,
-        tokenExpiraEm: true,
-        tokenStatus: true,
-        tipoPagamento: true,
-        orcamentoMensal: true,
-        criadoEm: true,
-      },
+      select: SELECT_CONTA,
     });
 
     return NextResponse.json(atualizado);
@@ -140,11 +181,17 @@ export async function DELETE(_req: NextRequest, { params }: { params: Params }) 
       return NextResponse.json({ erro: "Conta não encontrada" }, { status: 404 });
     }
 
-    // Soft delete: preserva histórico de insights e acessos
-    await prisma.contaAnuncio.update({
-      where: { id },
-      data: { ativo: false },
-    });
+    // Apaga todos os dados associados antes de deletar a conta
+    await limparDadosConta(id);
+
+    await prisma.$transaction([
+      prisma.acessoDashboard.deleteMany({ where: { contaAnuncioId: id } }),
+      prisma.relatorioGerado.deleteMany({ where: { contaAnuncioId: id } }),
+      prisma.configuracaoGtm.deleteMany({ where: { contaAnuncioId: id } }),
+      prisma.notificacaoSaldo.deleteMany({ where: { contaAnuncioId: id } }),
+      prisma.gestorConta.deleteMany({ where: { contaAnuncioId: id } }),
+      prisma.contaAnuncio.delete({ where: { id } }),
+    ]);
 
     return NextResponse.json({ ok: true });
   } catch {

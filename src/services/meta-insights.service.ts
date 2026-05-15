@@ -408,10 +408,30 @@ export async function sincronizarContaAnuncio(params: {
 
   console.log(`[meta-insights] sincronização concluída: ${sincronizados} registros salvos no total`);
 
-  // Atualiza timestamp da última sincronização bem-sucedida (mesmo com erros parciais)
+  // Atualiza timestamp e saldo atual da conta
+  const dadosUpdate: { ultimaSincronizacao: Date; saldoAtual?: number; saldoAtualizadoEm?: Date } = {
+    ultimaSincronizacao: new Date(),
+  };
+
+  try {
+    const metaApiVersion = process.env.META_API_VERSION ?? "v18.0";
+    const resSaldo = await fetch(
+      `https://graph.facebook.com/${metaApiVersion}/${accountIdMeta}?fields=balance&access_token=${tokenAcesso}`
+    );
+    if (resSaldo.ok) {
+      const dados = (await resSaldo.json()) as { balance?: string };
+      if (dados.balance !== undefined) {
+        dadosUpdate.saldoAtual = Number(dados.balance) / 100;
+        dadosUpdate.saldoAtualizadoEm = new Date();
+      }
+    }
+  } catch {
+    // saldo é opcional — não bloqueia a sincronização
+  }
+
   await prisma.contaAnuncio.update({
     where: { id: contaAnuncioId },
-    data: { ultimaSincronizacao: new Date() },
+    data: dadosUpdate,
   });
 
   return { sincronizados, erros };

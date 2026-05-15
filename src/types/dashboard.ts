@@ -15,6 +15,8 @@ export interface ContaAnuncio {
   tokenStatus: "ok" | "expirando" | "expirado" | "erro";
   tipoPagamento: "cartao" | "boleto";
   orcamentoMensal: string | null;
+  saldoAtual: string | null;
+  saldoAtualizadoEm: string | null;
   criadoEm: string;
 }
 

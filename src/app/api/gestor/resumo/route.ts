@@ -53,6 +53,9 @@ export async function GET(req: NextRequest) {
         labelMetricaPrincipal: true,
         labelCustoPorResultado: true,
         ultimaSincronizacao: true,
+        tipoPagamento: true,
+        saldoAtual: true,
+        saldoAtualizadoEm: true,
       },
     });
 
@@ -81,6 +84,8 @@ export async function GET(req: NextRequest) {
       conta: {
         ...conta,
         ultimaSincronizacao: conta.ultimaSincronizacao?.toISOString() ?? null,
+        saldoAtual: conta.saldoAtual?.toString() ?? null,
+        saldoAtualizadoEm: conta.saldoAtualizadoEm?.toISOString() ?? null,
       },
       hoje: filtrar(insights, hoje, hoje),
       ontem: filtrar(insights, ontem, ontem),

@@ -32,6 +32,8 @@ export async function GET() {
         tokenStatus: true,
         tipoPagamento: true,
         orcamentoMensal: true,
+        saldoAtual: true,
+        saldoAtualizadoEm: true,
         criadoEm: true,
       },
       orderBy: { criadoEm: "desc" },
@@ -114,6 +116,8 @@ export async function POST(req: NextRequest) {
         tokenStatus: true,
         tipoPagamento: true,
         orcamentoMensal: true,
+        saldoAtual: true,
+        saldoAtualizadoEm: true,
         criadoEm: true,
       },
     });
