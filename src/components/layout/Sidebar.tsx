@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { signOut } from "next-auth/react";
@@ -239,6 +239,38 @@ export function Sidebar({ isAdmin, userName, permissoes }: SidebarProps) {
 
   const initial = userName?.charAt(0).toUpperCase() ?? "?";
 
+  const [pendenciasCount, setPendenciasCount] = useState(0);
+
+  useEffect(() => {
+    fetch("/api/crm/pendencias")
+      .then((r) => r.json())
+      .then((data: unknown) => {
+        const count = Array.isArray(data) ? data.length : 0;
+        setPendenciasCount(count);
+
+        if (count === 0) return;
+        if (typeof window === "undefined" || !("Notification" in window)) return;
+        if (sessionStorage.getItem("notif-pendencias-enviada")) return;
+
+        const mostrar = () => {
+          sessionStorage.setItem("notif-pendencias-enviada", "1");
+          new Notification("Pendências · Elevoy Analyx", {
+            body: `${count} lead${count !== 1 ? "s" : ""} com follow-up atrasado`,
+            icon: "/favicon.ico",
+          });
+        };
+
+        if (Notification.permission === "granted") {
+          mostrar();
+        } else if (Notification.permission !== "denied") {
+          void Notification.requestPermission().then((perm) => {
+            if (perm === "granted") mostrar();
+          });
+        }
+      })
+      .catch(() => undefined);
+  }, []);
+
   return (
     <aside
       className={`${collapsed ? "w-14" : "w-60"} bg-[#0a0a0a] flex flex-col shrink-0 transition-[width] duration-200 overflow-hidden`}
@@ -298,9 +330,23 @@ export function Sidebar({ isAdmin, userName, permissoes }: SidebarProps) {
                             : "text-white/65 hover:bg-white/10 hover:text-white"
                         }`}
                       >
-                        <span className="shrink-0">{item.icon}</span>
+                        <span className="shrink-0 relative">
+                          {item.icon}
+                          {item.href === "/vendas/pendencias" && pendenciasCount > 0 && collapsed && (
+                            <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-red-500 rounded-full text-[8px] font-bold text-white flex items-center justify-center leading-none">
+                              {pendenciasCount > 9 ? "9+" : pendenciasCount}
+                            </span>
+                          )}
+                        </span>
                         {!collapsed && (
-                          <span className="text-sm font-medium truncate">{item.label}</span>
+                          <>
+                            <span className="text-sm font-medium truncate flex-1">{item.label}</span>
+                            {item.href === "/vendas/pendencias" && pendenciasCount > 0 && (
+                              <span className="ml-auto shrink-0 text-[10px] font-bold bg-red-500 text-white rounded-full px-1.5 py-0.5 min-w-[1.25rem] text-center leading-none">
+                                {pendenciasCount}
+                              </span>
+                            )}
+                          </>
                         )}
                       </Link>
                     );

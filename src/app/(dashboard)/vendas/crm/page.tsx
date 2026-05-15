@@ -904,38 +904,6 @@ function Coluna({
   );
 }
 
-// ── Banner de notificação de atrasos ───────────────────────────────────────
-
-function BannerAtrasos({ etapas }: { etapas: CrmEtapa[] }) {
-  const [fechado, setFechado] = useState(false);
-
-  const atrasados = etapas.flatMap((e) =>
-    e.contatos.filter((c) => estaAtrasado(c.dataContato))
-  );
-
-  if (atrasados.length === 0 || fechado) return null;
-
-  return (
-    <div className="mx-6 mt-4 flex items-center gap-3 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
-      <svg className="w-4 h-4 text-red-500 shrink-0" fill="currentColor" viewBox="0 0 24 24">
-        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" />
-      </svg>
-      <p className="flex-1 text-sm text-red-700">
-        <span className="font-semibold">{atrasados.length} lead{atrasados.length !== 1 ? "s" : ""}</span> com follow-up atrasado:{" "}
-        {atrasados.slice(0, 3).map((c) => c.nome).join(", ")}
-        {atrasados.length > 3 ? ` e mais ${atrasados.length - 3}` : ""}
-      </p>
-      <button
-        onClick={() => setFechado(true)}
-        className="p-1 text-red-400 hover:text-red-600 transition-colors"
-      >
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-        </svg>
-      </button>
-    </div>
-  );
-}
 
 // ── Página principal ───────────────────────────────────────────────────────
 
@@ -1079,9 +1047,6 @@ function CrmPageContent() {
           + Adicionar lead
         </button>
       </div>
-
-      {/* Banner de atrasos */}
-      <BannerAtrasos etapas={etapas} />
 
       {/* Board */}
       <div className="flex-1 overflow-x-auto overflow-y-hidden">
