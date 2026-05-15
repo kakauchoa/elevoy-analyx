@@ -11,8 +11,7 @@ export interface ContaAnuncio {
   labelCustoPorResultado: string;
   compartilhamentoAtivo: boolean;
   ultimaSincronizacao: string | null;
-  tokenExpiraEm: string | null;
-  tokenStatus: "ok" | "expirando" | "expirado" | "erro";
+  dataEntrada: string | null;
   tipoPagamento: "cartao" | "boleto";
   orcamentoMensal: string | null;
   saldoAtual: string | null;

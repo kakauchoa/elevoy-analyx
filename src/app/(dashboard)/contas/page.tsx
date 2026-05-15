@@ -20,8 +20,7 @@ export default async function ContasPage() {
       labelCustoPorResultado: true,
       compartilhamentoAtivo: true,
       ultimaSincronizacao: true,
-      tokenExpiraEm: true,
-      tokenStatus: true,
+      dataEntrada: true,
       tipoPagamento: true,
       orcamentoMensal: true,
       saldoAtual: true,
@@ -31,17 +30,15 @@ export default async function ContasPage() {
     orderBy: { criadoEm: "desc" },
   });
 
-  // Serializa objetos Date para string (Next.js não serializa Date ao passar para client components)
   const contasSerializadas: ContaAnuncio[] = contas.map((c) => ({
     ...c,
     tipoFunil: c.tipoFunil as ContaAnuncio["tipoFunil"],
-    tokenStatus: c.tokenStatus as ContaAnuncio["tokenStatus"],
     tipoPagamento: c.tipoPagamento as ContaAnuncio["tipoPagamento"],
     orcamentoMensal: c.orcamentoMensal?.toString() ?? null,
     saldoAtual: c.saldoAtual?.toString() ?? null,
     saldoAtualizadoEm: c.saldoAtualizadoEm?.toISOString() ?? null,
     ultimaSincronizacao: c.ultimaSincronizacao?.toISOString() ?? null,
-    tokenExpiraEm: c.tokenExpiraEm?.toISOString() ?? null,
+    dataEntrada: c.dataEntrada?.toISOString().slice(0, 10) ?? null,
     criadoEm: c.criadoEm.toISOString(),
   }));
 

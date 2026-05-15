@@ -92,7 +92,8 @@ model ContaAnuncio {
   nomeCliente            String            @map("nome_cliente")
   slugCompartilhavel     String            @unique @map("slug_compartilhavel")
   accountIdMeta          String            @map("account_id_meta")
-  tokenAcesso            String            @db.Text @map("token_acesso")
+  tokenAcesso            String?           @db.Text @map("token_acesso")
+  dataEntrada            DateTime?         @db.Date @map("data_entrada")
   tipoFunil              TipoFunil         @map("tipo_funil")
   metricaPrincipal       String            @map("metrica_principal")
   labelMetricaPrincipal  String            @map("label_metrica_principal")
@@ -268,13 +269,16 @@ model RelatorioGerado {
 }
 
 model ConfiguracaoMetaApp {
-  id           String   @id @default(uuid())
-  usuarioId    String   @unique @map("usuario_id")
-  appId        String   @map("app_id") @db.VarChar(100)
-  appSecret    String   @map("app_secret") @db.Text
-  criadoEm     DateTime @default(now()) @map("criado_em")
-  atualizadoEm DateTime @updatedAt @map("atualizado_em")
-  usuario      Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  id            String      @id @default(uuid())
+  usuarioId     String      @unique @map("usuario_id")
+  appId         String      @map("app_id") @db.VarChar(100)
+  appSecret     String      @map("app_secret") @db.Text
+  tokenAcesso   String?     @db.Text @map("token_acesso")
+  tokenExpiraEm DateTime?   @map("token_expira_em")
+  tokenStatus   TokenStatus @default(ok) @map("token_status")
+  criadoEm      DateTime    @default(now()) @map("criado_em")
+  atualizadoEm  DateTime    @updatedAt @map("atualizado_em")
+  usuario       Usuario     @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
 
   @@map("configuracoes_meta_app")
 }

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { descriptografar } from "@/lib/cripto";
+import { obterTokenGlobal } from "@/lib/token-global";
 import { sincronizarContaAnuncio } from "@/services/meta-insights.service";
 import { verificarAcessoConta } from "@/lib/acesso-contas";
 
@@ -29,7 +29,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ erro: "contaAnuncioId é obrigatório" }, { status: 400 });
     }
 
-    // Verifica acesso: criador ou gestor vinculado via gestor_contas
     const temAcesso = await verificarAcessoConta(session.user.id, body.contaAnuncioId);
     if (!temAcesso) {
       return NextResponse.json({ erro: "Conta não encontrada" }, { status: 404 });
@@ -37,18 +36,23 @@ export async function POST(req: NextRequest) {
 
     const conta = await prisma.contaAnuncio.findFirst({
       where: { id: body.contaAnuncioId, ativo: true },
-      select: { id: true, accountIdMeta: true, tokenAcesso: true },
+      select: { id: true, accountIdMeta: true },
     });
 
     if (!conta) {
       return NextResponse.json({ erro: "Conta não encontrada" }, { status: 404 });
     }
 
+    let tokenAcesso: string;
+    try {
+      tokenAcesso = await obterTokenGlobal();
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Token Meta não configurado";
+      return NextResponse.json({ erro: msg }, { status: 503 });
+    }
+
     const dataInicio = body.dataInicio ?? ontem();
     const dataFim = body.dataFim ?? ontem();
-
-    // Descriptografa o token somente no momento da chamada à API
-    const tokenAcesso = descriptografar(conta.tokenAcesso);
 
     const resultado = await sincronizarContaAnuncio({
       contaAnuncioId: conta.id,

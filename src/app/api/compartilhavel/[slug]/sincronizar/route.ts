@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { descriptografar } from "@/lib/cripto";
+import { obterTokenGlobal } from "@/lib/token-global";
 import { sincronizarContaAnuncio } from "@/services/meta-insights.service";
 
 export async function POST(
@@ -23,7 +23,6 @@ export async function POST(
       select: {
         id: true,
         accountIdMeta: true,
-        tokenAcesso: true,
         compartilhamentoAtivo: true,
         ultimaSincronizacao: true,
         ativo: true,
@@ -45,9 +44,13 @@ export async function POST(
       }
     }
 
-    const tokenAcesso = descriptografar(conta.tokenAcesso);
+    let tokenAcesso: string;
+    try {
+      tokenAcesso = await obterTokenGlobal();
+    } catch {
+      return NextResponse.json({ iniciado: false, motivo: "token_nao_configurado" });
+    }
 
-    // Dispara sincronização em background sem aguardar
     sincronizarContaAnuncio({
       contaAnuncioId: conta.id,
       accountIdMeta: conta.accountIdMeta,

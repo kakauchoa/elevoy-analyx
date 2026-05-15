@@ -14,8 +14,8 @@ type CamposForm = {
   nomeCliente: string;
   slugCompartilhavel: string;
   accountIdMeta: string;
-  tokenAcesso: string;
   tipoFunil: TipoFunil | "";
+  dataEntrada: string;
   tipoPagamento: "cartao" | "boleto";
   orcamentoMensal: string;
 };
@@ -40,8 +40,8 @@ export function FormularioConta({ conta, onSalvar, onFechar }: FormularioContaPr
     nomeCliente: conta?.nomeCliente ?? "",
     slugCompartilhavel: conta?.slugCompartilhavel ?? "",
     accountIdMeta: conta?.accountIdMeta?.replace(/^act_/, "") ?? "",
-    tokenAcesso: "",
     tipoFunil: conta?.tipoFunil ?? "",
+    dataEntrada: conta?.dataEntrada ?? "",
     tipoPagamento: conta?.tipoPagamento ?? "cartao",
     orcamentoMensal: conta?.orcamentoMensal ? String(Number(conta.orcamentoMensal)) : "",
   });
@@ -69,11 +69,6 @@ export function FormularioConta({ conta, onSalvar, onFechar }: FormularioContaPr
       return;
     }
 
-    if (!modoEdicao && !form.tokenAcesso) {
-      setErro("O token de acesso é obrigatório");
-      return;
-    }
-
     setCarregando(true);
 
     try {
@@ -82,13 +77,12 @@ export function FormularioConta({ conta, onSalvar, onFechar }: FormularioContaPr
         slugCompartilhavel: form.slugCompartilhavel,
         accountIdMeta: `act_${form.accountIdMeta}`,
         tipoFunil: form.tipoFunil,
+        dataEntrada: form.dataEntrada || null,
         tipoPagamento: form.tipoPagamento,
         orcamentoMensal: form.tipoPagamento === "boleto" && form.orcamentoMensal
           ? Number(form.orcamentoMensal)
           : null,
       };
-
-      if (form.tokenAcesso) payload.tokenAcesso = form.tokenAcesso;
 
       const url = modoEdicao ? `/api/contas/${conta.id}` : "/api/contas";
       const method = modoEdicao ? "PATCH" : "POST";
@@ -99,7 +93,7 @@ export function FormularioConta({ conta, onSalvar, onFechar }: FormularioContaPr
         body: JSON.stringify(payload),
       });
 
-      const dados = (await res.json()) as ContaAnuncio & { erro?: string; orcamentoMensal?: string | null };
+      const dados = (await res.json()) as ContaAnuncio & { erro?: string };
 
       if (!res.ok) {
         setErro(dados.erro ?? "Erro ao salvar conta");
@@ -195,24 +189,19 @@ export function FormularioConta({ conta, onSalvar, onFechar }: FormularioContaPr
             </p>
           </div>
 
-          {/* Token de acesso */}
+          {/* Data de entrada do cliente */}
           <div className="flex flex-col gap-1.5">
             <label className="text-sm font-medium text-gray-700">
-              Token de acesso
-              {modoEdicao && (
-                <span className="ml-1 font-normal text-gray-400">(deixe em branco para manter)</span>
-              )}
+              Data de entrada do cliente
             </label>
             <input
-              type="password"
-              value={form.tokenAcesso}
-              onChange={(e) => setForm((prev) => ({ ...prev, tokenAcesso: e.target.value }))}
-              placeholder={modoEdicao ? "••••••••" : "EAAxxxxxxxxxxxx"}
-              required={!modoEdicao}
-              className="border border-[#e5e5e5] rounded-lg px-3 py-2.5 text-sm font-mono text-gray-900 focus:outline-none focus:ring-2 focus:ring-black transition-shadow"
+              type="date"
+              value={form.dataEntrada}
+              onChange={(e) => setForm((prev) => ({ ...prev, dataEntrada: e.target.value }))}
+              className="border border-[#e5e5e5] rounded-lg px-3 py-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-black transition-shadow"
             />
             <p className="text-xs text-gray-400">
-              Token de longa duração da Graph API. Criptografado antes de ser salvo.
+              Data a partir da qual os dados serão importados do Gerenciador de Anúncios.
             </p>
           </div>
 

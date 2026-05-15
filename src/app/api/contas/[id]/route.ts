@@ -3,7 +3,6 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { CONFIGURACOES_FUNIL, TipoFunil } from "@/lib/metricas";
-import { criptografar } from "@/lib/cripto";
 
 type Params = Promise<{ id: string }>;
 
@@ -12,13 +11,11 @@ type DadosAtualizacao = {
   nomeCliente?: string;
   slugCompartilhavel?: string;
   accountIdMeta?: string;
-  tokenAcesso?: string;
-  tokenExpiraEm?: Date;
-  tokenStatus?: "ok" | "expirando" | "expirado" | "erro";
   tipoFunil?: TipoFunil;
   metricaPrincipal?: string;
   labelMetricaPrincipal?: string;
   labelCustoPorResultado?: string;
+  dataEntrada?: Date | null;
   tipoPagamento?: "cartao" | "boleto";
   orcamentoMensal?: number | null;
   ultimaSincronizacao?: null;
@@ -37,8 +34,7 @@ const SELECT_CONTA = {
   labelCustoPorResultado: true,
   compartilhamentoAtivo: true,
   ultimaSincronizacao: true,
-  tokenExpiraEm: true,
-  tokenStatus: true,
+  dataEntrada: true,
   tipoPagamento: true,
   orcamentoMensal: true,
   saldoAtual: true,
@@ -98,8 +94,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Params }) {
       nomeCliente?: string;
       slugCompartilhavel?: string;
       accountIdMeta?: string;
-      tokenAcesso?: string;
       tipoFunil?: TipoFunil;
+      dataEntrada?: string | null;
       tipoPagamento?: "cartao" | "boleto";
       orcamentoMensal?: number | null;
     };
@@ -139,12 +135,6 @@ export async function PATCH(req: NextRequest, { params }: { params: Params }) {
       dados.accountIdMeta = body.accountIdMeta;
     }
 
-    if (body.tokenAcesso) {
-      dados.tokenAcesso = criptografar(body.tokenAcesso);
-      dados.tokenExpiraEm = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000);
-      dados.tokenStatus = "ok";
-    }
-
     if (body.tipoFunil) {
       const config = CONFIGURACOES_FUNIL[body.tipoFunil];
       dados.tipoFunil = body.tipoFunil;
@@ -153,6 +143,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Params }) {
       dados.labelCustoPorResultado = config.labelCustoPorResultado;
     }
 
+    if ("dataEntrada" in body) dados.dataEntrada = body.dataEntrada ? new Date(body.dataEntrada) : null;
     if (body.tipoPagamento) dados.tipoPagamento = body.tipoPagamento;
     if (body.orcamentoMensal !== undefined) dados.orcamentoMensal = body.orcamentoMensal;
 

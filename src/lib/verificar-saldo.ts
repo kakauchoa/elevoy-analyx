@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { descriptografar } from "@/lib/cripto";
+import { obterTokenGlobal } from "@/lib/token-global";
 import { enviarMensagemWhatsApp } from "@/lib/evolution-api";
 
 const META_API_VERSION = process.env.META_API_VERSION ?? "v18.0";
@@ -34,13 +34,20 @@ export async function verificarSaldoContas(): Promise<ResultadoVerificacao> {
     config?.evolutionInstance &&
     config?.evolutionWhatsapp;
 
+  let token: string;
+  try {
+    token = await obterTokenGlobal();
+  } catch {
+    console.error("[verificarSaldo] Token global não configurado — abortando verificação");
+    return { processadas: 0, alertas: 0, erros: 1 };
+  }
+
   const contas = await prisma.contaAnuncio.findMany({
     where: { ativo: true },
     select: {
       id: true,
       nomeCliente: true,
       accountIdMeta: true,
-      tokenAcesso: true,
       tipoPagamento: true,
       orcamentoMensal: true,
     },
@@ -51,7 +58,6 @@ export async function verificarSaldoContas(): Promise<ResultadoVerificacao> {
 
   for (const conta of contas) {
     try {
-      const token = descriptografar(conta.tokenAcesso);
       const res = await fetch(
         `https://graph.facebook.com/${META_API_VERSION}/${conta.accountIdMeta}?fields=balance,account_status&access_token=${token}`
       );
@@ -61,6 +67,15 @@ export async function verificarSaldoContas(): Promise<ResultadoVerificacao> {
       if (dados.error) {
         erros++;
         continue;
+      }
+
+      // Atualiza saldoAtual no banco com o valor real da conta
+      if (dados.balance !== undefined) {
+        const saldoReal = Number(dados.balance) / 100;
+        await prisma.contaAnuncio.update({
+          where: { id: conta.id },
+          data: { saldoAtual: saldoReal, saldoAtualizadoEm: new Date() },
+        });
       }
 
       let tipoAlerta: string | null = null;

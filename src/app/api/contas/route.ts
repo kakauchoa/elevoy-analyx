@@ -3,7 +3,6 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { CONFIGURACOES_FUNIL, TipoFunil } from "@/lib/metricas";
-import { criptografar } from "@/lib/cripto";
 import { resolverAcesso } from "@/lib/acesso-contas";
 
 export async function GET() {
@@ -28,8 +27,7 @@ export async function GET() {
         labelCustoPorResultado: true,
         compartilhamentoAtivo: true,
         ultimaSincronizacao: true,
-        tokenExpiraEm: true,
-        tokenStatus: true,
+        dataEntrada: true,
         tipoPagamento: true,
         orcamentoMensal: true,
         saldoAtual: true,
@@ -56,15 +54,15 @@ export async function POST(req: NextRequest) {
       nomeCliente?: string;
       slugCompartilhavel?: string;
       accountIdMeta?: string;
-      tokenAcesso?: string;
       tipoFunil?: TipoFunil;
+      dataEntrada?: string | null;
       tipoPagamento?: "cartao" | "boleto";
       orcamentoMensal?: number | null;
     };
 
-    const { nomeCliente, slugCompartilhavel, accountIdMeta, tokenAcesso, tipoFunil } = body;
+    const { nomeCliente, slugCompartilhavel, accountIdMeta, tipoFunil } = body;
 
-    if (!nomeCliente || !slugCompartilhavel || !accountIdMeta || !tokenAcesso || !tipoFunil) {
+    if (!nomeCliente || !slugCompartilhavel || !accountIdMeta || !tipoFunil) {
       return NextResponse.json({ erro: "Todos os campos são obrigatórios" }, { status: 400 });
     }
 
@@ -91,13 +89,11 @@ export async function POST(req: NextRequest) {
         nomeCliente,
         slugCompartilhavel,
         accountIdMeta,
-        tokenAcesso: criptografar(tokenAcesso),
         tipoFunil,
         metricaPrincipal: config.metricaPrincipal,
         labelMetricaPrincipal: config.labelMetricaPrincipal,
         labelCustoPorResultado: config.labelCustoPorResultado,
-        tokenExpiraEm: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000),
-        tokenStatus: "ok",
+        dataEntrada: body.dataEntrada ? new Date(body.dataEntrada) : null,
         tipoPagamento: body.tipoPagamento ?? "cartao",
         orcamentoMensal: body.orcamentoMensal ?? null,
       },
@@ -112,8 +108,7 @@ export async function POST(req: NextRequest) {
         labelCustoPorResultado: true,
         compartilhamentoAtivo: true,
         ultimaSincronizacao: true,
-        tokenExpiraEm: true,
-        tokenStatus: true,
+        dataEntrada: true,
         tipoPagamento: true,
         orcamentoMensal: true,
         saldoAtual: true,

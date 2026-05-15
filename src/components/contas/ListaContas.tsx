@@ -5,21 +5,6 @@ import { ContaAnuncio } from "@/types/dashboard";
 import { LABELS_FUNIL, TipoFunil } from "@/lib/metricas";
 import { FormularioConta } from "./FormularioConta";
 
-function BadgeTokenStatus({ status }: { status: ContaAnuncio["tokenStatus"] }) {
-  const map = {
-    ok: { label: "Token OK", cls: "bg-green-50 text-green-700 border-green-200" },
-    expirando: { label: "Expirando", cls: "bg-yellow-50 text-yellow-700 border-yellow-200" },
-    expirado: { label: "Expirado", cls: "bg-red-50 text-red-700 border-red-200" },
-    erro: { label: "Erro no token", cls: "bg-red-50 text-red-700 border-red-200" },
-  };
-  const { label, cls } = map[status] ?? map.ok;
-  return (
-    <span className={`text-[11px] font-medium border px-2 py-0.5 rounded-full ${cls}`}>
-      {label}
-    </span>
-  );
-}
-
 interface ListaContasProps {
   contasIniciais: ContaAnuncio[];
 }
@@ -29,8 +14,9 @@ export function ListaContas({ contasIniciais }: ListaContasProps) {
   const [modalAberto, setModalAberto] = useState(false);
   const [contaEmEdicao, setContaEmEdicao] = useState<ContaAnuncio | null>(null);
   const [confirmandoExclusao, setConfirmandoExclusao] = useState<string | null>(null);
+  const [confirmandoReprocessar, setConfirmandoReprocessar] = useState<string | null>(null);
   const [copiado, setCopiado] = useState<string | null>(null);
-  const [renovando, setRenovando] = useState<string | null>(null);
+  const [reprocessando, setReprocessando] = useState<string | null>(null);
   const [erroGlobal, setErroGlobal] = useState("");
 
   const abrirModal = (conta: ContaAnuncio | null = null) => {
@@ -85,32 +71,27 @@ export function ListaContas({ contasIniciais }: ListaContasProps) {
     setTimeout(() => setCopiado(null), 2000);
   };
 
-  const handleRenovarToken = async (id: string) => {
-    setRenovando(id);
+  const handleReprocessar = async (id: string) => {
+    setConfirmandoReprocessar(null);
+    setReprocessando(id);
     setErroGlobal("");
+
     try {
-      const res = await fetch(`/api/contas/${id}/renovar-token`, { method: "POST" });
-      const data = (await res.json()) as {
-        ok?: boolean;
-        erro?: string;
-        tokenExpiraEm?: string;
-        tokenStatus?: ContaAnuncio["tokenStatus"];
-      };
-      if (res.ok && data.ok) {
+      const res = await fetch(`/api/contas/${id}/reprocessar`, { method: "POST" });
+      const data = (await res.json()) as { iniciado?: boolean; erro?: string; dataInicio?: string; dataFim?: string };
+
+      if (res.ok && data.iniciado) {
+        // Atualiza a conta localmente — dados serão reprocessados em background
         setContas((prev) =>
-          prev.map((c) =>
-            c.id === id
-              ? { ...c, tokenExpiraEm: data.tokenExpiraEm ?? null, tokenStatus: data.tokenStatus ?? "ok" }
-              : c
-          )
+          prev.map((c) => (c.id === id ? { ...c, ultimaSincronizacao: null } : c))
         );
       } else {
-        setErroGlobal(data.erro ?? "Erro ao renovar token");
+        setErroGlobal(data.erro ?? "Erro ao iniciar reprocessamento");
       }
     } catch {
-      setErroGlobal("Erro ao renovar token");
+      setErroGlobal("Erro ao iniciar reprocessamento");
     } finally {
-      setRenovando(null);
+      setReprocessando(null);
     }
   };
 
@@ -183,7 +164,11 @@ export function ListaContas({ contasIniciais }: ListaContasProps) {
                     <span className="text-xs bg-black text-white px-2 py-0.5 rounded-full">
                       {LABELS_FUNIL[conta.tipoFunil as TipoFunil]}
                     </span>
-                    <BadgeTokenStatus status={conta.tokenStatus} />
+                    {reprocessando === conta.id && (
+                      <span className="text-xs text-orange-600 bg-orange-50 border border-orange-200 px-2 py-0.5 rounded-full">
+                        Reprocessando dados...
+                      </span>
+                    )}
                   </div>
                   <div className="mt-1.5 flex items-center gap-2 text-xs text-gray-400 flex-wrap">
                     <span className="font-mono">{conta.accountIdMeta}</span>
@@ -191,6 +176,17 @@ export function ListaContas({ contasIniciais }: ListaContasProps) {
                     <span>Resultado: {conta.labelMetricaPrincipal}</span>
                     <span>·</span>
                     <span className="font-mono">/compartilhavel/{conta.slugCompartilhavel}</span>
+                    {conta.dataEntrada && (
+                      <>
+                        <span>·</span>
+                        <span>
+                          Desde:{" "}
+                          {new Date(conta.dataEntrada).toLocaleDateString("pt-BR", {
+                            day: "2-digit", month: "2-digit", year: "numeric",
+                          })}
+                        </span>
+                      </>
+                    )}
                   </div>
                 </div>
 
@@ -227,24 +223,41 @@ export function ListaContas({ contasIniciais }: ListaContasProps) {
                     )}
                   </button>
 
-                  {/* Renovar token */}
-                  <button
-                    onClick={() => handleRenovarToken(conta.id)}
-                    disabled={renovando === conta.id}
-                    title="Renovar token Meta"
-                    className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors disabled:opacity-40"
-                  >
-                    {renovando === conta.id ? (
-                      <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                      </svg>
-                    ) : (
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                      </svg>
-                    )}
-                  </button>
+                  {/* Reprocessar dados */}
+                  {confirmandoReprocessar === conta.id ? (
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => handleReprocessar(conta.id)}
+                        className="text-xs px-2 py-1 bg-orange-600 text-white rounded-md hover:bg-orange-700 transition-colors"
+                      >
+                        Confirmar
+                      </button>
+                      <button
+                        onClick={() => setConfirmandoReprocessar(null)}
+                        className="text-xs px-2 py-1 text-gray-500 hover:bg-gray-100 rounded-md transition-colors"
+                      >
+                        Cancelar
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => setConfirmandoReprocessar(conta.id)}
+                      disabled={reprocessando === conta.id}
+                      title="Reprocessar todos os dados desde a data de entrada"
+                      className="p-1.5 text-gray-400 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-colors disabled:opacity-40"
+                    >
+                      {reprocessando === conta.id ? (
+                        <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                        </svg>
+                      ) : (
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                      )}
+                    </button>
+                  )}
 
                   {/* Editar */}
                   <button
@@ -296,13 +309,12 @@ export function ListaContas({ contasIniciais }: ListaContasProps) {
                   {conta.compartilhamentoAtivo ? "Link público ativo" : "Link público inativo"}
                 </span>
                 <div className="flex items-center gap-3 text-xs text-gray-400">
-                  {conta.tokenExpiraEm && (
-                    <span>
-                      Token expira em:{" "}
-                      {new Date(conta.tokenExpiraEm).toLocaleDateString("pt-BR", {
-                        day: "2-digit",
-                        month: "2-digit",
-                        year: "numeric",
+                  {conta.saldoAtual && (
+                    <span className="font-medium text-gray-600">
+                      Saldo: R${" "}
+                      {Number(conta.saldoAtual).toLocaleString("pt-BR", {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
                       })}
                     </span>
                   )}
@@ -318,7 +330,7 @@ export function ListaContas({ contasIniciais }: ListaContasProps) {
                       })}
                     </span>
                   ) : (
-                    <span>Nunca sincronizado</span>
+                    <span>{reprocessando === conta.id ? "Reprocessando..." : "Nunca sincronizado"}</span>
                   )}
                 </div>
               </div>
