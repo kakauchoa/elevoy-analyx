@@ -256,10 +256,8 @@ function SecaoVerificar() {
     setRodando(true);
     setResultado(null);
     try {
-      const cronSecret = "";
       const res = await fetch("/api/jobs/verificar-saldo", {
         method: "POST",
-        headers: { "x-cron-secret": cronSecret },
       });
       const dados = (await res.json()) as typeof resultado;
       setResultado(dados);
