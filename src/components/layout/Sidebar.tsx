@@ -196,6 +196,7 @@ interface NavItem {
   icon: React.ReactNode;
   adminOnly?: boolean;
   exact?: boolean;
+  permission?: string;
 }
 
 interface NavSection {
@@ -213,6 +214,7 @@ const SECTIONS: NavSection[] = [
     items: [
       { href: "/", label: "Dashboard", icon: <IconGrid />, exact: true },
       { href: "/tarefas", label: "Painel de Tarefas", icon: <IconCheckSquare /> },
+      { href: "/acessos", label: "Acessos", icon: <IconEye />, permission: "Clientes" },
     ],
   },
   {
@@ -221,7 +223,8 @@ const SECTIONS: NavSection[] = [
     permission: "Clientes",
     items: [
       { href: "/contas", label: "Contas de Anúncio", icon: <IconStore /> },
-      { href: "/acessos", label: "Acessos", icon: <IconEye /> },
+      { href: "/administrativo/mapa-cliente", label: "Mapa do Cliente", icon: <IconMapPin /> },
+      { href: "/administrativo/mapa-evolucao", label: "Mapa de Evolução", icon: <IconTrendingUp /> },
     ],
   },
   {
@@ -235,12 +238,6 @@ const SECTIONS: NavSection[] = [
     ],
   },
   {
-    id: "equipe",
-    label: "Equipe",
-    adminOnly: true,
-    items: [{ href: "/usuarios", label: "Usuários", icon: <IconUsers /> }],
-  },
-  {
     id: "ferramentas",
     label: "Ferramentas",
     adminOnly: true,
@@ -248,15 +245,6 @@ const SECTIONS: NavSection[] = [
       { href: "/ferramentas", label: "Verificação de Saldo", icon: <IconShield />, exact: true },
       { href: "/ferramentas/rastreamento-whatsapp", label: "Rastreamento WhatsApp", icon: <IconWhatsApp /> },
       { href: "/ferramentas/construtor-dashboard", label: "Construtor de Dashboard", icon: <IconLayout /> },
-    ],
-  },
-  {
-    id: "administrativo",
-    label: "Administrativo",
-    adminOnly: true,
-    items: [
-      { href: "/administrativo/mapa-cliente", label: "Mapa do Cliente", icon: <IconMapPin /> },
-      { href: "/administrativo/mapa-evolucao", label: "Mapa de Evolução", icon: <IconTrendingUp /> },
     ],
   },
 ];
@@ -270,12 +258,18 @@ export function Sidebar({ isAdmin, userName, permissoes }: SidebarProps) {
     visaoGeral: false,
     clientes: false,
     vendas: false,
-    equipe: false,
     ferramentas: false,
-    administrativo: false,
   });
   const [popupAberto, setPopupAberto] = useState(false);
   const popupRef = useRef<HTMLDivElement>(null);
+
+  // Restaura estado salvo no localStorage
+  useEffect(() => {
+    try {
+      const salvo = localStorage.getItem("sidebar-sections");
+      if (salvo) setOpenSections(JSON.parse(salvo) as Record<string, boolean>);
+    } catch {}
+  }, []);
 
   useEffect(() => {
     function handleClickFora(e: MouseEvent) {
@@ -288,7 +282,11 @@ export function Sidebar({ isAdmin, userName, permissoes }: SidebarProps) {
   }, [popupAberto]);
 
   function toggleSection(id: string) {
-    setOpenSections((prev) => ({ ...prev, [id]: !prev[id] }));
+    setOpenSections((prev) => {
+      const novo = { ...prev, [id]: !prev[id] };
+      try { localStorage.setItem("sidebar-sections", JSON.stringify(novo)); } catch {}
+      return novo;
+    });
   }
 
   function isActive(href: string, exact?: boolean) {
@@ -362,10 +360,12 @@ export function Sidebar({ isAdmin, userName, permissoes }: SidebarProps) {
       <nav className="flex-1 py-3 overflow-y-auto overflow-x-hidden">
         {SECTIONS.map((section) => {
           if (!sectionVisible(section)) return null;
-          const open = openSections[section.id] ?? true;
-          const visibleItems = section.items.filter(
-            (item) => !item.adminOnly || isAdmin
-          );
+          const open = openSections[section.id] ?? false;
+          const visibleItems = section.items.filter((item) => {
+            if (item.adminOnly && !isAdmin) return false;
+            if (item.permission && !isAdmin && !permissoes.includes(item.permission)) return false;
+            return true;
+          });
           if (visibleItems.length === 0) return null;
 
           return (
