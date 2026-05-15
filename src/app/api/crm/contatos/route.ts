@@ -38,7 +38,8 @@ export async function POST(req: NextRequest) {
       empresa?: string;
       email?: string;
       notas?: string;
-      dataFollowUp?: string | null;
+      dataContato?: string | null;
+      dataMensagem?: string | null;
     };
 
     if (!body.etapaId || !body.nome?.trim()) {
@@ -50,7 +51,8 @@ export async function POST(req: NextRequest) {
     });
     if (!etapa) return NextResponse.json({ erro: "Etapa não encontrada" }, { status: 404 });
 
-    const dataFollowUp = body.dataFollowUp ? new Date(body.dataFollowUp) : null;
+    const dataContato = body.dataContato ? new Date(body.dataContato) : null;
+    const dataMensagem = body.dataMensagem ? new Date(body.dataMensagem) : null;
 
     const contato = await prisma.crmContato.create({
       data: {
@@ -61,18 +63,18 @@ export async function POST(req: NextRequest) {
         empresa: body.empresa?.trim() || null,
         email: body.email?.trim() || null,
         notas: body.notas?.trim() || null,
-        dataFollowUp,
+        dataContato,
+        dataMensagem,
       },
       include: includeCompleto,
     });
 
-    // Criar evento no Google Calendar se tiver data
-    if (dataFollowUp) {
+    if (dataContato) {
       const eventId = await criarEventoCalendario({
         usuarioId: session.user.id,
         summary: contato.nome,
         description: contato.notas ?? undefined,
-        dataFollowUp,
+        dataFollowUp: dataContato,
       });
       if (eventId) {
         await prisma.crmContato.update({

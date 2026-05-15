@@ -30,7 +30,10 @@ interface CrmContato {
   empresa: string | null;
   email: string | null;
   notas: string | null;
-  dataFollowUp: string | null;
+  dataContato: string | null;
+  dataMensagem: string | null;
+  criadoEm: string;
+  atualizadoEm: string;
   campos: CampoCustomizado[];
   tags: CrmContatoTag[];
 }
@@ -40,6 +43,7 @@ interface CrmEtapa {
   nome: string;
   cor: string;
   ordem: number;
+  fixo: boolean;
   contatos: CrmContato[];
 }
 
@@ -49,9 +53,9 @@ function telefoneSemFormatacao(tel: string): string {
   return tel.replace(/\D/g, "");
 }
 
-function estaAtrasado(dataFollowUp: string | null): boolean {
-  if (!dataFollowUp) return false;
-  return new Date(dataFollowUp) < new Date();
+function estaAtrasado(dataContato: string | null): boolean {
+  if (!dataContato) return false;
+  return new Date(dataContato) < new Date();
 }
 
 function formatarData(iso: string): string {
@@ -62,16 +66,16 @@ function formatarData(iso: string): string {
 // Ordena contatos: atrasados primeiro (mais antigo primeiro), depois futuros, depois sem data
 function ordenarContatos(contatos: CrmContato[]): CrmContato[] {
   const agora = new Date();
-  const comData = contatos.filter((c) => c.dataFollowUp !== null);
-  const semData = contatos.filter((c) => c.dataFollowUp === null);
+  const comData = contatos.filter((c) => c.dataContato !== null);
+  const semData = contatos.filter((c) => c.dataContato === null);
 
   const atrasados = comData
-    .filter((c) => new Date(c.dataFollowUp!) < agora)
-    .sort((a, b) => new Date(a.dataFollowUp!).getTime() - new Date(b.dataFollowUp!).getTime());
+    .filter((c) => new Date(c.dataContato!) < agora)
+    .sort((a, b) => new Date(a.dataContato!).getTime() - new Date(b.dataContato!).getTime());
 
   const futuros = comData
-    .filter((c) => new Date(c.dataFollowUp!) >= agora)
-    .sort((a, b) => new Date(a.dataFollowUp!).getTime() - new Date(b.dataFollowUp!).getTime());
+    .filter((c) => new Date(c.dataContato!) >= agora)
+    .sort((a, b) => new Date(a.dataContato!).getTime() - new Date(b.dataContato!).getTime());
 
   return [...atrasados, ...futuros, ...semData];
 }
@@ -237,8 +241,11 @@ function ModalContato({ contato, etapaId, etapas, todasTags, onClose, onSalvo, o
   const [empresa, setEmpresa] = useState(contato?.empresa ?? "");
   const [email, setEmail] = useState(contato?.email ?? "");
   const [notas, setNotas] = useState(contato?.notas ?? "");
-  const [dataFollowUp, setDataFollowUp] = useState(
-    contato?.dataFollowUp ? new Date(contato.dataFollowUp).toISOString().slice(0, 16) : ""
+  const [dataContato, setDataContato] = useState(
+    contato?.dataContato ? new Date(contato.dataContato).toISOString().slice(0, 16) : ""
+  );
+  const [dataMensagem, setDataMensagem] = useState(
+    contato?.dataMensagem ? new Date(contato.dataMensagem).toISOString().slice(0, 16) : ""
   );
   const [etapaSelecionada, setEtapaSelecionada] = useState(etapaId ?? etapas[0]?.id ?? "");
   const [campos, setCampos] = useState<CampoCustomizado[]>(contato?.campos ?? []);
@@ -266,7 +273,8 @@ function ModalContato({ contato, etapaId, etapas, todasTags, onClose, onSalvo, o
             empresa: empresa || null,
             email: email || null,
             notas: notas || null,
-            dataFollowUp: dataFollowUp || null,
+            dataContato: dataContato || null,
+            dataMensagem: dataMensagem || null,
           }),
         });
         const data = (await res.json()) as CrmContato;
@@ -290,7 +298,8 @@ function ModalContato({ contato, etapaId, etapas, todasTags, onClose, onSalvo, o
             empresa: empresa || null,
             email: email || null,
             notas: notas || null,
-            dataFollowUp: dataFollowUp || null,
+            dataContato: dataContato || null,
+            dataMensagem: dataMensagem || null,
           }),
         });
         const data = (await res.json()) as CrmContato;
@@ -452,21 +461,46 @@ function ModalContato({ contato, etapaId, etapas, todasTags, onClose, onSalvo, o
             </div>
           ))}
 
-          {/* Data de follow-up */}
+          {/* Data de entrada (somente leitura em edição) */}
+          {!isNovo && contato && (
+            <div className="flex gap-3 text-xs text-gray-400 bg-gray-50 rounded-lg px-3 py-2">
+              <span>Entrada: <span className="text-gray-600">{formatarData(contato.criadoEm)}</span></span>
+              <span>·</span>
+              <span>Atualizado: <span className="text-gray-600">{formatarData(contato.atualizadoEm)}</span></span>
+            </div>
+          )}
+
+          {/* Data da última mensagem */}
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Data de follow-up</label>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Data da última mensagem</label>
             <input
               type="datetime-local"
-              value={dataFollowUp}
-              onChange={(e) => setDataFollowUp(e.target.value)}
+              value={dataMensagem}
+              onChange={(e) => setDataMensagem(e.target.value)}
               className="w-full border border-[#e5e5e5] rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-black"
             />
-            {dataFollowUp && (
-              <button
-                onClick={() => setDataFollowUp("")}
-                className="mt-1 text-xs text-gray-400 hover:text-red-500 transition-colors"
-              >
-                Limpar data
+            {dataMensagem && (
+              <button onClick={() => setDataMensagem("")} className="mt-1 text-xs text-gray-400 hover:text-red-500 transition-colors">
+                Limpar
+              </button>
+            )}
+          </div>
+
+          {/* Data de contato (vai para atraso) */}
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">
+              Data de contato
+              <span className="ml-1 text-[10px] text-orange-500 font-normal">entra em atraso</span>
+            </label>
+            <input
+              type="datetime-local"
+              value={dataContato}
+              onChange={(e) => setDataContato(e.target.value)}
+              className="w-full border border-[#e5e5e5] rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-black"
+            />
+            {dataContato && (
+              <button onClick={() => setDataContato("")} className="mt-1 text-xs text-gray-400 hover:text-red-500 transition-colors">
+                Limpar
               </button>
             )}
           </div>
@@ -673,7 +707,7 @@ interface CardContatoProps {
 }
 
 function CardContato({ contato, onDragStart, onClick }: CardContatoProps) {
-  const atrasado = estaAtrasado(contato.dataFollowUp);
+  const atrasado = estaAtrasado(contato.dataContato);
 
   return (
     <div
@@ -699,13 +733,22 @@ function CardContato({ contato, onDragStart, onClick }: CardContatoProps) {
         <p className="text-xs text-gray-500 mt-0.5 truncate">{contato.empresa}</p>
       )}
 
-      {/* Data de follow-up */}
-      {contato.dataFollowUp && (
+      {/* Data de contato (com atraso) */}
+      {contato.dataContato && (
         <div className={`mt-2 flex items-center gap-1 ${atrasado ? "text-red-600" : "text-gray-500"}`}>
           <svg className="w-3 h-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
           </svg>
-          <span className="text-[11px]">{formatarData(contato.dataFollowUp)}</span>
+          <span className="text-[11px]">Contato: {formatarData(contato.dataContato)}</span>
+        </div>
+      )}
+      {/* Última mensagem */}
+      {contato.dataMensagem && (
+        <div className="mt-1 flex items-center gap-1 text-gray-400">
+          <svg className="w-3 h-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+          </svg>
+          <span className="text-[11px]">Msg: {formatarData(contato.dataMensagem)}</span>
         </div>
       )}
 
@@ -823,7 +866,7 @@ function BannerAtrasos({ etapas }: { etapas: CrmEtapa[] }) {
   const [fechado, setFechado] = useState(false);
 
   const atrasados = etapas.flatMap((e) =>
-    e.contatos.filter((c) => estaAtrasado(c.dataFollowUp))
+    e.contatos.filter((c) => estaAtrasado(c.dataContato))
   );
 
   if (atrasados.length === 0 || fechado) return null;
@@ -946,7 +989,7 @@ export default function CrmPage() {
     setTodasTags((prev) => [...prev, tag]);
   }
 
-  const totalAtrasados = etapas.flatMap((e) => e.contatos.filter((c) => estaAtrasado(c.dataFollowUp))).length;
+  const totalAtrasados = etapas.flatMap((e) => e.contatos.filter((c) => estaAtrasado(c.dataContato))).length;
 
   if (carregando) {
     return (

@@ -18,7 +18,23 @@
       "Bash(npm show *)",
       "Bash(npm search *)",
       "Bash(node -e \"const p=require\\('./package.json'\\); const deps={...p.dependencies,...p.devDependencies}; ['next-auth','@prisma/client','prisma','bcryptjs'].forEach\\(k=>console.log\\(k+':', deps[k]\\)\\)\")",
-      "Bash(npm run *)"
+      "Bash(npm run *)",
+      "Bash(mysql *)",
+      "Bash(npx tsx -e ' *)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)",
+      "Bash(git remote *)",
+      "Bash(mkdir -p \"/Users/kauanuchoa/Library/Mobile Documents/com~apple~CloudDocs/0-Code-my-apps/Elevoy-Analyx/src/app/api/crm/etapas/[id]\")",
+      "Bash(mkdir -p \"/Users/kauanuchoa/Library/Mobile Documents/com~apple~CloudDocs/0-Code-my-apps/Elevoy-Analyx/src/app/api/crm/contatos/[id]/mover\")",
+      "Bash(mkdir -p \"/Users/kauanuchoa/Library/Mobile Documents/com~apple~CloudDocs/0-Code-my-apps/Elevoy-Analyx/src/app/api/crm/contatos/[id]/campos\")",
+      "Bash(mkdir -p \"/Users/kauanuchoa/Library/Mobile Documents/com~apple~CloudDocs/0-Code-my-apps/Elevoy-Analyx/src/app/api/usuarios/[id]/permissoes\")",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\('\\\\n'.join\\(d.get\\('dependencies',{}\\).keys\\(\\)\\)\\)\")",
+      "Bash(mkdir -p \"/Users/kauanuchoa/Library/Mobile Documents/com~apple~CloudDocs/0-Code-my-apps/Elevoy-Analyx/src/app/api/crm/tags/[id]\")",
+      "Bash(mkdir -p \"/Users/kauanuchoa/Library/Mobile Documents/com~apple~CloudDocs/0-Code-my-apps/Elevoy-Analyx/src/app/api/crm/contatos/[id]/tags\")",
+      "Bash(node -e \"const b=require\\('bcryptjs'\\);b.hash\\('Kn@071805',12\\).then\\(h=>console.log\\(h\\)\\)\")",
+      "Bash(git commit -m 'fix: remover fetch HEAD que causava CORS no Google OAuth *)",
+      "Bash(git commit -m 'feat: prospecção GMN + melhorias CRM \\(datas, Leads fixo\\) *)"
     ]
   }
 }

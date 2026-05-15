@@ -75,6 +75,8 @@ model Usuario {
   contatosCrm         CrmContato[]
   tagsCrm             CrmTag[]
   integracaoGoogle    IntegracaoGoogle?
+  prospeccoes         ProspeccaoGmn[]
+  historicosPesquisa  HistoricoPesquisaGmn[]
 
   @@map("usuarios")
 }
@@ -283,6 +285,7 @@ model CrmEtapa {
   nome      String       @db.VarChar(100)
   cor       String       @db.VarChar(20)
   ordem     Int
+  fixo      Boolean      @default(false)
   criadoEm  DateTime     @default(now()) @map("criado_em")
   usuario   Usuario      @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
   contatos  CrmContato[]
@@ -291,22 +294,23 @@ model CrmEtapa {
 }
 
 model CrmContato {
-  id                   String               @id @default(uuid())
-  etapaId              String               @map("etapa_id")
-  usuarioId            String               @map("usuario_id")
-  nome                 String               @db.VarChar(255)
-  telefone             String?              @db.VarChar(30)
-  empresa              String?              @db.VarChar(255)
-  email                String?              @db.VarChar(255)
-  notas                String?              @db.Text
-  dataFollowUp         DateTime?            @map("data_follow_up")
-  googleCalendarEventId String?             @map("google_calendar_event_id") @db.VarChar(255)
-  criadoEm             DateTime             @default(now()) @map("criado_em")
-  atualizadoEm         DateTime             @updatedAt @map("atualizado_em")
-  etapa                CrmEtapa             @relation(fields: [etapaId], references: [id], onDelete: Cascade)
-  usuario              Usuario              @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
-  campos               CrmCampoCustomizado[]
-  tags                 CrmContatoTag[]
+  id                    String               @id @default(uuid())
+  etapaId               String               @map("etapa_id")
+  usuarioId             String               @map("usuario_id")
+  nome                  String               @db.VarChar(255)
+  telefone              String?              @db.VarChar(30)
+  empresa               String?              @db.VarChar(255)
+  email                 String?              @db.VarChar(255)
+  notas                 String?              @db.Text
+  dataContato           DateTime?            @map("data_follow_up")
+  dataMensagem          DateTime?            @map("data_mensagem")
+  googleCalendarEventId String?              @map("google_calendar_event_id") @db.VarChar(255)
+  criadoEm              DateTime             @default(now()) @map("criado_em")
+  atualizadoEm          DateTime             @updatedAt @map("atualizado_em")
+  etapa                 CrmEtapa             @relation(fields: [etapaId], references: [id], onDelete: Cascade)
+  usuario               Usuario              @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  campos                CrmCampoCustomizado[]
+  tags                  CrmContatoTag[]
 
   @@map("crm_contatos")
 }
@@ -355,6 +359,46 @@ model IntegracaoGoogle {
   usuario      Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
 
   @@map("integracoes_google")
+}
+
+model ProspeccaoGmn {
+  id            String   @id @default(uuid())
+  usuarioId     String   @map("usuario_id")
+  placeId       String   @map("place_id") @db.VarChar(255)
+  cidade        String   @db.VarChar(255)
+  nicho         String   @db.VarChar(255)
+  nome          String   @db.VarChar(500)
+  telefone      String?  @db.VarChar(50)
+  site          String?  @db.VarChar(500)
+  endereco      String?  @db.Text
+  avaliacao     Decimal? @db.Decimal(3, 1)
+  qtdAvaliacoes Int?     @map("qtd_avaliacoes")
+  extraidoEm    DateTime @default(now()) @map("extraido_em")
+  enviadoCrm    Boolean  @default(false) @map("enviado_crm")
+  crmContatoId  String?  @map("crm_contato_id") @db.VarChar(191)
+  usuario       Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@unique([usuarioId, placeId])
+  @@map("prospeccoes_gmn")
+}
+
+model HistoricoPesquisaGmn {
+  id           String   @id @default(uuid())
+  usuarioId    String   @map("usuario_id")
+  cidade       String   @db.VarChar(255)
+  nicho        String   @db.VarChar(255)
+  pesquisadoEm DateTime @default(now()) @map("pesquisado_em")
+  usuario      Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@map("historico_pesquisa_gmn")
+}
+
+model ConfiguracaoPlataforma {
+  id                 String   @id @default(uuid())
+  googlePlacesApiKey String?  @map("google_places_api_key") @db.VarChar(500)
+  atualizadoEm      DateTime @updatedAt @map("atualizado_em")
+
+  @@map("configuracoes_plataforma")
 }
 
 model ConfiguracaoGtm {

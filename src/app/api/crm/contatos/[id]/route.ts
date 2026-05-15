@@ -30,7 +30,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Params }) {
       empresa?: string | null;
       email?: string | null;
       notas?: string | null;
-      dataFollowUp?: string | null;
+      dataContato?: string | null;
+      dataMensagem?: string | null;
     };
 
     const dados: Record<string, string | Date | null | undefined> = {};
@@ -39,10 +40,11 @@ export async function PATCH(req: NextRequest, { params }: { params: Params }) {
     if ("empresa" in body) dados.empresa = body.empresa?.trim() || null;
     if ("email" in body) dados.email = body.email?.trim() || null;
     if ("notas" in body) dados.notas = body.notas?.trim() || null;
+    if ("dataMensagem" in body) dados.dataMensagem = body.dataMensagem ? new Date(body.dataMensagem) : null;
 
-    const mudouData = "dataFollowUp" in body;
-    const novaData = mudouData ? (body.dataFollowUp ? new Date(body.dataFollowUp) : null) : undefined;
-    if (mudouData) dados.dataFollowUp = novaData ?? null;
+    const mudouDataContato = "dataContato" in body;
+    const novaDataContato = mudouDataContato ? (body.dataContato ? new Date(body.dataContato) : null) : undefined;
+    if (mudouDataContato) dados.dataContato = novaDataContato ?? null;
 
     const atualizado = await prisma.crmContato.update({
       where: { id },
@@ -50,19 +52,18 @@ export async function PATCH(req: NextRequest, { params }: { params: Params }) {
       include: includeCompleto,
     });
 
-    // Sincronizar com Google Calendar
-    if (mudouData) {
-      if (!novaData && contato.googleCalendarEventId) {
+    if (mudouDataContato) {
+      if (!novaDataContato && contato.googleCalendarEventId) {
         await deletarEventoCalendario(session.user.id, contato.googleCalendarEventId);
         await prisma.crmContato.update({ where: { id }, data: { googleCalendarEventId: null } });
-      } else if (novaData && contato.googleCalendarEventId) {
-        await atualizarEventoCalendario(session.user.id, contato.googleCalendarEventId, atualizado.nome, novaData);
-      } else if (novaData && !contato.googleCalendarEventId) {
+      } else if (novaDataContato && contato.googleCalendarEventId) {
+        await atualizarEventoCalendario(session.user.id, contato.googleCalendarEventId, atualizado.nome, novaDataContato);
+      } else if (novaDataContato && !contato.googleCalendarEventId) {
         const eventId = await criarEventoCalendario({
           usuarioId: session.user.id,
           summary: atualizado.nome,
           description: atualizado.notas ?? undefined,
-          dataFollowUp: novaData,
+          dataFollowUp: novaDataContato,
         });
         if (eventId) {
           await prisma.crmContato.update({ where: { id }, data: { googleCalendarEventId: eventId } });

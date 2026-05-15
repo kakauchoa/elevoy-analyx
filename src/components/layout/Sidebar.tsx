@@ -88,6 +88,15 @@ function IconKey() {
   );
 }
 
+function IconSearch() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="11" cy="11" r="8" />
+      <path d="m21 21-4.35-4.35" />
+    </svg>
+  );
+}
+
 function IconKanban() {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -160,7 +169,10 @@ const SECTIONS: NavSection[] = [
     id: "vendas",
     label: "Vendas",
     permission: "Vendas",
-    items: [{ href: "/vendas/crm", label: "CRM", icon: <IconKanban /> }],
+    items: [
+      { href: "/vendas/crm", label: "CRM", icon: <IconKanban /> },
+      { href: "/vendas/prospeccao", label: "Prospecção GMN", icon: <IconSearch /> },
+    ],
   },
   {
     id: "equipe",
