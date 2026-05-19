@@ -299,6 +299,15 @@ function TabWhatsApp({
 
 // ── Tab Cliente CRM ──────────────────────────────────────────────────────────
 
+type PainelAtivo = "nenhum" | "busca" | "novo";
+
+interface NovoClienteForm {
+  nome: string;
+  email: string;
+  telefone: string;
+  senha: string;
+}
+
 function TabCliente({
   conta,
   onAtualizar,
@@ -308,19 +317,26 @@ function TabCliente({
 }) {
   const [clientes, setClientes] = useState<ClienteOpcao[]>([]);
   const [busca, setBusca] = useState("");
+  const [painel, setPainel] = useState<PainelAtivo>("nenhum");
   const [vinculando, setVinculando] = useState(false);
   const [desvinculando, setDesvinculando] = useState(false);
-  const [mostrarBusca, setMostrarBusca] = useState(false);
+  const [apagando, setApagando] = useState(false);
+
+  const [novoForm, setNovoForm] = useState<NovoClienteForm>({
+    nome: "", email: "", telefone: "", senha: "",
+  });
+  const [criando, setCriando] = useState(false);
+  const [erroCriacao, setErroCriacao] = useState("");
 
   useEffect(() => {
-    if (mostrarBusca) {
+    if (painel === "busca") {
       fetch("/api/rastreamento/clientes")
         .then((r) => r.json())
         .then((lista: ClienteOpcao[]) =>
-          setClientes(lista.filter((c) => c.status === "aprovado" || c.status === "pendente"))
+          setClientes(lista.filter((c) => !c.contaAnuncioId || c.id === conta.cliente?.id))
         );
     }
-  }, [mostrarBusca]);
+  }, [painel, conta.cliente?.id]);
 
   async function vincularCliente(clienteId: string) {
     setVinculando(true);
@@ -330,13 +346,13 @@ function TabCliente({
       body: JSON.stringify({ acao: "aprovar", contaAnuncioId: conta.id }),
     });
     setVinculando(false);
-    setMostrarBusca(false);
+    setPainel("nenhum");
     onAtualizar();
   }
 
   async function desvincularCliente() {
     if (!conta.cliente) return;
-    if (!confirm("Desvincular este cliente da conta?")) return;
+    if (!confirm("Desvincular este cliente da conta? O perfil não será apagado.")) return;
     setDesvinculando(true);
     await fetch(`/api/rastreamento/clientes/${conta.cliente.id}`, {
       method: "PATCH",
@@ -345,6 +361,43 @@ function TabCliente({
     });
     setDesvinculando(false);
     onAtualizar();
+  }
+
+  async function apagarCliente() {
+    if (!conta.cliente) return;
+    if (
+      !confirm(
+        `Apagar a conta de "${conta.cliente.nome}" permanentemente? Esta ação não pode ser desfeita.`
+      )
+    )
+      return;
+    setApagando(true);
+    await fetch(`/api/rastreamento/clientes/${conta.cliente.id}`, { method: "DELETE" });
+    setApagando(false);
+    onAtualizar();
+  }
+
+  async function criarCliente(e: React.FormEvent) {
+    e.preventDefault();
+    setCriando(true);
+    setErroCriacao("");
+    try {
+      const res = await fetch("/api/rastreamento/clientes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...novoForm, contaAnuncioId: conta.id }),
+      });
+      const data = (await res.json()) as { ok?: boolean; erro?: string };
+      if (!res.ok) {
+        setErroCriacao(data.erro ?? "Erro ao criar cliente");
+        return;
+      }
+      setPainel("nenhum");
+      setNovoForm({ nome: "", email: "", telefone: "", senha: "" });
+      onAtualizar();
+    } finally {
+      setCriando(false);
+    }
   }
 
   const clientesFiltrados = clientes.filter(
@@ -358,16 +411,14 @@ function TabCliente({
       <div>
         <h2 className="text-base font-semibold text-gray-900 mb-1">Cliente vinculado</h2>
         <p className="text-sm text-gray-500">
-          O cliente vinculado tem acesso ao CRM desta conta em{" "}
-          <code className="text-xs bg-gray-100 px-1 rounded">
-            /crm-cliente/{conta.id}
-          </code>
+          O cliente vinculado acessa o CRM em{" "}
+          <code className="text-xs bg-gray-100 px-1 rounded">/crm-cliente/login</code>
         </p>
       </div>
 
       {conta.cliente ? (
-        <div className="border border-[#e5e5e5] rounded-xl p-5 bg-white">
-          <div className="flex items-start justify-between">
+        <div className="border border-[#e5e5e5] rounded-xl p-5 bg-white space-y-4">
+          <div className="flex items-start justify-between gap-3">
             <div>
               <p className="font-semibold text-gray-900">{conta.cliente.nome}</p>
               <p className="text-sm text-gray-500 mt-0.5">{conta.cliente.email}</p>
@@ -384,17 +435,26 @@ function TabCliente({
                 {conta.cliente.status === "aprovado" ? "Aprovado" : "Pendente"}
               </span>
             </div>
-            <button
-              disabled={desvinculando}
-              onClick={desvincularCliente}
-              className="text-sm text-red-500 hover:text-red-700 disabled:opacity-50"
-            >
-              Desvincular
-            </button>
+            <div className="flex flex-col items-end gap-2 shrink-0">
+              <button
+                disabled={desvinculando}
+                onClick={desvincularCliente}
+                className="text-xs text-gray-500 hover:text-gray-700 disabled:opacity-50 border border-[#e5e5e5] px-2.5 py-1 rounded-lg"
+              >
+                Desvincular
+              </button>
+              <button
+                disabled={apagando}
+                onClick={apagarCliente}
+                className="text-xs text-red-500 hover:text-red-700 disabled:opacity-50 border border-red-200 px-2.5 py-1 rounded-lg"
+              >
+                {apagando ? "Apagando…" : "Apagar conta"}
+              </button>
+            </div>
           </div>
 
-          <div className="mt-4 pt-4 border-t border-[#f0f0f0]">
-            <p className="text-xs text-gray-400 mb-2">Link de acesso do cliente:</p>
+          <div className="pt-3 border-t border-[#f0f0f0]">
+            <p className="text-xs text-gray-400 mb-2">Link de acesso:</p>
             <LinkCopiavel
               label="Portal do cliente"
               href={`${typeof window !== "undefined" ? window.location.origin : ""}/crm-cliente/login`}
@@ -402,28 +462,99 @@ function TabCliente({
           </div>
         </div>
       ) : (
-        <div className="border border-dashed border-[#e5e5e5] rounded-xl p-6 text-center bg-gray-50">
-          <p className="text-sm text-gray-500 mb-3">Nenhum cliente vinculado a esta conta</p>
-          <button
-            onClick={() => setMostrarBusca(true)}
-            className="px-4 py-2 text-sm font-medium bg-gray-900 text-white rounded-lg hover:bg-gray-700 transition-colors"
-          >
-            Vincular cliente existente
-          </button>
+        <div className="border border-dashed border-[#e5e5e5] rounded-xl p-6 bg-gray-50 space-y-3">
+          <p className="text-sm text-gray-500 text-center">Nenhum cliente vinculado</p>
+          <div className="flex gap-2 justify-center">
+            <button
+              onClick={() => setPainel(painel === "novo" ? "nenhum" : "novo")}
+              className="px-4 py-2 text-sm font-medium bg-gray-900 text-white rounded-lg hover:bg-gray-700 transition-colors"
+            >
+              Criar novo cliente
+            </button>
+            <button
+              onClick={() => setPainel(painel === "busca" ? "nenhum" : "busca")}
+              className="px-4 py-2 text-sm font-medium border border-[#e5e5e5] text-gray-700 rounded-lg hover:bg-white transition-colors"
+            >
+              Vincular existente
+            </button>
+          </div>
         </div>
       )}
 
-      {/* Busca de clientes */}
-      {mostrarBusca && (
+      {/* Formulário de criação */}
+      {painel === "novo" && (
+        <div className="border border-[#e5e5e5] rounded-xl p-5 bg-white">
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-sm font-semibold text-gray-900">Novo cliente</p>
+            <button onClick={() => setPainel("nenhum")} className="text-gray-400 hover:text-gray-600 text-lg leading-none">×</button>
+          </div>
+          <form onSubmit={(e) => void criarCliente(e)} className="space-y-3">
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Nome</label>
+              <input
+                required
+                type="text"
+                value={novoForm.nome}
+                onChange={(e) => setNovoForm((f) => ({ ...f, nome: e.target.value }))}
+                placeholder="Nome completo"
+                className="w-full px-3 py-2 text-sm border border-[#e5e5e5] rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">E-mail</label>
+              <input
+                required
+                type="email"
+                value={novoForm.email}
+                onChange={(e) => setNovoForm((f) => ({ ...f, email: e.target.value }))}
+                placeholder="email@cliente.com"
+                className="w-full px-3 py-2 text-sm border border-[#e5e5e5] rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Telefone <span className="text-gray-400">(opcional)</span></label>
+              <input
+                type="text"
+                value={novoForm.telefone}
+                onChange={(e) => setNovoForm((f) => ({ ...f, telefone: e.target.value }))}
+                placeholder="5511999999999"
+                className="w-full px-3 py-2 text-sm border border-[#e5e5e5] rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Senha de acesso</label>
+              <input
+                required
+                type="password"
+                value={novoForm.senha}
+                onChange={(e) => setNovoForm((f) => ({ ...f, senha: e.target.value }))}
+                placeholder="Mínimo 6 caracteres"
+                minLength={6}
+                className="w-full px-3 py-2 text-sm border border-[#e5e5e5] rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900"
+              />
+            </div>
+            {erroCriacao && (
+              <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+                {erroCriacao}
+              </p>
+            )}
+            <button
+              type="submit"
+              disabled={criando}
+              className="w-full py-2 text-sm font-medium bg-gray-900 text-white rounded-lg hover:bg-gray-700 disabled:opacity-50 transition-colors"
+            >
+              {criando ? "Criando…" : "Criar e vincular cliente"}
+            </button>
+          </form>
+        </div>
+      )}
+
+      {/* Busca de clientes existentes */}
+      {painel === "busca" && (
         <div className="border border-[#e5e5e5] rounded-xl p-5 bg-white space-y-3">
           <div className="flex items-center justify-between">
-            <p className="text-sm font-medium text-gray-700">Selecionar cliente</p>
-            <button
-              onClick={() => setMostrarBusca(false)}
-              className="text-gray-400 hover:text-gray-600 text-lg leading-none"
-            >
-              ×
-            </button>
+            <p className="text-sm font-medium text-gray-700">Selecionar cliente existente</p>
+            <button onClick={() => setPainel("nenhum")} className="text-gray-400 hover:text-gray-600 text-lg leading-none">×</button>
           </div>
           <input
             type="text"
@@ -434,7 +565,7 @@ function TabCliente({
           />
           <div className="space-y-2 max-h-60 overflow-y-auto">
             {clientesFiltrados.length === 0 ? (
-              <p className="text-sm text-gray-400 py-3 text-center">Nenhum cliente encontrado</p>
+              <p className="text-sm text-gray-400 py-3 text-center">Nenhum cliente disponível</p>
             ) : (
               clientesFiltrados.map((c) => (
                 <div
@@ -460,15 +591,15 @@ function TabCliente({
       )}
 
       <div className="border-t border-[#f0f0f0] pt-5">
-        <p className="text-sm font-medium text-gray-700 mb-2">Aprovação de novos cadastros</p>
-        <p className="text-sm text-gray-500 mb-3">
-          Quando um cliente se cadastrar em <code className="text-xs bg-gray-100 px-1 rounded">/crm-cliente/registro</code>, ele aparece aqui aguardando aprovação.
+        <p className="text-xs text-gray-400">
+          Clientes criados aqui têm acesso imediato ao portal. Cadastros feitos pelo cliente em{" "}
+          <code className="bg-gray-100 px-1 rounded">/crm-cliente/registro</code> precisam de aprovação.
         </p>
         <button
           onClick={() => (window.location.href = "/ferramentas/rastreamento-whatsapp/aprovar")}
-          className="text-sm text-blue-600 hover:underline"
+          className="mt-2 text-sm text-blue-600 hover:underline"
         >
-          Ver todos os clientes pendentes →
+          Ver clientes pendentes →
         </button>
       </div>
     </div>
