@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
 import { resolverAcesso } from "@/lib/acesso-contas";
-import { getEvolutionConfig, buscarQr } from "@/lib/evolution-api";
+import { baileysManager } from "@/lib/baileys-manager";
 
 type Params = Promise<{ contaId: string }>;
 
@@ -18,22 +17,10 @@ export async function GET(req: NextRequest, { params }: { params: Params }) {
       return NextResponse.json({ erro: "Acesso negado" }, { status: 403 });
     }
 
-    const conta = await prisma.contaAnuncio.findUnique({ where: { id: contaId } });
-    if (!conta?.evolutionInstanceName) {
-      return NextResponse.json({ base64: null, state: "close" });
-    }
+    const estado = baileysManager.getEstado(contaId);
+    const qrBase64 = baileysManager.getQr(contaId);
 
-    const cfg = await getEvolutionConfig();
-    if (!cfg) return NextResponse.json({ base64: null, state: "unknown" });
-
-    const qr = await buscarQr(cfg, conta.evolutionInstanceName);
-
-    await prisma.contaAnuncio.update({
-      where: { id: contaId },
-      data: { evolutionStatus: qr.state },
-    });
-
-    return NextResponse.json(qr);
+    return NextResponse.json({ base64: qrBase64, state: estado });
   } catch (err) {
     console.error("[GET /api/rastreamento/whatsapp/[contaId]/qr]", err);
     return NextResponse.json({ erro: "Erro interno" }, { status: 500 });

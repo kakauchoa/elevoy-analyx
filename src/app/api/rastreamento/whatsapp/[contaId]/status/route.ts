@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { resolverAcesso } from "@/lib/acesso-contas";
-import { getEvolutionConfig, verificarStatus } from "@/lib/evolution-api";
+import { baileysManager } from "@/lib/baileys-manager";
 
 type Params = Promise<{ contaId: string }>;
 
@@ -18,22 +18,15 @@ export async function GET(req: NextRequest, { params }: { params: Params }) {
       return NextResponse.json({ erro: "Acesso negado" }, { status: 403 });
     }
 
-    const conta = await prisma.contaAnuncio.findUnique({ where: { id: contaId } });
-    if (!conta?.evolutionInstanceName) {
-      return NextResponse.json({ state: "close", instanceName: null });
-    }
+    const estado = baileysManager.getEstado(contaId);
 
-    const cfg = await getEvolutionConfig();
-    if (!cfg) return NextResponse.json({ state: "unknown", instanceName: conta.evolutionInstanceName });
-
-    const state = await verificarStatus(cfg, conta.evolutionInstanceName);
-
+    // Sincroniza o estado no banco para persistência entre deploys
     await prisma.contaAnuncio.update({
       where: { id: contaId },
-      data: { evolutionStatus: state },
+      data: { evolutionStatus: estado },
     });
 
-    return NextResponse.json({ state, instanceName: conta.evolutionInstanceName });
+    return NextResponse.json({ state: estado });
   } catch (err) {
     console.error("[GET /api/rastreamento/whatsapp/[contaId]/status]", err);
     return NextResponse.json({ erro: "Erro interno" }, { status: 500 });
