@@ -12,7 +12,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Params }) {
 
     const { id } = await params;
     const body = (await req.json()) as {
-      acao: "aprovar" | "rejeitar";
+      acao: "aprovar" | "rejeitar" | "desvincular";
       contaAnuncioId?: string;
     };
 
@@ -49,6 +49,15 @@ export async function PATCH(req: NextRequest, { params }: { params: Params }) {
       await prisma.clienteCrm.update({
         where: { id },
         data: { status: "rejeitado" },
+      });
+      return NextResponse.json({ ok: true });
+    }
+
+    if (body.acao === "desvincular") {
+      // Remove vínculo com conta mas mantém o cliente aprovado
+      await prisma.clienteCrm.update({
+        where: { id },
+        data: { contaAnuncioId: null, aprovadoPorId: null, aprovadoEm: null, status: "pendente" },
       });
       return NextResponse.json({ ok: true });
     }

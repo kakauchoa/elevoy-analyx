@@ -100,12 +100,20 @@ export default function RastreamentoWhatsAppPage() {
                       {conta.pixelId ? `Pixel: ${conta.pixelId}` : "Pixel não configurado"}
                     </p>
                   </div>
-                  <button
-                    onClick={() => router.push(`/ferramentas/rastreamento-whatsapp/${conta.id}`)}
-                    className="shrink-0 px-3 py-1.5 text-xs font-medium bg-gray-900 text-white rounded-lg hover:bg-gray-700 transition-colors"
-                  >
-                    Ver CRM
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => router.push(`/ferramentas/rastreamento-whatsapp/configurar/${conta.id}`)}
+                      className="shrink-0 px-3 py-1.5 text-xs font-medium border border-[#e5e5e5] text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                    >
+                      Configurar
+                    </button>
+                    <button
+                      onClick={() => router.push(`/ferramentas/rastreamento-whatsapp/${conta.id}`)}
+                      className="shrink-0 px-3 py-1.5 text-xs font-medium bg-gray-900 text-white rounded-lg hover:bg-gray-700 transition-colors"
+                    >
+                      Ver CRM
+                    </button>
+                  </div>
                 </div>
               </div>
 

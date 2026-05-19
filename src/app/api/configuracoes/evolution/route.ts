@@ -31,20 +31,25 @@ export async function POST(req: NextRequest) {
     if (!session) return NextResponse.json({ erro: "Não autorizado" }, { status: 401 });
 
     const body = (await req.json()) as {
-      evolutionApiUrl?: string;
-      evolutionApiKey?: string;
-      evolutionInstance?: string;
-      evolutionWhatsapp?: string;
+      evolutionApiUrl?: string | null;
+      evolutionApiKey?: string | null;
+      evolutionInstance?: string | null;
+      evolutionWhatsapp?: string | null;
+      evolutionVersion?: string | null;
     };
 
     const existente = await prisma.configuracaoPlataforma.findFirst();
 
-    const dados = {
+    const dados: Record<string, string | null> = {
       evolutionApiUrl: body.evolutionApiUrl ?? null,
-      evolutionApiKey: body.evolutionApiKey ?? null,
       evolutionInstance: body.evolutionInstance ?? null,
       evolutionWhatsapp: body.evolutionWhatsapp ?? null,
+      evolutionVersion: body.evolutionVersion ?? null,
     };
+    // Só sobrescreve a chave se foi enviada (undefined = manter atual)
+    if (body.evolutionApiKey !== undefined) {
+      dados.evolutionApiKey = body.evolutionApiKey;
+    }
 
     if (existente) {
       await prisma.configuracaoPlataforma.update({ where: { id: existente.id }, data: dados });

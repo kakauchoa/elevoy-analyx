@@ -108,6 +108,8 @@ model ContaAnuncio {
   tokenAcesso            String?           @db.Text @map("token_acesso")
   pageIdMeta             String?           @db.VarChar(100) @map("page_id_meta")
   webhookToken           String?           @unique @db.VarChar(100) @map("webhook_token")
+  evolutionInstanceName  String?           @db.VarChar(100) @map("evolution_instance_name")
+  evolutionStatus        String?           @db.VarChar(30) @map("evolution_status")
   dataEntrada            DateTime?         @db.Date @map("data_entrada")
   tipoFunil              TipoFunil         @map("tipo_funil")
   metricaPrincipal       String            @map("metrica_principal")
@@ -432,6 +434,7 @@ model ConfiguracaoPlataforma {
   evolutionApiKey    String?  @map("evolution_api_key") @db.VarChar(500)
   evolutionInstance  String?  @map("evolution_instance") @db.VarChar(255)
   evolutionWhatsapp  String?  @map("evolution_whatsapp") @db.VarChar(50)
+  evolutionVersion   String?  @map("evolution_version") @db.VarChar(30)
   atualizadoEm      DateTime @updatedAt @map("atualizado_em")
 
   @@map("configuracoes_plataforma")
