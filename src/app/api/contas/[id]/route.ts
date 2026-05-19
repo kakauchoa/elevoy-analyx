@@ -18,6 +18,7 @@ type DadosAtualizacao = {
   dataEntrada?: Date | null;
   tipoPagamento?: "cartao" | "boleto";
   orcamentoMensal?: number | null;
+  pageIdMeta?: string | null;
   ultimaSincronizacao?: null;
   saldoAtual?: null;
   saldoAtualizadoEm?: null;
@@ -28,6 +29,8 @@ const SELECT_CONTA = {
   nomeCliente: true,
   slugCompartilhavel: true,
   accountIdMeta: true,
+  pageIdMeta: true,
+  webhookToken: true,
   tipoFunil: true,
   metricaPrincipal: true,
   labelMetricaPrincipal: true,

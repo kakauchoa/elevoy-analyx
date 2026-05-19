@@ -12,9 +12,9 @@ export default withAuth(
   }
 );
 
-// Protege todas as rotas exceto login, health check, dashboard compartilhável e assets do Next.js
+// Protege rotas do dashboard — exclui rotas públicas e do portal do cliente CRM
 export const config = {
   matcher: [
-    "/((?!login|api/health|api/jobs|compartilhavel|api/compartilhavel|api/auth|_next/static|_next/image|favicon.ico|public).*)",
+    "/((?!login|api/health|api/jobs|compartilhavel|api/compartilhavel|api/auth|api/rastreamento/webhook|api/cliente-crm|crm-cliente|_next/static|_next/image|favicon.ico|public).*)",
   ],
 };
