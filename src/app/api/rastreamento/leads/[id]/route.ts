@@ -5,11 +5,11 @@ import { prisma } from "@/lib/prisma";
 import { resolverAcesso } from "@/lib/acesso-contas";
 import { getSessionCliente } from "@/lib/cliente-crm-auth";
 
-type Params = Promise<{ contaId: string }>;
+type Params = Promise<{ id: string }>;
 
 export async function GET(req: NextRequest, { params }: { params: Params }) {
   try {
-    const { contaId } = await params;
+    const { id: contaId } = await params;
 
     // Aceita sessão do gestor ou do cliente CRM
     const session = await getServerSession(authOptions);
