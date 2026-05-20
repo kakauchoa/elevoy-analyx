@@ -532,22 +532,14 @@ export default function UsuariosPage() {
                     : g.contasComAcesso.map((c) => c.nomeCliente).join(", ")}
                 </p>
               </div>
-              <div className="flex items-center gap-2 shrink-0">
+              {!g.isAdmin && (
                 <button
-                  onClick={() => setGestorPlano(g)}
-                  className="text-xs font-medium text-gray-700 border border-[#e5e5e5] rounded-lg px-3 py-1.5 hover:bg-gray-50 transition-colors"
+                  onClick={() => setGestorEditando(g)}
+                  className="shrink-0 text-xs font-medium text-gray-700 border border-[#e5e5e5] rounded-lg px-3 py-1.5 hover:bg-gray-50 transition-colors"
                 >
-                  Plano
+                  Editar acessos
                 </button>
-                {!g.isAdmin && (
-                  <button
-                    onClick={() => setGestorEditando(g)}
-                    className="text-xs font-medium text-gray-700 border border-[#e5e5e5] rounded-lg px-3 py-1.5 hover:bg-gray-50 transition-colors"
-                  >
-                    Acessos
-                  </button>
-                )}
-              </div>
+              )}
             </div>
           ))}
         </div>

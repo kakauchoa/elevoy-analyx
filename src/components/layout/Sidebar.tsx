@@ -247,6 +247,14 @@ const SECTIONS: NavSection[] = [
       { href: "/ferramentas/construtor-dashboard", label: "Construtor de Dashboard", icon: <IconLayout /> },
     ],
   },
+  {
+    id: "administracao",
+    label: "Administração",
+    adminOnly: true,
+    items: [
+      { href: "/administrativo/planos", label: "Controle de Planos", icon: <IconShield /> },
+    ],
+  },
 ];
 
 // ── Component ──────────────────────────────────────────────────────────────
