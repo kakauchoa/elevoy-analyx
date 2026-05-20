@@ -15,6 +15,9 @@ interface GestorItem {
   email: string;
   criadoEm: string;
   isAdmin: boolean;
+  plano: string;
+  contasMaximas: number;
+  assinaturaAtiva: boolean;
   contasComAcesso: ContaSimples[];
   permissoes?: string[];
 }
@@ -25,6 +28,123 @@ interface ApiResponse {
 }
 
 const SECOES_DISPONIVEIS = ["Clientes", "Vendas"];
+
+const LABEL_PLANO: Record<string, string> = {
+  free: "Gratuito",
+  basico: "Básico",
+  intermediario: "Intermediário",
+  personalizado: "Personalizado",
+};
+
+// ── Modal de edição de plano ────────────────────────────────────────────────
+
+function ModalPlano({
+  gestor,
+  onClose,
+  onSalvo,
+}: {
+  gestor: GestorItem;
+  onClose: () => void;
+  onSalvo: (g: Pick<GestorItem, "id" | "plano" | "contasMaximas" | "assinaturaAtiva">) => void;
+}) {
+  const [plano, setPlano] = useState(gestor.plano);
+  const [contasMaximas, setContasMaximas] = useState(String(gestor.contasMaximas));
+  const [assinaturaAtiva, setAssinaturaAtiva] = useState(gestor.assinaturaAtiva);
+  const [salvando, setSalvando] = useState(false);
+  const [erro, setErro] = useState("");
+
+  async function salvar(e: React.FormEvent) {
+    e.preventDefault();
+    setErro("");
+    setSalvando(true);
+    try {
+      const res = await fetch(`/api/usuarios/${gestor.id}/plano`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          plano,
+          contasMaximas: Number(contasMaximas),
+          assinaturaAtiva,
+        }),
+      });
+      const data = (await res.json()) as {
+        id: string; plano: string; contasMaximas: number; assinaturaAtiva: boolean; erro?: string;
+      };
+      if (!res.ok) { setErro(data.erro ?? "Erro ao salvar"); return; }
+      onSalvo(data);
+    } finally {
+      setSalvando(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 flex flex-col gap-5">
+        <div className="flex items-center justify-between">
+          <h2 className="font-semibold text-gray-900">Editar plano — {gestor.nome}</h2>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-700 text-xl leading-none">×</button>
+        </div>
+
+        <form onSubmit={(e) => void salvar(e)} className="flex flex-col gap-4">
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm font-medium text-gray-700">Plano</label>
+            <select
+              value={plano}
+              onChange={(e) => {
+                setPlano(e.target.value);
+                const defaults: Record<string, number> = { free: 3, basico: 10, intermediario: 30, personalizado: 10 };
+                setContasMaximas(String(defaults[e.target.value] ?? 3));
+              }}
+              className="border border-[#e5e5e5] rounded-lg px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-black"
+            >
+              {Object.entries(LABEL_PLANO).map(([k, v]) => (
+                <option key={k} value={k}>{v}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm font-medium text-gray-700">Limite de contas</label>
+            <input
+              type="number"
+              min={1}
+              value={contasMaximas}
+              onChange={(e) => setContasMaximas(e.target.value)}
+              className="border border-[#e5e5e5] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+            />
+          </div>
+
+          <label className="flex items-center gap-3 cursor-pointer">
+            <button
+              type="button"
+              onClick={() => setAssinaturaAtiva((v) => !v)}
+              className={`relative inline-flex h-5 w-9 rounded-full border-2 border-transparent transition-colors ${
+                assinaturaAtiva ? "bg-black" : "bg-gray-200"
+              }`}
+            >
+              <span className={`inline-block h-4 w-4 rounded-full bg-white shadow transform transition ${assinaturaAtiva ? "translate-x-4" : "translate-x-0"}`} />
+            </button>
+            <span className="text-sm text-gray-700">Assinatura ativa</span>
+          </label>
+
+          {erro && (
+            <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{erro}</p>
+          )}
+
+          <div className="flex gap-3 pt-1">
+            <button type="button" onClick={onClose} className="flex-1 border border-[#e5e5e5] text-gray-700 text-sm font-medium py-2.5 rounded-lg hover:bg-gray-50">
+              Cancelar
+            </button>
+            <button type="submit" disabled={salvando} className="flex-1 bg-black text-white text-sm font-medium py-2.5 rounded-lg hover:bg-gray-900 disabled:opacity-50">
+              {salvando ? "Salvando…" : "Salvar"}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
 
 // ── Modal de Novo Gestor ───────────────────────────────────────────────────
 
@@ -305,6 +425,7 @@ export default function UsuariosPage() {
   const [acessoNegado, setAcessoNegado] = useState(false);
   const [modalNovo, setModalNovo] = useState(false);
   const [gestorEditando, setGestorEditando] = useState<GestorItem | null>(null);
+  const [gestorPlano, setGestorPlano] = useState<GestorItem | null>(null);
 
   useEffect(() => {
     fetch("/api/usuarios")
@@ -321,6 +442,13 @@ export default function UsuariosPage() {
   function handleGestorCriado(g: GestorItem) {
     setGestores((prev) => [...prev, g]);
     setModalNovo(false);
+  }
+
+  function handlePlanoSalvo(data: Pick<GestorItem, "id" | "plano" | "contasMaximas" | "assinaturaAtiva">) {
+    setGestores((prev) =>
+      prev.map((g) => (g.id === data.id ? { ...g, ...data } : g))
+    );
+    setGestorPlano(null);
   }
 
   function handleAcessosSalvos(gestorId: string, contas: ContaSimples[], permissoes: string[]) {
@@ -387,6 +515,13 @@ export default function UsuariosPage() {
                       {s}
                     </span>
                   ))}
+                  <span className={`shrink-0 text-[10px] font-medium px-1.5 py-0.5 rounded-full border ${
+                    g.assinaturaAtiva
+                      ? "bg-green-50 text-green-700 border-green-200"
+                      : "bg-gray-50 text-gray-500 border-gray-200"
+                  }`}>
+                    {LABEL_PLANO[g.plano] ?? g.plano} · {g.contasMaximas} contas
+                  </span>
                 </div>
                 <p className="text-xs text-gray-500 mt-0.5 truncate">{g.email}</p>
                 <p className="text-xs text-gray-400 mt-1">
@@ -397,14 +532,22 @@ export default function UsuariosPage() {
                     : g.contasComAcesso.map((c) => c.nomeCliente).join(", ")}
                 </p>
               </div>
-              {!g.isAdmin && (
+              <div className="flex items-center gap-2 shrink-0">
                 <button
-                  onClick={() => setGestorEditando(g)}
-                  className="shrink-0 text-xs font-medium text-gray-700 border border-[#e5e5e5] rounded-lg px-3 py-1.5 hover:bg-gray-50 transition-colors"
+                  onClick={() => setGestorPlano(g)}
+                  className="text-xs font-medium text-gray-700 border border-[#e5e5e5] rounded-lg px-3 py-1.5 hover:bg-gray-50 transition-colors"
                 >
-                  Editar acessos
+                  Plano
                 </button>
-              )}
+                {!g.isAdmin && (
+                  <button
+                    onClick={() => setGestorEditando(g)}
+                    className="text-xs font-medium text-gray-700 border border-[#e5e5e5] rounded-lg px-3 py-1.5 hover:bg-gray-50 transition-colors"
+                  >
+                    Acessos
+                  </button>
+                )}
+              </div>
             </div>
           ))}
         </div>
@@ -423,6 +566,14 @@ export default function UsuariosPage() {
           todasContas={contasAdmin}
           onClose={() => setGestorEditando(null)}
           onSalvo={handleAcessosSalvos}
+        />
+      )}
+
+      {gestorPlano && (
+        <ModalPlano
+          gestor={gestorPlano}
+          onClose={() => setGestorPlano(null)}
+          onSalvo={handlePlanoSalvo}
         />
       )}
     </div>

@@ -10,6 +10,7 @@ type WaState = "open" | "close" | "connecting" | "unknown";
 interface ContaConfig {
   id: string;
   nomeCliente: string;
+  slugCompartilhavel: string;
   pageIdMeta: string | null;
   pixelId: string | null;
   webhookToken: string | null;
@@ -411,8 +412,7 @@ function TabCliente({
       <div>
         <h2 className="text-base font-semibold text-gray-900 mb-1">Cliente vinculado</h2>
         <p className="text-sm text-gray-500">
-          O cliente vinculado acessa o CRM em{" "}
-          <code className="text-xs bg-gray-100 px-1 rounded">/crm-cliente/login</code>
+          O cliente acessa o CRM pelo link abaixo. Copie e envie para ele.
         </p>
       </div>
 
@@ -453,12 +453,19 @@ function TabCliente({
             </div>
           </div>
 
-          <div className="pt-3 border-t border-[#f0f0f0]">
-            <p className="text-xs text-gray-400 mb-2">Link de acesso:</p>
+          <div className="pt-3 border-t border-[#f0f0f0] space-y-2">
+            <p className="text-xs text-gray-400">Links para enviar ao cliente:</p>
             <LinkCopiavel
-              label="Portal do cliente"
+              label="Acesso direto ao CRM"
+              href={`${typeof window !== "undefined" ? window.location.origin : ""}/crm-cliente/${conta.slugCompartilhavel}`}
+            />
+            <LinkCopiavel
+              label="Página de login"
               href={`${typeof window !== "undefined" ? window.location.origin : ""}/crm-cliente/login`}
             />
+            <p className="text-xs text-gray-400 pt-1">
+              O cliente usa o <strong>e-mail</strong> e a <strong>senha definida aqui</strong> para entrar.
+            </p>
           </div>
         </div>
       ) : (

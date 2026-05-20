@@ -72,7 +72,7 @@ export async function POST(req: NextRequest) {
       select: { contasMaximas: true },
     });
     const totalContas = await prisma.contaAnuncio.count({
-      where: { usuarioId: session.user.id, ativo: true },
+      where: { usuarioId: session.user.id, ativo: true, rastreamentoApenas: false },
     });
     if (usuario && totalContas >= usuario.contasMaximas) {
       return NextResponse.json(

@@ -29,6 +29,9 @@ export default function RastreamentoWhatsAppPage() {
   const [modalGerenciar, setModalGerenciar] = useState(false);
   const [contasDisponiveis, setContasDisponiveis] = useState<ContaDisponivel[]>([]);
   const [atualizando, setAtualizando] = useState<string | null>(null);
+  const [novaContaNome, setNovaContaNome] = useState("");
+  const [criandoConta, setCriandoConta] = useState(false);
+  const [erroConta, setErroConta] = useState("");
 
   function carregar() {
     setCarregando(true);
@@ -44,7 +47,30 @@ export default function RastreamentoWhatsAppPage() {
     const res = await fetch("/api/rastreamento/contas", { method: "POST" });
     const lista = (await res.json()) as ContaDisponivel[];
     setContasDisponiveis(lista);
+    setNovaContaNome("");
+    setErroConta("");
     setModalGerenciar(true);
+  }
+
+  async function criarContaWpp(e: React.FormEvent) {
+    e.preventDefault();
+    if (!novaContaNome.trim()) return;
+    setCriandoConta(true);
+    setErroConta("");
+    try {
+      const res = await fetch("/api/rastreamento/contas/nova", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nomeCliente: novaContaNome.trim() }),
+      });
+      const dados = (await res.json()) as ContaDisponivel & { erro?: string };
+      if (!res.ok) { setErroConta(dados.erro ?? "Erro ao criar conta"); return; }
+      setContasDisponiveis((prev) => [{ ...dados, rastreamentoAtivo: true }, ...prev]);
+      setNovaContaNome("");
+      carregar();
+    } finally {
+      setCriandoConta(false);
+    }
   }
 
   async function toggleRastreamento(id: string, ativo: boolean) {
@@ -118,7 +144,33 @@ export default function RastreamentoWhatsAppPage() {
                 ×
               </button>
             </div>
-            <div className="p-6 space-y-2 max-h-96 overflow-y-auto">
+            <div className="p-6 space-y-3 max-h-[70vh] overflow-y-auto">
+              {/* Formulário de nova conta WPP-only */}
+              <form onSubmit={(e) => void criarContaWpp(e)} className="border border-dashed border-gray-300 rounded-xl p-4 bg-gray-50 space-y-2">
+                <p className="text-xs font-semibold text-gray-600">Nova conta só para WhatsApp</p>
+                <p className="text-xs text-gray-400">Rastreamento sem precisar de conta Meta Ads</p>
+                <div className="flex gap-2 pt-1">
+                  <input
+                    type="text"
+                    value={novaContaNome}
+                    onChange={(e) => setNovaContaNome(e.target.value)}
+                    placeholder="Nome do cliente"
+                    className="flex-1 px-3 py-2 text-sm border border-[#e5e5e5] rounded-lg focus:outline-none focus:ring-2 focus:ring-black bg-white"
+                  />
+                  <button
+                    type="submit"
+                    disabled={criandoConta || !novaContaNome.trim()}
+                    className="px-4 py-2 text-sm font-medium bg-gray-900 text-white rounded-lg hover:bg-gray-700 disabled:opacity-50 transition-colors shrink-0"
+                  >
+                    {criandoConta ? "…" : "Criar"}
+                  </button>
+                </div>
+                {erroConta && (
+                  <p className="text-xs text-red-600">{erroConta}</p>
+                )}
+              </form>
+
+              {/* Lista de contas existentes */}
               {contasDisponiveis.length === 0 ? (
                 <p className="text-sm text-gray-400 text-center py-4">Nenhuma conta cadastrada.</p>
               ) : (

@@ -22,6 +22,7 @@ export async function GET(req: NextRequest, { params }: { params: Params }) {
       select: {
         id: true,
         nomeCliente: true,
+        slugCompartilhavel: true,
         pageIdMeta: true,
         webhookToken: true,
         evolutionInstanceName: true,

@@ -43,7 +43,7 @@ export async function verificarSaldoContas(): Promise<ResultadoVerificacao> {
   }
 
   const contas = await prisma.contaAnuncio.findMany({
-    where: { ativo: true },
+    where: { ativo: true, rastreamentoApenas: false },
     select: {
       id: true,
       nomeCliente: true,

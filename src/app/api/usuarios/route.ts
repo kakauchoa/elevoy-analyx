@@ -21,6 +21,9 @@ export async function GET() {
         nome: true,
         email: true,
         criadoEm: true,
+        plano: true,
+        contasMaximas: true,
+        assinaturaAtiva: true,
         gestorContas: {
           where: { contaAnuncioId: { in: contaIds } },
           select: {
@@ -44,6 +47,9 @@ export async function GET() {
       email: g.email,
       criadoEm: g.criadoEm.toISOString(),
       isAdmin: g.id === session.user.id,
+      plano: g.plano,
+      contasMaximas: g.contasMaximas,
+      assinaturaAtiva: g.assinaturaAtiva,
       contasComAcesso:
         g.id === session.user.id
           ? contasAdmin

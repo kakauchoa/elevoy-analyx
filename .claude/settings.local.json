@@ -37,7 +37,19 @@
       "Bash(git commit -m 'feat: prospecção GMN + melhorias CRM \\(datas, Leads fixo\\) *)",
       "Bash(git commit *)",
       "Bash(xargs ls -la)",
-      "Bash(grep -v \"^$\")"
+      "Bash(grep -v \"^$\")",
+      "Bash(mkdir -p \"/Users/kauanuchoa/Library/Mobile Documents/com~apple~CloudDocs/0-Code-my-apps/Elevoy-Analyx/src/app/api/rastreamento/webhook/[token]\")",
+      "Bash(mkdir -p \"/Users/kauanuchoa/Library/Mobile Documents/com~apple~CloudDocs/0-Code-my-apps/Elevoy-Analyx/src/app/api/rastreamento/leads/[contaId]\")",
+      "Bash(mkdir -p \"/Users/kauanuchoa/Library/Mobile Documents/com~apple~CloudDocs/0-Code-my-apps/Elevoy-Analyx/src/app/api/rastreamento/leads/[id]/status\")",
+      "Bash(mkdir -p \"/Users/kauanuchoa/Library/Mobile Documents/com~apple~CloudDocs/0-Code-my-apps/Elevoy-Analyx/src/app/api/rastreamento/clientes/[id]\")",
+      "Bash(mkdir -p \"/Users/kauanuchoa/Library/Mobile Documents/com~apple~CloudDocs/0-Code-my-apps/Elevoy-Analyx/src/app/api/rastreamento/reset/[id]\")",
+      "Bash(mkdir -p \"/Users/kauanuchoa/Library/Mobile Documents/com~apple~CloudDocs/0-Code-my-apps/Elevoy-Analyx/src/app/api/rastreamento/leads/[id]\")",
+      "Bash(cp \"/Users/kauanuchoa/Library/Mobile Documents/com~apple~CloudDocs/0-Code-my-apps/Elevoy-Analyx/src/app/api/rastreamento/leads/[contaId]/route.ts\" \"/Users/kauanuchoa/Library/Mobile Documents/com~apple~CloudDocs/0-Code-my-apps/Elevoy-Analyx/src/app/api/rastreamento/leads/[id]/route.ts\")",
+      "Bash(mkdir -p \"/Users/kauanuchoa/Library/Mobile Documents/com~apple~CloudDocs/0-Code-my-apps/Elevoy-Analyx/src/app/api/rastreamento/whatsapp/[contaId]/conectar\")",
+      "Bash(mkdir -p \"/Users/kauanuchoa/Library/Mobile Documents/com~apple~CloudDocs/0-Code-my-apps/Elevoy-Analyx/src/app/api/rastreamento/whatsapp/[contaId]/qr\")",
+      "Bash(mkdir -p \"/Users/kauanuchoa/Library/Mobile Documents/com~apple~CloudDocs/0-Code-my-apps/Elevoy-Analyx/src/app/api/rastreamento/whatsapp/[contaId]/status\")",
+      "Bash(mkdir -p \"/Users/kauanuchoa/Library/Mobile Documents/com~apple~CloudDocs/0-Code-my-apps/Elevoy-Analyx/src/app/api/rastreamento/whatsapp/[contaId]/desconectar\")",
+      "Bash(mkdir -p \"/Users/kauanuchoa/Library/Mobile Documents/com~apple~CloudDocs/0-Code-my-apps/Elevoy-Analyx/src/app/api/rastreamento/whatsapp/[contaId]/recriar\")"
     ]
   }
 }
