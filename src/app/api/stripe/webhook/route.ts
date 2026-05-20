@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { stripe } from "@/lib/stripe";
+import { getStripe } from "@/lib/stripe";
 import { prisma } from "@/lib/prisma";
 import Stripe from "stripe";
 
@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
 
   let event: Stripe.Event;
   try {
-    event = stripe.webhooks.constructEvent(
+    event = getStripe().webhooks.constructEvent(
       body,
       signature,
       process.env.STRIPE_WEBHOOK_SECRET!
@@ -79,7 +79,7 @@ async function atualizarAssinatura(sub: Stripe.Subscription) {
   const quantidade = Number(sub.metadata?.quantidade ?? 1);
 
   if (!usuarioId || !plano) {
-    const cliente = await stripe.customers.retrieve(sub.customer as string) as Stripe.Customer;
+    const cliente = await getStripe().customers.retrieve(sub.customer as string) as Stripe.Customer;
     const uid = cliente.metadata?.usuarioId;
     if (!uid) return;
 
@@ -109,7 +109,7 @@ async function atualizarAssinatura(sub: Stripe.Subscription) {
 async function cancelarAssinatura(sub: Stripe.Subscription) {
   const usuarioId = sub.metadata?.usuarioId;
   if (!usuarioId) {
-    const cliente = await stripe.customers.retrieve(sub.customer as string) as Stripe.Customer;
+    const cliente = await getStripe().customers.retrieve(sub.customer as string) as Stripe.Customer;
     const uid = cliente.metadata?.usuarioId;
     if (!uid) return;
     await prisma.usuario.update({
