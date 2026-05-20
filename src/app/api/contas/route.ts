@@ -66,6 +66,23 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ erro: "Todos os campos são obrigatórios" }, { status: 400 });
     }
 
+    // Verifica limite de contas do plano
+    const usuario = await prisma.usuario.findUnique({
+      where: { id: session.user.id },
+      select: { contasMaximas: true },
+    });
+    const totalContas = await prisma.contaAnuncio.count({
+      where: { usuarioId: session.user.id, ativo: true },
+    });
+    if (usuario && totalContas >= usuario.contasMaximas) {
+      return NextResponse.json(
+        {
+          erro: `Limite de ${usuario.contasMaximas} contas atingido. Faça upgrade em /planos.`,
+        },
+        { status: 403 }
+      );
+    }
+
     if (!/^act_\d+$/.test(accountIdMeta)) {
       return NextResponse.json(
         { erro: "Account ID inválido. Use o formato act_123456" },
