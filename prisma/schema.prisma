@@ -123,6 +123,8 @@ model ContaAnuncio {
   orcamentoMensal        Decimal?          @db.Decimal(10, 2) @map("orcamento_mensal")
   saldoAtual             Decimal?          @db.Decimal(15, 2) @map("saldo_atual")
   saldoAtualizadoEm      DateTime?         @map("saldo_atualizado_em")
+  limiteAlertaSaldo      Decimal?          @db.Decimal(10, 2) @map("limite_alerta_saldo")
+  rastreamentoAtivo      Boolean           @default(true) @map("rastreamento_ativo")
   ativo                  Boolean           @default(true)
   criadoEm               DateTime          @default(now()) @map("criado_em")
   atualizadoEm           DateTime          @updatedAt @map("atualizado_em")

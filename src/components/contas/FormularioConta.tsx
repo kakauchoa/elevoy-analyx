@@ -18,6 +18,7 @@ type CamposForm = {
   dataEntrada: string;
   tipoPagamento: "cartao" | "boleto";
   orcamentoMensal: string;
+  limiteAlertaSaldo: string;
 };
 
 const OPCOES_FUNIL = Object.entries(LABELS_FUNIL) as [TipoFunil, string][];
@@ -44,6 +45,9 @@ export function FormularioConta({ conta, onSalvar, onFechar }: FormularioContaPr
     dataEntrada: conta?.dataEntrada ?? "",
     tipoPagamento: conta?.tipoPagamento ?? "cartao",
     orcamentoMensal: conta?.orcamentoMensal ? String(Number(conta.orcamentoMensal)) : "",
+    limiteAlertaSaldo: (conta as unknown as { limiteAlertaSaldo?: string | number | null })?.limiteAlertaSaldo
+      ? String(Number((conta as unknown as { limiteAlertaSaldo?: string | number | null }).limiteAlertaSaldo))
+      : "",
   });
 
   const [slugManual, setSlugManual] = useState(modoEdicao);
@@ -81,6 +85,9 @@ export function FormularioConta({ conta, onSalvar, onFechar }: FormularioContaPr
         tipoPagamento: form.tipoPagamento,
         orcamentoMensal: form.tipoPagamento === "boleto" && form.orcamentoMensal
           ? Number(form.orcamentoMensal)
+          : null,
+        limiteAlertaSaldo: form.tipoPagamento === "boleto" && form.limiteAlertaSaldo
+          ? Number(form.limiteAlertaSaldo)
           : null,
       };
 
@@ -272,10 +279,30 @@ export function FormularioConta({ conta, onSalvar, onFechar }: FormularioContaPr
                   className="flex-1 px-3 py-2.5 text-sm text-gray-900 outline-none bg-white"
                 />
               </div>
+
+
+            {/* Limite de alerta de saldo */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-sm font-medium text-gray-700">Alertar quando saldo cair abaixo de (R$)</label>
+              <div className="flex items-center border border-[#e5e5e5] rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-black transition-shadow">
+                <span className="px-3 py-2.5 bg-gray-50 text-gray-400 text-xs border-r border-[#e5e5e5] whitespace-nowrap select-none">
+                  R$
+                </span>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={form.limiteAlertaSaldo}
+                  onChange={(e) => setForm((prev) => ({ ...prev, limiteAlertaSaldo: e.target.value }))}
+                  placeholder="200.00"
+                  className="flex-1 px-3 py-2.5 text-sm text-gray-900 outline-none bg-white"
+                />
+              </div>
               <p className="text-xs text-gray-400">
-                Alerta enviado por WhatsApp quando o saldo cair abaixo de 30% deste valor.
+                Alerta via WhatsApp quando o saldo atingir este valor. Deixe em branco para não alertar.
               </p>
             </div>
+          </div>
           )}
 
           {/* Painel informativo do funil */}

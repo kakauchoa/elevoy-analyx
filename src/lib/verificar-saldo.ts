@@ -50,6 +50,7 @@ export async function verificarSaldoContas(): Promise<ResultadoVerificacao> {
       accountIdMeta: true,
       tipoPagamento: true,
       orcamentoMensal: true,
+      limiteAlertaSaldo: true,
     },
   });
 
@@ -82,20 +83,23 @@ export async function verificarSaldoContas(): Promise<ResultadoVerificacao> {
       let mensagem = "";
       let detalhes: Record<string, unknown> = {};
 
-      if (conta.tipoPagamento === "boleto" && conta.orcamentoMensal) {
+      if (conta.tipoPagamento === "boleto") {
         const saldo = Number(dados.balance ?? 0);
-        const orcamento = Number(conta.orcamentoMensal);
-        const percentual = orcamento > 0 ? saldo / orcamento : 1;
+        const limite = conta.limiteAlertaSaldo ? Number(conta.limiteAlertaSaldo) : null;
+        const orcamento = conta.orcamentoMensal ? Number(conta.orcamentoMensal) : null;
 
-        if (percentual <= 0.3) {
+        // Dispara se o saldo estiver abaixo do limite configurado
+        const abaixoDoLimite = limite !== null && saldo <= limite;
+
+        if (abaixoDoLimite) {
           tipoAlerta = "saldo_baixo";
           mensagem =
             `⚠️ *Saldo baixo — ${conta.nomeCliente}*\n\n` +
             `Saldo atual: R$ ${saldo.toFixed(2)}\n` +
-            `Orçamento mensal: R$ ${orcamento.toFixed(2)}\n` +
-            `Restante: ${(percentual * 100).toFixed(0)}% do orçamento\n\n` +
-            `Recarregue o boleto para evitar interrupção nas campanhas.`;
-          detalhes = { saldo, orcamento, percentual };
+            `Limite de alerta: R$ ${limite!.toFixed(2)}\n` +
+            (orcamento ? `Orçamento mensal: R$ ${orcamento.toFixed(2)}\n` : "") +
+            `\nRecarregue o boleto para evitar interrupção nas campanhas.`;
+          detalhes = { saldo, limite, orcamento };
         }
       } else if (conta.tipoPagamento === "cartao") {
         const status = dados.account_status;

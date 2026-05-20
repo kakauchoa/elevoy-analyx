@@ -18,6 +18,7 @@ type DadosAtualizacao = {
   dataEntrada?: Date | null;
   tipoPagamento?: "cartao" | "boleto";
   orcamentoMensal?: number | null;
+  limiteAlertaSaldo?: number | null;
   pageIdMeta?: string | null;
   ultimaSincronizacao?: null;
   saldoAtual?: null;
@@ -40,6 +41,7 @@ const SELECT_CONTA = {
   dataEntrada: true,
   tipoPagamento: true,
   orcamentoMensal: true,
+  limiteAlertaSaldo: true,
   saldoAtual: true,
   saldoAtualizadoEm: true,
   criadoEm: true,
@@ -101,6 +103,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Params }) {
       dataEntrada?: string | null;
       tipoPagamento?: "cartao" | "boleto";
       orcamentoMensal?: number | null;
+      limiteAlertaSaldo?: number | null;
     };
 
     const dados: DadosAtualizacao = {};
@@ -149,6 +152,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Params }) {
     if ("dataEntrada" in body) dados.dataEntrada = body.dataEntrada ? new Date(body.dataEntrada) : null;
     if (body.tipoPagamento) dados.tipoPagamento = body.tipoPagamento;
     if (body.orcamentoMensal !== undefined) dados.orcamentoMensal = body.orcamentoMensal;
+    if (body.limiteAlertaSaldo !== undefined) dados.limiteAlertaSaldo = body.limiteAlertaSaldo;
 
     const atualizado = await prisma.contaAnuncio.update({
       where: { id },
