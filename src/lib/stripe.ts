@@ -48,11 +48,12 @@ export const PLANOS = {
   personalizado: {
     priceId: process.env.STRIPE_PRICE_PERSONALIZADO ?? "",
     nome: "Personalizado",
+    precoBase: 149.9,
     precoPorPacote: 30,
     contasPorPacote: 10,
     descricao: "Para grandes agências",
     recursos: [
-      "Contas ilimitadas (R$ 30/10 contas)",
+      "Base R$ 149,90 + R$ 30/10 contas",
       "Dashboard compartilhável",
       "Alertas de saldo via WhatsApp",
       "Rastreamento WhatsApp",

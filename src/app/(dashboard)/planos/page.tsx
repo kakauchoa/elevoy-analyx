@@ -189,14 +189,15 @@ export default function PlanosPage() {
             </div>
             <div>
               <span className="text-3xl font-bold text-gray-900">
-                R$ {(qtdPersonalizado * 30).toFixed(2).replace(".", ",")}
+                R$ {(149.9 + qtdPersonalizado * 30).toFixed(2).replace(".", ",")}
               </span>
               <span className="text-sm text-gray-500">/mês</span>
             </div>
+            <p className="text-xs text-gray-400">Base R$ 149,90 + R$ 30/pacote de 10 contas</p>
 
             <div className="flex flex-col gap-1.5">
               <label className="text-xs text-gray-500">
-                Pacotes de contas ({qtdPersonalizado * 10} contas)
+                Pacotes adicionais ({qtdPersonalizado * 10} contas)
               </label>
               <div className="flex items-center gap-2">
                 <button

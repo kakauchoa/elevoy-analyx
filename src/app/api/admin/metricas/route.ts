@@ -58,17 +58,22 @@ export async function GET() {
       return { ...m, total: acumulado };
     });
 
-    // MRR estimado por plano
+    // MRR estimado por plano (personalizado: base 149.90 + 30 por pacote de 10 contas)
     const PRECO: Record<string, number> = {
       basico: 49.9,
       intermediario: 149.9,
-      personalizado: 49.9,
       free: 0,
     };
 
     const mrr = gestores
       .filter((g) => g.assinaturaAtiva)
-      .reduce((acc, g) => acc + (PRECO[g.plano] ?? 0), 0);
+      .reduce((acc, g) => {
+        if (g.plano === "personalizado") {
+          const pacotes = Math.max(1, Math.ceil(Math.min(g.contasMaximas, 990) / 10));
+          return acc + 149.9 + pacotes * 30;
+        }
+        return acc + (PRECO[g.plano] ?? 0);
+      }, 0);
 
     // Distribuição por plano
     const distPlano: Record<string, number> = { free: 0, basico: 0, intermediario: 0, personalizado: 0 };

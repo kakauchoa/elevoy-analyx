@@ -1,7 +1,7 @@
 import { proto } from "@whiskeysockets/baileys";
 import { prisma } from "./prisma";
 import { dispararEventoCapi } from "./meta-capi";
-import { descriptografarToken } from "./cripto";
+import { criptografar, descriptografarToken } from "./cripto";
 
 type WAMessage = proto.IWebMessageInfo;
 
@@ -66,6 +66,14 @@ export async function processarLeadWpp(contaId: string, msg: WAMessage): Promise
   let anuncio: string | null = null;
 
   const tokenDecriptado = conta.tokenAcesso ? descriptografarToken(conta.tokenAcesso) : null;
+
+  // Migração lazy: re-criptografa tokens em texto puro
+  if (conta.tokenAcesso && !conta.tokenAcesso.includes(":")) {
+    void prisma.contaAnuncio.update({
+      where: { id: contaId },
+      data: { tokenAcesso: criptografar(conta.tokenAcesso) },
+    });
+  }
 
   if (ctwaInfo.sourceId && tokenDecriptado) {
     try {

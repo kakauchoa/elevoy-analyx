@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { dispararEventoCapi } from "@/lib/meta-capi";
-import { descriptografarToken } from "@/lib/cripto";
+import { criptografar, descriptografarToken } from "@/lib/cripto";
 
 type Params = Promise<{ token: string }>;
 
@@ -70,6 +70,14 @@ export async function POST(req: NextRequest, { params }: { params: Params }) {
     let anuncio: string | null = null;
 
     const tokenDecriptado = conta.tokenAcesso ? descriptografarToken(conta.tokenAcesso) : null;
+
+    // Migração lazy: re-criptografa tokens em texto puro
+    if (conta.tokenAcesso && !conta.tokenAcesso.includes(":")) {
+      void prisma.contaAnuncio.update({
+        where: { id: conta.id },
+        data: { tokenAcesso: criptografar(conta.tokenAcesso) },
+      });
+    }
 
     if (sourceId && tokenDecriptado) {
       try {

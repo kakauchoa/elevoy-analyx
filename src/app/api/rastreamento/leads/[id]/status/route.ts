@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getSessionCliente } from "@/lib/cliente-crm-auth";
 import { dispararEventoCapi, EventoCapi } from "@/lib/meta-capi";
 import { StatusLeadWpp } from "@prisma/client";
-import { descriptografarToken } from "@/lib/cripto";
+import { criptografar, descriptografarToken } from "@/lib/cripto";
 
 type Params = Promise<{ id: string }>;
 
@@ -75,6 +75,14 @@ export async function PATCH(req: NextRequest, { params }: { params: Params }) {
     const accessToken = lead.conta.tokenAcesso
       ? descriptografarToken(lead.conta.tokenAcesso)
       : null;
+
+    // Migração lazy: re-criptografa tokens em texto puro
+    if (lead.conta.tokenAcesso && !lead.conta.tokenAcesso.includes(":")) {
+      void prisma.contaAnuncio.update({
+        where: { id: lead.contaAnuncioId },
+        data: { tokenAcesso: criptografar(lead.conta.tokenAcesso) },
+      });
+    }
 
     if (eventoNome && pixelId && pageId && accessToken && lead.ctwa) {
       const resultado = await dispararEventoCapi({
