@@ -148,6 +148,11 @@ function ModalPlano({
 
 // ── Modal de Novo Gestor ───────────────────────────────────────────────────
 
+function gerarSenhaAleatoria(): string {
+  const chars = "abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789@#!";
+  return Array.from({ length: 10 }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
+}
+
 function ModalNovoGestor({
   onClose,
   onCriado,
@@ -157,10 +162,12 @@ function ModalNovoGestor({
 }) {
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
-  const [senha, setSenha] = useState("");
+  const [senha, setSenha] = useState(gerarSenhaAleatoria());
   const [secoes, setSecoes] = useState<Set<string>>(new Set(["Clientes"]));
   const [erro, setErro] = useState("");
   const [salvando, setSalvando] = useState(false);
+  const [credenciais, setCredenciais] = useState<{ email: string; senha: string } | null>(null);
+  const [copiado, setCopiado] = useState(false);
 
   function toggleSecao(s: string) {
     setSecoes((prev) => {
@@ -189,7 +196,6 @@ function ModalNovoGestor({
 
       const gestor = data as GestorItem;
 
-      // Salva permissões de seção
       if (secoes.size > 0) {
         await fetch(`/api/usuarios/${gestor.id}/permissoes`, {
           method: "PUT",
@@ -199,9 +205,79 @@ function ModalNovoGestor({
       }
 
       onCriado({ ...gestor, permissoes: [...secoes] });
+      setCredenciais({ email: email.trim(), senha });
     } finally {
       setSalvando(false);
     }
+  }
+
+  async function copiarCredenciais() {
+    if (!credenciais) return;
+    const url = process.env.NEXT_PUBLIC_APP_URL ?? window.location.origin;
+    const texto = `Acesso à plataforma:\nLink: ${url}/login\nEmail: ${credenciais.email}\nSenha: ${credenciais.senha}`;
+    await navigator.clipboard.writeText(texto);
+    setCopiado(true);
+    setTimeout(() => setCopiado(false), 2500);
+  }
+
+  // Tela de credenciais após criação
+  if (credenciais) {
+    const url = process.env.NEXT_PUBLIC_APP_URL ?? (typeof window !== "undefined" ? window.location.origin : "");
+    return (
+      <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-full bg-green-100 flex items-center justify-center shrink-0">
+              <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900">Gestor criado!</h2>
+              <p className="text-sm text-gray-500">Copie e envie os dados de acesso.</p>
+            </div>
+          </div>
+
+          <div className="bg-gray-50 border border-[#e5e5e5] rounded-xl p-4 space-y-2 text-sm font-mono">
+            <p className="text-gray-500 font-sans text-xs font-medium">Link de acesso</p>
+            <p className="text-gray-800 break-all">{url}/login</p>
+            <p className="text-gray-500 font-sans text-xs font-medium mt-3">Email</p>
+            <p className="text-gray-800">{credenciais.email}</p>
+            <p className="text-gray-500 font-sans text-xs font-medium mt-3">Senha</p>
+            <p className="text-gray-800 tracking-widest">{credenciais.senha}</p>
+          </div>
+
+          <div className="flex gap-3 pt-1">
+            <button
+              onClick={copiarCredenciais}
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium border border-[#e5e5e5] rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              {copiado ? (
+                <>
+                  <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  Copiado!
+                </>
+              ) : (
+                <>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                  </svg>
+                  Copiar credenciais
+                </>
+              )}
+            </button>
+            <button
+              onClick={onClose}
+              className="flex-1 px-4 py-2 text-sm font-medium text-white bg-black rounded-lg hover:bg-gray-900"
+            >
+              Fechar
+            </button>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -212,22 +288,27 @@ function ModalNovoGestor({
         {erro && <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{erro}</p>}
 
         <div className="space-y-3">
-          {[
-            { label: "Nome", value: nome, setter: setNome, type: "text", placeholder: "João Silva" },
-            { label: "Email", value: email, setter: setEmail, type: "email", placeholder: "joao@exemplo.com" },
-            { label: "Senha temporária", value: senha, setter: setSenha, type: "password", placeholder: "Mínimo 6 caracteres" },
-          ].map(({ label, value, setter, type, placeholder }) => (
-            <div key={label}>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
-              <input
-                type={type}
-                value={value}
-                onChange={(e) => setter(e.target.value)}
-                placeholder={placeholder}
-                className="w-full border border-[#e5e5e5] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black"
-              />
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Nome</label>
+            <input type="text" value={nome} onChange={(e) => setNome(e.target.value)} placeholder="João Silva"
+              className="w-full border border-[#e5e5e5] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="joao@exemplo.com"
+              className="w-full border border-[#e5e5e5] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Senha temporária</label>
+            <div className="flex gap-2">
+              <input type="text" value={senha} onChange={(e) => setSenha(e.target.value)} placeholder="Mínimo 6 caracteres"
+                className="flex-1 border border-[#e5e5e5] rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-black" />
+              <button onClick={() => setSenha(gerarSenhaAleatoria())} type="button" title="Gerar nova senha"
+                className="px-3 py-2 text-xs border border-[#e5e5e5] rounded-lg hover:bg-gray-50 transition-colors text-gray-500">
+                Gerar
+              </button>
             </div>
-          ))}
+          </div>
         </div>
 
         <div>
@@ -235,12 +316,8 @@ function ModalNovoGestor({
           <div className="flex flex-col gap-2">
             {SECOES_DISPONIVEIS.map((s) => (
               <label key={s} className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={secoes.has(s)}
-                  onChange={() => toggleSecao(s)}
-                  className="w-4 h-4 rounded accent-black"
-                />
+                <input type="checkbox" checked={secoes.has(s)} onChange={() => toggleSecao(s)}
+                  className="w-4 h-4 rounded accent-black" />
                 <span className="text-sm text-gray-800">{s}</span>
               </label>
             ))}
@@ -251,11 +328,8 @@ function ModalNovoGestor({
           <button onClick={onClose} className="flex-1 px-4 py-2 text-sm text-gray-700 border border-[#e5e5e5] rounded-lg hover:bg-gray-50">
             Cancelar
           </button>
-          <button
-            onClick={() => void salvar()}
-            disabled={salvando}
-            className="flex-1 px-4 py-2 text-sm font-medium text-white bg-black rounded-lg hover:bg-gray-900 disabled:opacity-50"
-          >
+          <button onClick={() => void salvar()} disabled={salvando}
+            className="flex-1 px-4 py-2 text-sm font-medium text-white bg-black rounded-lg hover:bg-gray-900 disabled:opacity-50">
             {salvando ? "Criando..." : "Criar gestor"}
           </button>
         </div>
