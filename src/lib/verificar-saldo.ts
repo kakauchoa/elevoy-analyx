@@ -13,28 +13,10 @@ const DESC_STATUS: Record<number, string> = {
   101: "Pendente de encerramento",
 };
 
-interface FundingSourceDetails {
-  display_string?: string;
-  type?: number;
-}
-
 interface MetaContaInfo {
   balance?: string;
   account_status?: number;
-  funding_source_details?: FundingSourceDetails;
   error?: { message: string };
-}
-
-function parsearSaldoMeta(info: MetaContaInfo): number | null {
-  const displayString = info.funding_source_details?.display_string;
-  if (displayString) {
-    // "R$ 11.080,00" → remove símbolo e espaços, converte separadores BR para EN
-    const limpo = displayString.replace(/[R$\s]/g, "").replace(/\./g, "").replace(",", ".");
-    const valor = parseFloat(limpo);
-    if (!isNaN(valor)) return valor;
-  }
-  if (info.balance !== undefined) return Number(info.balance);
-  return null;
 }
 
 export interface ResultadoVerificacao {
@@ -78,7 +60,7 @@ export async function verificarSaldoContas(): Promise<ResultadoVerificacao> {
   for (const conta of contas) {
     try {
       const res = await fetch(
-        `https://graph.facebook.com/${META_API_VERSION}/${conta.accountIdMeta}?fields=balance,account_status,funding_source_details&access_token=${token}`
+        `https://graph.facebook.com/${META_API_VERSION}/${conta.accountIdMeta}?fields=balance,account_status&access_token=${token}`
       );
 
       const dados = (await res.json()) as MetaContaInfo;
@@ -88,9 +70,9 @@ export async function verificarSaldoContas(): Promise<ResultadoVerificacao> {
         continue;
       }
 
-      // Atualiza saldoAtual — prioriza display_string de funding_source_details
-      const saldoReal = parsearSaldoMeta(dados);
-      if (saldoReal !== null) {
+      // balance retorna o saldo disponível atual na conta (float em BRL)
+      if (dados.balance !== undefined) {
+        const saldoReal = Number(dados.balance);
         await prisma.contaAnuncio.update({
           where: { id: conta.id },
           data: { saldoAtual: saldoReal, saldoAtualizadoEm: new Date() },

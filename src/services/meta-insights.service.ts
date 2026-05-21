@@ -416,26 +416,13 @@ export async function sincronizarContaAnuncio(params: {
   try {
     const metaApiVersion = process.env.META_API_VERSION ?? "v18.0";
     const resSaldo = await fetch(
-      `https://graph.facebook.com/${metaApiVersion}/${accountIdMeta}?fields=balance,funding_source_details&access_token=${tokenAcesso}`
+      `https://graph.facebook.com/${metaApiVersion}/${accountIdMeta}?fields=balance&access_token=${tokenAcesso}`
     );
     if (resSaldo.ok) {
-      const dados = (await resSaldo.json()) as {
-        balance?: string;
-        funding_source_details?: { display_string?: string; type?: number };
-      };
-      // Prioriza display_string de funding_source_details para obter o saldo disponível
-      const displayString = dados.funding_source_details?.display_string;
-      let saldoReal: number | null = null;
-      if (displayString) {
-        const limpo = displayString.replace(/[R$\s]/g, "").replace(/\./g, "").replace(",", ".");
-        const parsed = parseFloat(limpo);
-        if (!isNaN(parsed)) saldoReal = parsed;
-      }
-      if (saldoReal === null && dados.balance !== undefined) {
-        saldoReal = Number(dados.balance);
-      }
-      if (saldoReal !== null) {
-        dadosUpdate.saldoAtual = saldoReal;
+      const dados = (await resSaldo.json()) as { balance?: string };
+      // balance retorna o saldo disponível atual na conta (float em BRL)
+      if (dados.balance !== undefined) {
+        dadosUpdate.saldoAtual = Number(dados.balance);
         dadosUpdate.saldoAtualizadoEm = new Date();
       }
     }
