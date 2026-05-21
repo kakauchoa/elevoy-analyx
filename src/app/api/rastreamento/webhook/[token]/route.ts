@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { dispararEventoCapi } from "@/lib/meta-capi";
+import { descriptografarToken } from "@/lib/cripto";
 
 type Params = Promise<{ token: string }>;
 
@@ -68,10 +69,12 @@ export async function POST(req: NextRequest, { params }: { params: Params }) {
     let publico: string | null = null;
     let anuncio: string | null = null;
 
-    if (sourceId && conta.tokenAcesso) {
+    const tokenDecriptado = conta.tokenAcesso ? descriptografarToken(conta.tokenAcesso) : null;
+
+    if (sourceId && tokenDecriptado) {
       try {
         const resAd = await fetch(
-          `https://graph.facebook.com/v22.0/${sourceId}?fields=name,adset,campaign&access_token=${conta.tokenAcesso}`
+          `https://graph.facebook.com/v22.0/${sourceId}?fields=name,adset,campaign&access_token=${tokenDecriptado}`
         );
         const ad = (await resAd.json()) as {
           name?: string;
@@ -82,7 +85,7 @@ export async function POST(req: NextRequest, { params }: { params: Params }) {
 
         if (ad.adset?.id) {
           const resAdset = await fetch(
-            `https://graph.facebook.com/v22.0/${ad.adset.id}?fields=name&access_token=${conta.tokenAcesso}`
+            `https://graph.facebook.com/v22.0/${ad.adset.id}?fields=name&access_token=${tokenDecriptado}`
           );
           const adset = (await resAdset.json()) as { name?: string };
           publico = adset.name ?? null;
@@ -90,7 +93,7 @@ export async function POST(req: NextRequest, { params }: { params: Params }) {
 
         if (ad.campaign?.id) {
           const resCampaign = await fetch(
-            `https://graph.facebook.com/v22.0/${ad.campaign.id}?fields=name&access_token=${conta.tokenAcesso}`
+            `https://graph.facebook.com/v22.0/${ad.campaign.id}?fields=name&access_token=${tokenDecriptado}`
           );
           const campaign = (await resCampaign.json()) as { name?: string };
           campanha = campaign.name ?? null;
@@ -122,10 +125,10 @@ export async function POST(req: NextRequest, { params }: { params: Params }) {
     const pixelId = conta.configuracaoGtm?.metaPixelId;
     const pageId = conta.pageIdMeta;
 
-    if (pixelId && pageId && ctwa && conta.tokenAcesso) {
+    if (pixelId && pageId && ctwa && tokenDecriptado) {
       const resultado = await dispararEventoCapi({
         pixelId,
-        accessToken: conta.tokenAcesso,
+        accessToken: tokenDecriptado,
         pageId,
         evento: "LeadSubmitted",
         telefone,

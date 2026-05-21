@@ -27,3 +27,16 @@ export function descriptografar(textoCriptografado: string): string {
   const decipher = crypto.createDecipheriv(ALGORITMO, chave, iv);
   return Buffer.concat([decipher.update(dados), decipher.final()]).toString("utf8");
 }
+
+/**
+ * Descriptografa um token que pode estar em texto puro (legado) ou criptografado.
+ * Tokens legados (sem o separador ":") são retornados como estão.
+ */
+export function descriptografarToken(valor: string): string {
+  if (!valor.includes(":")) return valor;
+  try {
+    return descriptografar(valor);
+  } catch {
+    return valor;
+  }
+}

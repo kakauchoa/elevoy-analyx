@@ -1,6 +1,7 @@
 import { proto } from "@whiskeysockets/baileys";
 import { prisma } from "./prisma";
 import { dispararEventoCapi } from "./meta-capi";
+import { descriptografarToken } from "./cripto";
 
 type WAMessage = proto.IWebMessageInfo;
 
@@ -64,10 +65,12 @@ export async function processarLeadWpp(contaId: string, msg: WAMessage): Promise
   let publico: string | null = null;
   let anuncio: string | null = null;
 
-  if (ctwaInfo.sourceId && conta.tokenAcesso) {
+  const tokenDecriptado = conta.tokenAcesso ? descriptografarToken(conta.tokenAcesso) : null;
+
+  if (ctwaInfo.sourceId && tokenDecriptado) {
     try {
       const resAd = await fetch(
-        `https://graph.facebook.com/v22.0/${ctwaInfo.sourceId}?fields=name,adset,campaign&access_token=${conta.tokenAcesso}`
+        `https://graph.facebook.com/v22.0/${ctwaInfo.sourceId}?fields=name,adset,campaign&access_token=${tokenDecriptado}`
       );
       const ad = (await resAd.json()) as {
         name?: string;
@@ -77,12 +80,12 @@ export async function processarLeadWpp(contaId: string, msg: WAMessage): Promise
       anuncio = ad.name ?? null;
 
       if (ad.adset?.id) {
-        const r = await fetch(`https://graph.facebook.com/v22.0/${ad.adset.id}?fields=name&access_token=${conta.tokenAcesso}`);
+        const r = await fetch(`https://graph.facebook.com/v22.0/${ad.adset.id}?fields=name&access_token=${tokenDecriptado}`);
         const d = (await r.json()) as { name?: string };
         publico = d.name ?? null;
       }
       if (ad.campaign?.id) {
-        const r = await fetch(`https://graph.facebook.com/v22.0/${ad.campaign.id}?fields=name&access_token=${conta.tokenAcesso}`);
+        const r = await fetch(`https://graph.facebook.com/v22.0/${ad.campaign.id}?fields=name&access_token=${tokenDecriptado}`);
         const d = (await r.json()) as { name?: string };
         campanha = d.name ?? null;
       }
@@ -111,10 +114,10 @@ export async function processarLeadWpp(contaId: string, msg: WAMessage): Promise
   const pixelId = conta.configuracaoGtm?.metaPixelId;
   const pageId = conta.pageIdMeta;
 
-  if (pixelId && pageId && ctwaInfo.ctwa && conta.tokenAcesso) {
+  if (pixelId && pageId && ctwaInfo.ctwa && tokenDecriptado) {
     const resultado = await dispararEventoCapi({
       pixelId,
-      accessToken: conta.tokenAcesso,
+      accessToken: tokenDecriptado,
       pageId,
       evento: "LeadSubmitted",
       telefone,
