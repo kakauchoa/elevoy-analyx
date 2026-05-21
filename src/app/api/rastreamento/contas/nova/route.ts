@@ -65,7 +65,11 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(conta, { status: 201 });
   } catch (err) {
-    console.error("[POST /api/rastreamento/contas/nova]", err);
-    return NextResponse.json({ erro: "Erro interno" }, { status: 500 });
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error("[POST /api/rastreamento/contas/nova]", msg);
+    return NextResponse.json(
+      { erro: "Erro interno", detalhe: process.env.NODE_ENV !== "production" ? msg : undefined },
+      { status: 500 }
+    );
   }
 }

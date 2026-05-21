@@ -216,6 +216,33 @@ class BaileysManager {
   }
 }
 
+  /** Reconecta em background todas as contas que estavam abertas (chamado no startup) */
+  async reconectarInstanciasAtivas(): Promise<void> {
+    try {
+      const contas = await prisma.contaAnuncio.findMany({
+        where: { ativo: true, evolutionStatus: "open" },
+        select: { id: true },
+      });
+
+      void Promise.all(
+        contas.map(async (c) => {
+          try {
+            await this.criarConexao(c.id);
+          } catch (err) {
+            console.error(`[baileys-startup] Falha ao reconectar conta ${c.id}:`, err);
+          }
+        })
+      );
+
+      if (contas.length > 0) {
+        console.log(`[baileys-startup] Reconectando ${contas.length} instância(s) WhatsApp...`);
+      }
+    } catch (err) {
+      console.error("[baileys-startup] Erro ao reconectar instâncias:", err);
+    }
+  }
+}
+
 // Singleton — sobrevive hot-reload no dev e persiste no container de produção
 declare global {
   // eslint-disable-next-line no-var

@@ -80,11 +80,28 @@ export default function ConstrutorDashboardPage() {
     }
   }
 
+  const LAYOUT_PADRAO: Layout = {
+    widgets: [
+      { tipo: "metricas_destaque", ativo: true },
+      { tipo: "metricas_secundarias", ativo: true },
+      { tipo: "grafico", ativo: true },
+      { tipo: "tabela_campanhas", ativo: true },
+      { tipo: "funil_leads", ativo: false },
+    ],
+  };
+
   async function buscarLayout(contaId: string) {
     setCarregando(true);
     try {
       const res = await fetch(`/api/dashboard-config/${contaId}`);
-      if (res.ok) setLayout((await res.json()) as Layout);
+      if (res.ok) {
+        setLayout((await res.json()) as Layout);
+      } else {
+        // Fallback para layout padrão se API falhar (ex: tabela ainda não migrada)
+        setLayout(LAYOUT_PADRAO);
+      }
+    } catch {
+      setLayout(LAYOUT_PADRAO);
     } finally {
       setCarregando(false);
     }

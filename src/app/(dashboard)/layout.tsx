@@ -15,9 +15,10 @@ export default async function DashboardLayout({
     redirect("/login");
   }
 
-  const [contaCount, permissoesRows] = await Promise.all([
-    prisma.contaAnuncio.count({
-      where: { usuarioId: session.user.id, ativo: true },
+  const [usuario, permissoesRows] = await Promise.all([
+    prisma.usuario.findUnique({
+      where: { id: session.user.id },
+      select: { perfil: true },
     }),
     prisma.usuarioPermissao.findMany({
       where: { usuarioId: session.user.id },
@@ -25,7 +26,7 @@ export default async function DashboardLayout({
     }),
   ]);
 
-  const isAdmin = contaCount > 0;
+  const isAdmin = usuario?.perfil === "admin";
   const permissoes = permissoesRows.map((p) => p.secao);
 
   return (
