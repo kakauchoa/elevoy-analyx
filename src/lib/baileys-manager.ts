@@ -214,9 +214,7 @@ class BaileysManager {
       fs.rmSync(this.authPath(contaId), { recursive: true, force: true });
     } catch {}
   }
-}
 
-  /** Reconecta em background todas as contas que estavam abertas (chamado no startup) */
   async reconectarInstanciasAtivas(): Promise<void> {
     try {
       const contas = await prisma.contaAnuncio.findMany({
