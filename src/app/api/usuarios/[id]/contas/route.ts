@@ -6,6 +6,28 @@ import { resolverAcesso } from "@/lib/acesso-contas";
 
 type Params = Promise<{ id: string }>;
 
+// Retorna os IDs das contas vinculadas ao gestor via gestor_contas
+export async function GET(_req: NextRequest, { params }: { params: Params }) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session) return NextResponse.json({ erro: "Não autorizado" }, { status: 401 });
+
+    const { isAdmin } = await resolverAcesso(session.user.id);
+    if (!isAdmin) return NextResponse.json({ erro: "Acesso restrito ao administrador" }, { status: 403 });
+
+    const { id: gestorId } = await params;
+
+    const vinculos = await prisma.gestorConta.findMany({
+      where: { usuarioId: gestorId },
+      select: { contaAnuncioId: true },
+    });
+
+    return NextResponse.json(vinculos.map((v) => v.contaAnuncioId));
+  } catch {
+    return NextResponse.json({ erro: "Erro interno do servidor" }, { status: 500 });
+  }
+}
+
 // Substitui todos os vínculos gestor_contas de um gestor para as contas deste admin
 export async function PUT(req: NextRequest, { params }: { params: Params }) {
   try {

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { CONFIGURACOES_FUNIL, LABELS_METRICAS, type TipoFunil } from "@/lib/metricas";
 
 type WidgetTipo =
   | "metricas_destaque"
@@ -47,11 +48,103 @@ const INFO_WIDGET: Record<WidgetTipo, { titulo: string; descricao: string; icone
   },
 };
 
+// Retorna as métricas configuráveis por tipo de widget e funil
+function metricasDoWidget(tipo: WidgetTipo, funil: TipoFunil): string[] {
+  const cfg = CONFIGURACOES_FUNIL[funil];
+  if (tipo === "metricas_destaque") return cfg.metricasDestaque;
+  if (tipo === "metricas_secundarias") return cfg.submetricas;
+  if (tipo === "grafico") return cfg.metricasGrafico;
+  return [];
+}
+
 type ContaSimples = {
   id: string;
   nomeCliente: string;
   slugCompartilhavel: string;
+  tipoFunil: TipoFunil;
 };
+
+// ── Painel de configuração de métricas do widget ──────────────────────────────
+
+function ConfigPanel({
+  widget,
+  tipoFunil,
+  onChange,
+}: {
+  widget: Widget;
+  tipoFunil: TipoFunil;
+  onChange: (novaConfig: Record<string, unknown>) => void;
+}) {
+  const todasMetricas = metricasDoWidget(widget.tipo, tipoFunil);
+
+  if (todasMetricas.length === 0) {
+    return (
+      <div className="mt-2 mb-1 ml-12 mr-4 bg-gray-50 border border-[#e5e5e5] rounded-xl px-4 py-3">
+        <p className="text-xs text-gray-400">Este widget não tem métricas configuráveis.</p>
+      </div>
+    );
+  }
+
+  const selecionadas: string[] =
+    Array.isArray(widget.config?.metricas)
+      ? (widget.config.metricas as string[])
+      : todasMetricas;
+
+  function toggle(chave: string) {
+    const atual = new Set(selecionadas);
+    atual.has(chave) ? atual.delete(chave) : atual.add(chave);
+    // Mantém a ordem original do funil
+    const novas = todasMetricas.filter((m) => atual.has(m));
+    onChange({ ...widget.config, metricas: novas });
+  }
+
+  function resetar() {
+    onChange({ ...widget.config, metricas: todasMetricas });
+  }
+
+  const tudoAtivo = selecionadas.length === todasMetricas.length;
+
+  return (
+    <div className="mt-2 mb-1 ml-12 mr-4 bg-gray-50 border border-[#e5e5e5] rounded-xl px-4 py-3 space-y-2.5">
+      <div className="flex items-center justify-between">
+        <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide">
+          Métricas visíveis
+        </p>
+        {!tudoAtivo && (
+          <button
+            onClick={resetar}
+            className="text-[10px] text-blue-600 hover:underline"
+          >
+            Restaurar padrão
+          </button>
+        )}
+      </div>
+      <div className="flex flex-wrap gap-1.5">
+        {todasMetricas.map((chave) => {
+          const ativa = selecionadas.includes(chave);
+          return (
+            <button
+              key={chave}
+              onClick={() => toggle(chave)}
+              className={`px-2.5 py-1 text-[11px] font-medium rounded-full border transition-colors ${
+                ativa
+                  ? "bg-black text-white border-black"
+                  : "bg-white text-gray-500 border-[#e5e5e5] hover:border-gray-400"
+              }`}
+            >
+              {LABELS_METRICAS[chave] ?? chave}
+            </button>
+          );
+        })}
+      </div>
+      {selecionadas.length === 0 && (
+        <p className="text-[11px] text-amber-600">Selecione pelo menos uma métrica.</p>
+      )}
+    </div>
+  );
+}
+
+// ── Página principal ──────────────────────────────────────────────────────────
 
 export default function ConstrutorDashboardPage() {
   const [contas, setContas] = useState<ContaSimples[]>([]);
@@ -60,6 +153,7 @@ export default function ConstrutorDashboardPage() {
   const [carregando, setCarregando] = useState(false);
   const [salvando, setSalvando] = useState(false);
   const [mensagem, setMensagem] = useState<{ tipo: "ok" | "erro"; texto: string } | null>(null);
+  const [configAberta, setConfigAberta] = useState<number | null>(null);
 
   const dragIndex = useRef<number | null>(null);
 
@@ -68,7 +162,10 @@ export default function ConstrutorDashboardPage() {
   }, []);
 
   useEffect(() => {
-    if (contaSelecionada) buscarLayout(contaSelecionada);
+    if (contaSelecionada) {
+      setConfigAberta(null);
+      buscarLayout(contaSelecionada);
+    }
   }, [contaSelecionada]);
 
   async function buscarContas() {
@@ -97,7 +194,6 @@ export default function ConstrutorDashboardPage() {
       if (res.ok) {
         setLayout((await res.json()) as Layout);
       } else {
-        // Fallback para layout padrão se API falhar (ex: tabela ainda não migrada)
         setLayout(LAYOUT_PADRAO);
       }
     } catch {
@@ -131,6 +227,13 @@ export default function ConstrutorDashboardPage() {
     setLayout({ ...layout, widgets });
   }
 
+  function atualizarConfig(index: number, novaConfig: Record<string, unknown>) {
+    if (!layout) return;
+    const widgets = [...layout.widgets];
+    widgets[index] = { ...widgets[index], config: novaConfig };
+    setLayout({ ...layout, widgets });
+  }
+
   function onDragStart(index: number) {
     dragIndex.current = index;
   }
@@ -143,14 +246,20 @@ export default function ConstrutorDashboardPage() {
     widgets.splice(index, 0, item);
     dragIndex.current = index;
     setLayout({ widgets });
+    if (configAberta !== null) {
+      if (configAberta === dragIndex.current) setConfigAberta(index);
+      else setConfigAberta(null);
+    }
   }
 
   function onDragEnd() {
     dragIndex.current = null;
   }
 
-  const contaNome = contas.find((c) => c.id === contaSelecionada)?.nomeCliente ?? "";
-  const slugConta = contas.find((c) => c.id === contaSelecionada)?.slugCompartilhavel ?? "";
+  const contaSelecionadaObj = contas.find((c) => c.id === contaSelecionada);
+  const contaNome = contaSelecionadaObj?.nomeCliente ?? "";
+  const slugConta = contaSelecionadaObj?.slugCompartilhavel ?? "";
+  const tipoFunil: TipoFunil = contaSelecionadaObj?.tipoFunil ?? "outro";
 
   return (
     <div className="flex flex-col h-full">
@@ -158,7 +267,7 @@ export default function ConstrutorDashboardPage() {
         <div>
           <h1 className="text-xl font-bold text-gray-900">Construtor de Dashboard</h1>
           <p className="text-sm text-gray-500 mt-0.5">
-            Personalize o layout do dashboard para cada cliente
+            Personalize o layout e as métricas do dashboard para cada cliente
           </p>
         </div>
         <div className="flex items-center gap-3 shrink-0">
@@ -220,69 +329,105 @@ export default function ConstrutorDashboardPage() {
             ) : layout ? (
               <>
                 <p className="text-xs text-gray-500 bg-gray-50 border border-[#e5e5e5] rounded-xl px-4 py-3">
-                  Arraste os cards para reordenar as seções. Use o toggle para ativar ou desativar cada widget no dashboard do cliente.
+                  Arraste os cards para reordenar. Clique em{" "}
+                  <span className="font-mono text-gray-700">⚙</span> para editar as métricas visíveis em cada seção.
                 </p>
 
-                <div className="flex flex-col gap-2.5">
+                <div className="flex flex-col gap-1">
                   {layout.widgets.map((widget, i) => {
                     const info = INFO_WIDGET[widget.tipo];
+                    const configEstabelerta = configAberta === i;
+                    const temConfig = metricasDoWidget(widget.tipo, tipoFunil).length > 0;
+
                     return (
-                      <div
-                        key={widget.tipo}
-                        draggable
-                        onDragStart={() => onDragStart(i)}
-                        onDragOver={(e) => onDragOver(e, i)}
-                        onDragEnd={onDragEnd}
-                        className={`group border rounded-xl px-4 py-3.5 flex items-center gap-4 cursor-grab active:cursor-grabbing transition-all select-none ${
-                          widget.ativo
-                            ? "border-[#e5e5e5] bg-white shadow-sm"
-                            : "border-dashed border-gray-200 bg-gray-50/50 opacity-55"
-                        }`}
-                      >
-                        {/* Drag handle */}
-                        <div className="text-gray-300 group-hover:text-gray-400 transition-colors shrink-0">
-                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                            <circle cx="9" cy="5" r="1.5" />
-                            <circle cx="15" cy="5" r="1.5" />
-                            <circle cx="9" cy="12" r="1.5" />
-                            <circle cx="15" cy="12" r="1.5" />
-                            <circle cx="9" cy="19" r="1.5" />
-                            <circle cx="15" cy="19" r="1.5" />
-                          </svg>
-                        </div>
-
-                        {/* Ícone */}
-                        <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center shrink-0">
-                          <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d={info.icone} />
-                          </svg>
-                        </div>
-
-                        {/* Texto */}
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-gray-900">{info.titulo}</p>
-                          <p className="text-xs text-gray-400 mt-0.5 truncate">{info.descricao}</p>
-                        </div>
-
-                        {/* Ordem */}
-                        <span className="text-xs text-gray-300 tabular-nums shrink-0 w-5 text-right">
-                          {i + 1}
-                        </span>
-
-                        {/* Toggle */}
-                        <button
-                          type="button"
-                          onClick={() => toggleWidget(i)}
-                          className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                            widget.ativo ? "bg-black" : "bg-gray-200"
+                      <div key={widget.tipo}>
+                        <div
+                          draggable
+                          onDragStart={() => onDragStart(i)}
+                          onDragOver={(e) => onDragOver(e, i)}
+                          onDragEnd={onDragEnd}
+                          className={`group border rounded-xl px-4 py-3.5 flex items-center gap-4 cursor-grab active:cursor-grabbing transition-all select-none ${
+                            widget.ativo
+                              ? "border-[#e5e5e5] bg-white shadow-sm"
+                              : "border-dashed border-gray-200 bg-gray-50/50 opacity-55"
                           }`}
                         >
-                          <span
-                            className={`inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                              widget.ativo ? "translate-x-4" : "translate-x-0"
+                          {/* Drag handle */}
+                          <div className="text-gray-300 group-hover:text-gray-400 transition-colors shrink-0">
+                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                              <circle cx="9" cy="5" r="1.5" />
+                              <circle cx="15" cy="5" r="1.5" />
+                              <circle cx="9" cy="12" r="1.5" />
+                              <circle cx="15" cy="12" r="1.5" />
+                              <circle cx="9" cy="19" r="1.5" />
+                              <circle cx="15" cy="19" r="1.5" />
+                            </svg>
+                          </div>
+
+                          {/* Ícone */}
+                          <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center shrink-0">
+                            <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d={info.icone} />
+                            </svg>
+                          </div>
+
+                          {/* Texto */}
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-gray-900">{info.titulo}</p>
+                            <p className="text-xs text-gray-400 mt-0.5 truncate">{info.descricao}</p>
+                          </div>
+
+                          {/* Ordem */}
+                          <span className="text-xs text-gray-300 tabular-nums shrink-0 w-5 text-right">
+                            {i + 1}
+                          </span>
+
+                          {/* Botão de configuração de métricas */}
+                          {temConfig && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setConfigAberta(configEstabelerta ? null : i);
+                              }}
+                              className={`shrink-0 w-7 h-7 flex items-center justify-center rounded-lg transition-colors ${
+                                configEstabelerta
+                                  ? "bg-black text-white"
+                                  : "text-gray-400 hover:text-gray-700 hover:bg-gray-100"
+                              }`}
+                              title="Editar métricas visíveis"
+                            >
+                              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                              </svg>
+                            </button>
+                          )}
+
+                          {/* Toggle ativo/inativo */}
+                          <button
+                            type="button"
+                            onClick={() => toggleWidget(i)}
+                            className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                              widget.ativo ? "bg-black" : "bg-gray-200"
                             }`}
+                          >
+                            <span
+                              className={`inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                                widget.ativo ? "translate-x-4" : "translate-x-0"
+                              }`}
+                            />
+                          </button>
+                        </div>
+
+                        {/* Painel de configuração inline */}
+                        {configEstabelerta && (
+                          <ConfigPanel
+                            widget={widget}
+                            tipoFunil={tipoFunil}
+                            onChange={(novaConfig) => atualizarConfig(i, novaConfig)}
                           />
-                        </button>
+                        )}
                       </div>
                     );
                   })}

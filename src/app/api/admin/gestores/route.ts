@@ -29,6 +29,7 @@ export async function GET() {
         stripeSubscriptionId: true,
         criadoEm: true,
         _count: { select: { contas: { where: { ativo: true, rastreamentoApenas: false } } } },
+        permissoes: { select: { secao: true } },
       },
       orderBy: { criadoEm: "desc" },
     });
@@ -45,6 +46,7 @@ export async function GET() {
         stripeSubscriptionId: g.stripeSubscriptionId,
         criadoEm: g.criadoEm.toISOString(),
         totalContas: g._count.contas,
+        permissoes: g.permissoes.map((p) => p.secao),
       }))
     );
   } catch (err) {
