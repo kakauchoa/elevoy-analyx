@@ -98,16 +98,17 @@ function Seta({ campo, hoje, ontem }: {
 
 // ── Saldo badge ────────────────────────────────────────────────────────────
 
-function BadgeSaldo({ saldo, atualizadoEm, tipoPagamento }: {
+function BadgeSaldo({ saldo, atualizadoEm, tipoPagamento, atualizando, onRefresh }: {
   saldo: string | null;
   atualizadoEm: string | null;
   tipoPagamento: "cartao" | "boleto";
+  atualizando: boolean;
+  onRefresh: () => void;
 }) {
-  if (!saldo) return null;
-  const valor = Number(saldo);
+  const valor = saldo !== null ? Number(saldo) : null;
 
   return (
-    <div className="flex items-center gap-1.5 px-2.5 py-1 bg-gray-50 border border-[#e5e5e5] rounded-lg">
+    <div className="flex items-center gap-1 px-2.5 py-1 bg-gray-50 border border-[#e5e5e5] rounded-lg">
       <svg className="w-3.5 h-3.5 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
           d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -115,14 +116,30 @@ function BadgeSaldo({ saldo, atualizadoEm, tipoPagamento }: {
       <div className="text-right">
         <span className="text-xs font-semibold text-gray-800">
           {tipoPagamento === "boleto" ? "Saldo: " : "Conta: "}
-          R$ {valor.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          {atualizando
+            ? <span className="text-gray-400">atualizando...</span>
+            : valor !== null
+              ? `R$ ${valor.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+              : <span className="text-gray-400">—</span>
+          }
         </span>
-        {atualizadoEm && (
+        {atualizadoEm && !atualizando && (
           <span className="text-[10px] text-gray-400 ml-1.5">
             {new Date(atualizadoEm).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
           </span>
         )}
       </div>
+      <button
+        onClick={onRefresh}
+        disabled={atualizando}
+        title="Atualizar saldo"
+        className="ml-1 p-0.5 text-gray-400 hover:text-gray-700 disabled:opacity-30 transition-colors"
+      >
+        <svg className={`w-3 h-3 ${atualizando ? "animate-spin" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5}
+            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+        </svg>
+      </button>
     </div>
   );
 }
@@ -140,6 +157,26 @@ function CardConta({ conta }: { conta: ContaAnuncio }) {
   const config = CONFIGURACOES_FUNIL[tipoFunil];
   const custoCampo = CUSTO_CAMPO[tipoFunil];
   const campos = ["spend", config.metricaPrincipal, custoCampo, "cpm", "ctr"];
+
+  // Estado de saldo independente — sempre buscado direto do Meta ao carregar
+  const [saldoAtual, setSaldoAtual] = useState<string | null>(conta.saldoAtual);
+  const [saldoAtualizadoEm, setSaldoAtualizadoEm] = useState<string | null>(conta.saldoAtualizadoEm);
+  const [atualizandoSaldo, setAtualizandoSaldo] = useState(false);
+
+  const atualizarSaldo = useCallback(async () => {
+    if (atualizandoSaldo) return;
+    setAtualizandoSaldo(true);
+    try {
+      const res = await fetch(`/api/contas/${conta.id}/saldo`, { method: "POST" });
+      if (res.ok) {
+        const data = (await res.json()) as { saldoAtual: string | null; saldoAtualizadoEm: string };
+        setSaldoAtual(data.saldoAtual);
+        setSaldoAtualizadoEm(data.saldoAtualizadoEm);
+      }
+    } finally {
+      setAtualizandoSaldo(false);
+    }
+  }, [conta.id, atualizandoSaldo]);
 
   const carregarResumo = useCallback(async () => {
     try {
@@ -182,19 +219,16 @@ function CardConta({ conta }: { conta: ContaAnuncio }) {
   }, [conta.id, carregarResumo, sincronizando]);
 
   useEffect(() => {
+    // Para boleto: busca saldo do Meta imediatamente ao montar (dado sempre fresco)
+    if (conta.tipoPagamento === "boleto") {
+      void atualizarSaldo();
+    }
+
     setCarregando(true);
     carregarResumo().then((data) => {
       setCarregando(false);
-      if (!data) return;
-
-      // Para boleto: sempre atualiza saldo ao carregar (valor muda conforme gasto)
-      if (conta.tipoPagamento === "boleto") {
-        void fetch(`/api/contas/${conta.id}/saldo`, { method: "POST" })
-          .then(() => carregarResumo());
-      }
-
       // Valida dados de insights contra a API do Meta (uma vez por sessão)
-      if (!jaSincronizou.current) {
+      if (data && !jaSincronizou.current) {
         jaSincronizou.current = true;
         void sincronizarTudo();
       }
@@ -220,9 +254,11 @@ function CardConta({ conta }: { conta: ContaAnuncio }) {
             {LABELS_FUNIL[tipoFunil]}
           </span>
           <BadgeSaldo
-            saldo={resumo?.conta.saldoAtual ?? conta.saldoAtual}
-            atualizadoEm={resumo?.conta.saldoAtualizadoEm ?? conta.saldoAtualizadoEm}
+            saldo={saldoAtual}
+            atualizadoEm={saldoAtualizadoEm}
             tipoPagamento={conta.tipoPagamento}
+            atualizando={atualizandoSaldo}
+            onRefresh={atualizarSaldo}
           />
         </div>
 
