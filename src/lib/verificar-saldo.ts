@@ -16,7 +16,19 @@ const DESC_STATUS: Record<number, string> = {
 interface MetaContaInfo {
   balance?: string;
   account_status?: number;
+  expired_funding_source_details?: { display_string?: string };
   error?: { message: string };
+}
+
+// Ex: "BRL 14,076.00)" → 14076.00
+function parsearDisplayString(str: string): number | null {
+  const semParentese = str.replace(/\)/g, "").trim();
+  const partes = semParentese.split(/\s+/);
+  const valorStr = partes[partes.length - 1];
+  // Formato Meta: vírgula como separador de milhar, ponto decimal (ex: 14,076.00)
+  const valorLimpo = valorStr.replace(/,/g, "");
+  const num = parseFloat(valorLimpo);
+  return isNaN(num) ? null : num;
 }
 
 export interface ResultadoVerificacao {
@@ -60,7 +72,7 @@ export async function verificarSaldoContas(): Promise<ResultadoVerificacao> {
   for (const conta of contas) {
     try {
       const res = await fetch(
-        `https://graph.facebook.com/${META_API_VERSION}/${conta.accountIdMeta}?fields=balance,account_status&access_token=${token}`
+        `https://graph.facebook.com/${META_API_VERSION}/${conta.accountIdMeta}?fields=balance,account_status,expired_funding_source_details&access_token=${token}`
       );
 
       const dados = (await res.json()) as MetaContaInfo;
@@ -70,12 +82,20 @@ export async function verificarSaldoContas(): Promise<ResultadoVerificacao> {
         continue;
       }
 
-      // balance retorna o saldo disponível atual na conta (float em BRL)
-      if (dados.balance !== undefined) {
-        const saldoReal = Number(dados.balance);
+      // Para boleto: usa expired_funding_source_details.display_string (ex: "BRL 14,076.00)")
+      // Para cartão: usa balance (saldo disponível)
+      let saldoNumerico: number | undefined;
+      if (conta.tipoPagamento === "boleto") {
+        const displayStr = dados.expired_funding_source_details?.display_string;
+        saldoNumerico = displayStr ? parsearDisplayString(displayStr) ?? undefined : undefined;
+      } else if (dados.balance !== undefined) {
+        saldoNumerico = Number(dados.balance);
+      }
+
+      if (saldoNumerico !== undefined) {
         await prisma.contaAnuncio.update({
           where: { id: conta.id },
-          data: { saldoAtual: saldoReal, saldoAtualizadoEm: new Date() },
+          data: { saldoAtual: saldoNumerico, saldoAtualizadoEm: new Date() },
         });
       }
 
@@ -84,7 +104,7 @@ export async function verificarSaldoContas(): Promise<ResultadoVerificacao> {
       let detalhes: Record<string, unknown> = {};
 
       if (conta.tipoPagamento === "boleto") {
-        const saldo = Number(dados.balance ?? 0);
+        const saldo = saldoNumerico ?? 0;
         const limite = conta.limiteAlertaSaldo ? Number(conta.limiteAlertaSaldo) : null;
         const orcamento = conta.orcamentoMensal ? Number(conta.orcamentoMensal) : null;
 

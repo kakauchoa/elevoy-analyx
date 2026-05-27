@@ -171,8 +171,8 @@ function CardConta({ conta }: { conta: ContaAnuncio }) {
     setCarregando(true);
     carregarResumo().then((data) => {
       setCarregando(false);
-      // Auto-sync hoje se não há dados para hoje e ainda não rodou nesta sessão
-      if (data && !data.hoje && !sincronizouHoje.current) {
+      // Auto-sync hoje sempre que o dashboard abre (uma vez por sessão)
+      if (data && !sincronizouHoje.current) {
         sincronizouHoje.current = true;
         void sincronizarHoje();
       }

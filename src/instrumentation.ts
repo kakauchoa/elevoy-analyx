@@ -88,5 +88,43 @@ export async function register() {
 
     const { baileysManager } = await import("./lib/baileys-manager");
     await baileysManager.reconectarInstanciasAtivas();
+
+    // Cron sem biblioteca externa: agenda sincronização às 4h e verificação de saldo às 8h
+    agendarCronDiario(4, 0, async () => {
+      const { sincronizarTodasContas } = await import("./services/sincronizacao.service");
+      await sincronizarTodasContas();
+    });
+
+    agendarCronDiario(8, 0, async () => {
+      const { verificarSaldoContas } = await import("./lib/verificar-saldo");
+      await verificarSaldoContas();
+    });
   }
+}
+
+// Agenda uma função para rodar todo dia no horário especificado (hora local do servidor)
+function agendarCronDiario(hora: number, minuto: number, fn: () => Promise<void>): void {
+  function msAteProxima(): number {
+    const agora = new Date();
+    const proxima = new Date();
+    proxima.setHours(hora, minuto, 0, 0);
+    if (proxima <= agora) proxima.setDate(proxima.getDate() + 1);
+    return proxima.getTime() - agora.getTime();
+  }
+
+  function agendar() {
+    const delay = msAteProxima();
+    const horaStr = `${hora.toString().padStart(2, "0")}:${minuto.toString().padStart(2, "0")}`;
+    console.log(`[cron] Próxima execução às ${horaStr} em ${Math.round(delay / 60000)}min`);
+    setTimeout(async () => {
+      try {
+        await fn();
+      } catch (e) {
+        console.error(`[cron ${hora}h] Erro:`, e);
+      }
+      agendar();
+    }, delay);
+  }
+
+  agendar();
 }
