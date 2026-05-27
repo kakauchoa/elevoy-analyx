@@ -78,6 +78,12 @@ export async function POST(_req: NextRequest, { params }: { params: Params }) {
     return NextResponse.json({
       saldoAtual: saldoNumerico?.toString() ?? null,
       saldoAtualizadoEm: agora.toISOString(),
+      _debug: {
+        tipoPagamento: conta.tipoPagamento,
+        balance: dados.balance,
+        funding_source_details: dados.funding_source_details,
+        expired_funding_source_details: dados.expired_funding_source_details,
+      },
     });
   } catch (err) {
     console.error("[POST /api/contas/[id]/saldo]", err);
