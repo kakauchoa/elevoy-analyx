@@ -62,6 +62,12 @@ function hojeStr(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
+function ontemStr(): string {
+  const d = new Date();
+  d.setUTCDate(d.getUTCDate() - 1);
+  return d.toISOString().slice(0, 10);
+}
+
 function valorStr(dados: InsightNumericos | null, campo: string): string {
   if (!dados) return "—";
   const valor = dados[campo as keyof InsightNumericos] as number;
@@ -128,7 +134,7 @@ function CardConta({ conta }: { conta: ContaAnuncio }) {
   const [resumo, setResumo] = useState<ResumoResponse | null>(null);
   const [carregando, setCarregando] = useState(true);
   const [sincronizando, setSincronizando] = useState(false);
-  const sincronizouHoje = useRef(false);
+  const jaSincronizou = useRef(false);
 
   const tipoFunil = conta.tipoFunil as TipoFunil;
   const config = CONFIGURACOES_FUNIL[tipoFunil];
@@ -149,16 +155,24 @@ function CardConta({ conta }: { conta: ContaAnuncio }) {
     return null;
   }, [conta.id]);
 
-  const sincronizarHoje = useCallback(async () => {
+  // Valida e atualiza hoje + ontem + saldo contra a API do Meta
+  const sincronizarTudo = useCallback(async () => {
     if (sincronizando) return;
     setSincronizando(true);
     try {
-      const hoje = hojeStr();
-      await fetch("/api/meta/sincronizar", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ contaAnuncioId: conta.id, dataInicio: hoje, dataFim: hoje }),
-      });
+      // Sincroniza hoje e ontem em um único range + atualiza saldo em paralelo
+      await Promise.all([
+        fetch("/api/meta/sincronizar", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contaAnuncioId: conta.id,
+            dataInicio: ontemStr(),
+            dataFim: hojeStr(),
+          }),
+        }),
+        fetch(`/api/contas/${conta.id}/saldo`, { method: "POST" }),
+      ]);
       await carregarResumo();
     } catch {
       // ignora
@@ -171,10 +185,10 @@ function CardConta({ conta }: { conta: ContaAnuncio }) {
     setCarregando(true);
     carregarResumo().then((data) => {
       setCarregando(false);
-      // Auto-sync hoje sempre que o dashboard abre (uma vez por sessão)
-      if (data && !sincronizouHoje.current) {
-        sincronizouHoje.current = true;
-        void sincronizarHoje();
+      // Valida dados contra a API do Meta sempre que o dashboard abre (uma vez por sessão)
+      if (data && !jaSincronizou.current) {
+        jaSincronizou.current = true;
+        void sincronizarTudo();
       }
     }).catch(() => setCarregando(false));
   }, [conta.id]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -184,7 +198,7 @@ function CardConta({ conta }: { conta: ContaAnuncio }) {
 
   const linhas: Array<{ label: string; dados: InsightNumericos | null; mostrarSeta: boolean; carregandoLinha?: boolean }> = [
     { label: "Hoje",       dados: resumo?.hoje ?? null,  mostrarSeta: true,  carregandoLinha: sincronizando },
-    { label: "Ontem",      dados: resumo?.ontem ?? null, mostrarSeta: false },
+    { label: "Ontem",      dados: resumo?.ontem ?? null, mostrarSeta: false, carregandoLinha: sincronizando },
     { label: periodoLabel, dados: periodoDados ?? null,  mostrarSeta: false },
   ];
 
@@ -205,11 +219,11 @@ function CardConta({ conta }: { conta: ContaAnuncio }) {
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
-          {/* Botão atualizar dados de hoje */}
+          {/* Botão atualizar dados */}
           <button
-            onClick={sincronizarHoje}
+            onClick={() => void sincronizarTudo()}
             disabled={sincronizando || carregando}
-            title="Atualizar dados de hoje"
+            title="Validar dados contra o Meta Ads"
             className="p-1.5 text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-40"
           >
             <svg
@@ -302,7 +316,7 @@ function CardConta({ conta }: { conta: ContaAnuncio }) {
         <div className="px-5 py-2 border-t border-gray-100 bg-gray-50/60 flex items-center justify-between">
           <p className="text-xs text-gray-400">
             {sincronizando
-              ? "Atualizando dados de hoje..."
+              ? "Validando dados com o Meta Ads..."
               : resumo?.conta.ultimaSincronizacao
               ? `Atualizado em ${new Date(resumo.conta.ultimaSincronizacao).toLocaleString("pt-BR", {
                   day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit",
