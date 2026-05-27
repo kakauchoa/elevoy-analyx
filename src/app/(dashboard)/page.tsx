@@ -185,8 +185,16 @@ function CardConta({ conta }: { conta: ContaAnuncio }) {
     setCarregando(true);
     carregarResumo().then((data) => {
       setCarregando(false);
-      // Valida dados contra a API do Meta sempre que o dashboard abre (uma vez por sessão)
-      if (data && !jaSincronizou.current) {
+      if (!data) return;
+
+      // Para boleto: sempre atualiza saldo ao carregar (valor muda conforme gasto)
+      if (conta.tipoPagamento === "boleto") {
+        void fetch(`/api/contas/${conta.id}/saldo`, { method: "POST" })
+          .then(() => carregarResumo());
+      }
+
+      // Valida dados de insights contra a API do Meta (uma vez por sessão)
+      if (!jaSincronizou.current) {
         jaSincronizou.current = true;
         void sincronizarTudo();
       }
