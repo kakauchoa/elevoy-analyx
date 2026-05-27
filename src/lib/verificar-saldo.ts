@@ -21,14 +21,18 @@ interface MetaContaInfo {
   error?: { message: string };
 }
 
-// Ex: "BRL 14,076.00)" → 14076.00
+// Formato real da Meta: "Saldo disponível (R$1.407,25 BRL)"
 function parsearDisplayString(str: string): number | null {
-  const semParentese = str.replace(/\)/g, "").trim();
+  const matchBR = str.match(/R\$\s*([\d.]+,\d{2})/);
+  if (matchBR) {
+    const num = parseFloat(matchBR[1].replace(/\./g, "").replace(",", "."));
+    return isNaN(num) ? null : num;
+  }
+  // Fallback formato antigo: "BRL 14,076.00)"
+  const semParentese = str.replace(/[()]/g, "").trim();
   const partes = semParentese.split(/\s+/);
-  const valorStr = partes[partes.length - 1];
-  // Formato Meta: vírgula como separador de milhar, ponto decimal (ex: 14,076.00)
-  const valorLimpo = valorStr.replace(/,/g, "");
-  const num = parseFloat(valorLimpo);
+  const valorStr = partes.find((p) => /[\d,.]/.test(p)) ?? "";
+  const num = parseFloat(valorStr.replace(/,/g, ""));
   return isNaN(num) ? null : num;
 }
 

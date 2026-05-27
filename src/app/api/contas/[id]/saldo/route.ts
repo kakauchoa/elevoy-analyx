@@ -8,12 +8,17 @@ import { verificarAcessoConta } from "@/lib/acesso-contas";
 const META_API_VERSION = process.env.META_API_VERSION ?? "v18.0";
 
 function parsearDisplayString(str: string): number | null {
-  // Ex: "BRL 14,076.00)" → 14076.00
-  const semParentese = str.replace(/\)/g, "").trim();
+  // Formato real da Meta: "Saldo disponível (R$1.407,25 BRL)"
+  const matchBR = str.match(/R\$\s*([\d.]+,\d{2})/);
+  if (matchBR) {
+    const num = parseFloat(matchBR[1].replace(/\./g, "").replace(",", "."));
+    return isNaN(num) ? null : num;
+  }
+  // Fallback formato antigo: "BRL 14,076.00)"
+  const semParentese = str.replace(/[()]/g, "").trim();
   const partes = semParentese.split(/\s+/);
-  const valorStr = partes[partes.length - 1];
-  const valorLimpo = valorStr.replace(/,/g, "");
-  const num = parseFloat(valorLimpo);
+  const valorStr = partes.find((p) => /[\d,.]/.test(p)) ?? "";
+  const num = parseFloat(valorStr.replace(/,/g, ""));
   return isNaN(num) ? null : num;
 }
 
@@ -78,12 +83,6 @@ export async function POST(_req: NextRequest, { params }: { params: Params }) {
     return NextResponse.json({
       saldoAtual: saldoNumerico?.toString() ?? null,
       saldoAtualizadoEm: agora.toISOString(),
-      _debug: {
-        tipoPagamento: conta.tipoPagamento,
-        balance: dados.balance,
-        funding_source_details: dados.funding_source_details,
-        expired_funding_source_details: dados.expired_funding_source_details,
-      },
     });
   } catch (err) {
     console.error("[POST /api/contas/[id]/saldo]", err);
