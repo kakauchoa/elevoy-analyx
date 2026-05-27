@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { verificarAdminMaster } from "@/lib/admin-master-auth";
 
 export async function GET() {
-  if (!verificarAdminMaster()) {
+  if (!(await verificarAdminMaster())) {
     return NextResponse.json({ erro: "Não autorizado" }, { status: 401 });
   }
 

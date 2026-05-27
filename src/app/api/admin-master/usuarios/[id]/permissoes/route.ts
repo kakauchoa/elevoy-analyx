@@ -5,7 +5,7 @@ import { verificarAdminMaster } from "@/lib/admin-master-auth";
 type Params = Promise<{ id: string }>;
 
 export async function GET(_req: NextRequest, { params }: { params: Params }) {
-  if (!verificarAdminMaster()) {
+  if (!(await verificarAdminMaster())) {
     return NextResponse.json({ erro: "Não autorizado" }, { status: 401 });
   }
 
@@ -23,7 +23,7 @@ export async function GET(_req: NextRequest, { params }: { params: Params }) {
 }
 
 export async function PUT(req: NextRequest, { params }: { params: Params }) {
-  if (!verificarAdminMaster()) {
+  if (!(await verificarAdminMaster())) {
     return NextResponse.json({ erro: "Não autorizado" }, { status: 401 });
   }
 
