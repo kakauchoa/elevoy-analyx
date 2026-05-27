@@ -16,6 +16,7 @@ const DESC_STATUS: Record<number, string> = {
 interface MetaContaInfo {
   balance?: string;
   account_status?: number;
+  funding_source_details?: { display_string?: string };
   expired_funding_source_details?: { display_string?: string };
   error?: { message: string };
 }
@@ -72,7 +73,7 @@ export async function verificarSaldoContas(): Promise<ResultadoVerificacao> {
   for (const conta of contas) {
     try {
       const res = await fetch(
-        `https://graph.facebook.com/${META_API_VERSION}/${conta.accountIdMeta}?fields=balance,account_status,expired_funding_source_details&access_token=${token}`
+        `https://graph.facebook.com/${META_API_VERSION}/${conta.accountIdMeta}?fields=balance,account_status,funding_source_details,expired_funding_source_details&access_token=${token}`
       );
 
       const dados = (await res.json()) as MetaContaInfo;
@@ -82,11 +83,13 @@ export async function verificarSaldoContas(): Promise<ResultadoVerificacao> {
         continue;
       }
 
-      // Para boleto: usa expired_funding_source_details.display_string (ex: "BRL 14,076.00)")
+      // Para boleto: usa funding_source_details (boleto ativo/atual). Se nulo, tenta o expirado.
       // Para cartão: usa balance (saldo disponível)
       let saldoNumerico: number | undefined;
       if (conta.tipoPagamento === "boleto") {
-        const displayStr = dados.expired_funding_source_details?.display_string;
+        const displayStr =
+          dados.funding_source_details?.display_string ??
+          dados.expired_funding_source_details?.display_string;
         saldoNumerico = displayStr ? parsearDisplayString(displayStr) ?? undefined : undefined;
       } else if (dados.balance !== undefined) {
         saldoNumerico = Number(dados.balance);

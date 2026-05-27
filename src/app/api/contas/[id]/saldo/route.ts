@@ -43,10 +43,11 @@ export async function POST(_req: NextRequest, { params }: { params: Params }) {
     }
 
     const res = await fetch(
-      `https://graph.facebook.com/${META_API_VERSION}/${conta.accountIdMeta}?fields=balance,account_status,expired_funding_source_details&access_token=${token}`
+      `https://graph.facebook.com/${META_API_VERSION}/${conta.accountIdMeta}?fields=balance,account_status,funding_source_details,expired_funding_source_details&access_token=${token}`
     );
     const dados = (await res.json()) as {
       balance?: string;
+      funding_source_details?: { display_string?: string };
       expired_funding_source_details?: { display_string?: string };
       error?: { message: string };
     };
@@ -57,7 +58,10 @@ export async function POST(_req: NextRequest, { params }: { params: Params }) {
 
     let saldoNumerico: number | undefined;
     if (conta.tipoPagamento === "boleto") {
-      const displayStr = dados.expired_funding_source_details?.display_string;
+      // Boleto ativo tem saldo em funding_source_details; quando esgotado vai para expired
+      const displayStr =
+        dados.funding_source_details?.display_string ??
+        dados.expired_funding_source_details?.display_string;
       saldoNumerico = displayStr ? parsearDisplayString(displayStr) ?? undefined : undefined;
     } else if (dados.balance !== undefined) {
       saldoNumerico = Number(dados.balance);
