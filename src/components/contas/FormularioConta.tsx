@@ -64,8 +64,9 @@ export function FormularioConta({ conta, onSalvar, onFechar }: FormularioContaPr
 
   useEffect(() => {
     void fetch("/api/clientes-agencia")
-      .then((r) => r.json())
-      .then((d) => setClientes(d as ClienteOpcao[]));
+      .then((r) => r.ok ? r.json() : [])
+      .then((d) => setClientes(Array.isArray(d) ? d as ClienteOpcao[] : []))
+      .catch(() => setClientes([]));
   }, []);
 
   useEffect(() => {

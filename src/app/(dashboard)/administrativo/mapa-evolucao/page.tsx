@@ -71,13 +71,13 @@ export default function MapaEvolucaoPage() {
 
   useEffect(() => {
     void fetch("/api/clientes-agencia")
-      .then((r) => r.json())
+      .then((r) => r.ok ? r.json() : [])
       .then((d) => {
-        setClientes(d as ClienteEvolucao[]);
-        if ((d as ClienteEvolucao[]).length > 0) {
-          setClienteSelecionado((d as ClienteEvolucao[])[0].id);
-        }
+        const lista = Array.isArray(d) ? d as ClienteEvolucao[] : [];
+        setClientes(lista);
+        if (lista.length > 0) setClienteSelecionado(lista[0].id);
       })
+      .catch(() => setClientes([]))
       .finally(() => setCarregando(false));
   }, []);
 

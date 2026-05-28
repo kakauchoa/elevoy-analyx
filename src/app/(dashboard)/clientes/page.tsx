@@ -94,8 +94,11 @@ export default function ClientesPage() {
     setCarregando(true);
     try {
       const res = await fetch("/api/clientes-agencia");
+      if (!res.ok) { setClientes([]); return; }
       const data = await res.json() as Cliente[];
-      setClientes(data);
+      setClientes(Array.isArray(data) ? data : []);
+    } catch {
+      setClientes([]);
     } finally {
       setCarregando(false);
     }

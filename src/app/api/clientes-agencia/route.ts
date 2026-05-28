@@ -7,39 +7,44 @@ export async function GET() {
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ erro: "Não autenticado" }, { status: 401 });
 
-  const clientes = await prisma.clienteAgencia.findMany({
-    where: { usuarioId: session.user.id, ativo: true },
-    include: {
-      contas: { select: { id: true, nomeCliente: true, tipoFunil: true, slugCompartilhavel: true, rastreamentoApenas: true } },
-      servicos: { where: { ativo: true } },
-      pagamentos: { orderBy: { dataVencimento: "desc" }, take: 1 },
-      indicadoPor: { select: { id: true, nome: true } },
-      mapaAvaliacao: true,
-    },
-    orderBy: { nome: "asc" },
-  });
+  try {
+    const clientes = await prisma.clienteAgencia.findMany({
+      where: { usuarioId: session.user.id, ativo: true },
+      include: {
+        contas: { select: { id: true, nomeCliente: true, tipoFunil: true, slugCompartilhavel: true, rastreamentoApenas: true } },
+        servicos: { where: { ativo: true } },
+        pagamentos: { orderBy: { dataVencimento: "desc" }, take: 1 },
+        indicadoPor: { select: { id: true, nome: true } },
+        mapaAvaliacao: true,
+      },
+      orderBy: { nome: "asc" },
+    });
 
-  return NextResponse.json(
-    clientes.map((c) => ({
-      ...c,
-      dataEntrada: c.dataEntrada?.toISOString().slice(0, 10) ?? null,
-      criadoEm: c.criadoEm.toISOString(),
-      atualizadoEm: c.atualizadoEm.toISOString(),
-      pagamentos: c.pagamentos.map((p) => ({
-        ...p,
-        valor: p.valor.toString(),
-        dataVencimento: p.dataVencimento.toISOString().slice(0, 10),
-        dataPagamento: p.dataPagamento?.toISOString().slice(0, 10) ?? null,
-        criadoEm: p.criadoEm.toISOString(),
-        atualizadoEm: p.atualizadoEm.toISOString(),
-      })),
-      servicos: c.servicos.map((s) => ({
-        ...s,
-        valorMensal: s.valorMensal.toString(),
-        criadoEm: s.criadoEm.toISOString(),
-      })),
-    }))
-  );
+    return NextResponse.json(
+      clientes.map((c) => ({
+        ...c,
+        dataEntrada: c.dataEntrada?.toISOString().slice(0, 10) ?? null,
+        criadoEm: c.criadoEm.toISOString(),
+        atualizadoEm: c.atualizadoEm.toISOString(),
+        pagamentos: c.pagamentos.map((p) => ({
+          ...p,
+          valor: p.valor.toString(),
+          dataVencimento: p.dataVencimento.toISOString().slice(0, 10),
+          dataPagamento: p.dataPagamento?.toISOString().slice(0, 10) ?? null,
+          criadoEm: p.criadoEm.toISOString(),
+          atualizadoEm: p.atualizadoEm.toISOString(),
+        })),
+        servicos: c.servicos.map((s) => ({
+          ...s,
+          valorMensal: s.valorMensal.toString(),
+          criadoEm: s.criadoEm.toISOString(),
+        })),
+      }))
+    );
+  } catch {
+    // Tabela ainda não existe no banco — retorna lista vazia sem quebrar o frontend
+    return NextResponse.json([]);
+  }
 }
 
 export async function POST(request: Request) {
