@@ -9,31 +9,61 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
 
   const { id } = await params;
 
-  const cliente = await prisma.clienteAgencia.findFirst({
-    where: { id, usuarioId: session.user.id },
-    include: {
-      contas: {
-        select: {
-          id: true,
-          nomeCliente: true,
-          tipoFunil: true,
-          slugCompartilhavel: true,
-          rastreamentoApenas: true,
-          compartilhamentoAtivo: true,
-          ultimaSincronizacao: true,
+  // Busca os dados principais do cliente
+  let cliente;
+  try {
+    cliente = await prisma.clienteAgencia.findFirst({
+      where: { id, usuarioId: session.user.id },
+      include: {
+        contas: {
+          select: {
+            id: true,
+            nomeCliente: true,
+            tipoFunil: true,
+            slugCompartilhavel: true,
+            rastreamentoApenas: true,
+            compartilhamentoAtivo: true,
+            ultimaSincronizacao: true,
+          },
         },
+        servicos: { where: { ativo: true }, orderBy: { criadoEm: "asc" } },
+        pagamentos: { orderBy: { dataVencimento: "desc" } },
+        indicadoPor: { select: { id: true, nome: true } },
+        indicacoes: { select: { id: true, nome: true } },
       },
-      servicos: { where: { ativo: true }, orderBy: { criadoEm: "asc" } },
-      pagamentos: { orderBy: { dataVencimento: "desc" } },
-      indicadoPor: { select: { id: true, nome: true } },
-      indicacoes: { select: { id: true, nome: true } },
-      mapaAvaliacao: true,
-      mapaEvolucaoConfig: true,
-      mapaEvolucaoRegistros: { orderBy: { dataRegistro: "desc" } },
-    },
-  });
+    });
+  } catch {
+    return NextResponse.json({ erro: "Erro ao buscar cliente" }, { status: 500 });
+  }
 
   if (!cliente) return NextResponse.json({ erro: "Cliente não encontrado" }, { status: 404 });
+
+  // Busca os dados de mapa separadamente — tabelas podem não existir no banco ainda
+  let mapaAvaliacao = null;
+  let mapaEvolucaoConfig = null;
+  let mapaEvolucaoRegistros: {
+    id: string; clienteId: string; dataRegistro: Date; vendas: number | null;
+    faturamento: { toString(): string } | null; observacoes: string | null;
+    preenchidoPor: string; criadoEm: Date;
+  }[] = [];
+
+  try {
+    const comMapa = await prisma.clienteAgencia.findFirst({
+      where: { id },
+      include: {
+        mapaAvaliacao: true,
+        mapaEvolucaoConfig: true,
+        mapaEvolucaoRegistros: { orderBy: { dataRegistro: "desc" } },
+      },
+    });
+    if (comMapa) {
+      mapaAvaliacao = comMapa.mapaAvaliacao;
+      mapaEvolucaoConfig = comMapa.mapaEvolucaoConfig;
+      mapaEvolucaoRegistros = comMapa.mapaEvolucaoRegistros;
+    }
+  } catch {
+    // Tabelas de mapa ainda não existem no banco
+  }
 
   return NextResponse.json({
     ...cliente,
@@ -57,17 +87,18 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
       criadoEm: p.criadoEm.toISOString(),
       atualizadoEm: p.atualizadoEm.toISOString(),
     })),
-    mapaEvolucaoConfig: cliente.mapaEvolucaoConfig
+    mapaAvaliacao,
+    mapaEvolucaoConfig: mapaEvolucaoConfig
       ? {
-          ...cliente.mapaEvolucaoConfig,
-          metaFaturamentoMensal: cliente.mapaEvolucaoConfig.metaFaturamentoMensal?.toString() ?? null,
-          faturamentoInicio: cliente.mapaEvolucaoConfig.faturamentoInicio?.toString() ?? null,
-          dataInicio: cliente.mapaEvolucaoConfig.dataInicio?.toISOString().slice(0, 10) ?? null,
-          criadoEm: cliente.mapaEvolucaoConfig.criadoEm.toISOString(),
-          atualizadoEm: cliente.mapaEvolucaoConfig.atualizadoEm.toISOString(),
+          ...mapaEvolucaoConfig,
+          metaFaturamentoMensal: mapaEvolucaoConfig.metaFaturamentoMensal?.toString() ?? null,
+          faturamentoInicio: mapaEvolucaoConfig.faturamentoInicio?.toString() ?? null,
+          dataInicio: mapaEvolucaoConfig.dataInicio?.toISOString().slice(0, 10) ?? null,
+          criadoEm: mapaEvolucaoConfig.criadoEm.toISOString(),
+          atualizadoEm: mapaEvolucaoConfig.atualizadoEm.toISOString(),
         }
       : null,
-    mapaEvolucaoRegistros: cliente.mapaEvolucaoRegistros.map((r) => ({
+    mapaEvolucaoRegistros: mapaEvolucaoRegistros.map((r) => ({
       ...r,
       faturamento: r.faturamento?.toString() ?? null,
       dataRegistro: r.dataRegistro.toISOString().slice(0, 10),
