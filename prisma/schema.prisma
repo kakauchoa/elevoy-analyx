@@ -81,6 +81,20 @@ enum PlanoUsuario {
   personalizado
 }
 
+enum DesempenhoCampanhas {
+  otimo
+  bom
+  regular
+  ruim
+  pessimo
+}
+
+enum StatusPagamentoCliente {
+  pago
+  pendente
+  inadimplente
+}
+
 model Usuario {
   id                   String            @id @default(uuid())
   nome                 String
@@ -108,6 +122,7 @@ model Usuario {
   integracaoGoogle    IntegracaoGoogle?
   prospeccoes         ProspeccaoGmn[]
   historicosPesquisa  HistoricoPesquisaGmn[]
+  clientesAgencia     ClienteAgencia[]
 
   @@map("usuarios")
 }
@@ -139,10 +154,12 @@ model ContaAnuncio {
   limiteAlertaSaldo      Decimal?          @db.Decimal(10, 2) @map("limite_alerta_saldo")
   rastreamentoAtivo      Boolean           @default(true) @map("rastreamento_ativo")
   rastreamentoApenas     Boolean           @default(false) @map("rastreamento_apenas")
+  clienteAgenciaId       String?           @map("cliente_agencia_id")
   ativo                  Boolean           @default(true)
   criadoEm               DateTime          @default(now()) @map("criado_em")
   atualizadoEm           DateTime          @updatedAt @map("atualizado_em")
   usuario                Usuario           @relation(fields: [usuarioId], references: [id])
+  clienteAgencia         ClienteAgencia?   @relation(fields: [clienteAgenciaId], references: [id])
   campanhas              Campanha[]
   insights               InsightDiario[]
   acessos                AcessoDashboard[]
@@ -561,4 +578,101 @@ model SolicitacaoResetCrm {
   cliente     ClienteCrm       @relation(fields: [clienteId], references: [id], onDelete: Cascade)
 
   @@map("solicitacoes_reset_crm")
+}
+
+model ClienteAgencia {
+  id                    String                   @id @default(uuid())
+  usuarioId             String                   @map("usuario_id")
+  nome                  String                   @db.VarChar(255)
+  cnpj                  String?                  @db.VarChar(18)
+  nomeSocio             String?                  @map("nome_socio") @db.VarChar(255)
+  telefone              String?                  @db.VarChar(30)
+  email                 String?                  @db.VarChar(255)
+  dataEntrada           DateTime?                @db.Date @map("data_entrada")
+  indicadoPorId         String?                  @map("indicado_por_id")
+  observacoes           String?                  @db.Text
+  ativo                 Boolean                  @default(true)
+  criadoEm              DateTime                 @default(now()) @map("criado_em")
+  atualizadoEm          DateTime                 @updatedAt @map("atualizado_em")
+  usuario               Usuario                  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  indicadoPor           ClienteAgencia?          @relation("indicacoes", fields: [indicadoPorId], references: [id])
+  indicacoes            ClienteAgencia[]         @relation("indicacoes")
+  contas                ContaAnuncio[]
+  servicos              ServicoCliente[]
+  pagamentos            PagamentoCliente[]
+  mapaAvaliacao         MapaAvaliacaoCliente?
+  mapaEvolucaoConfig    MapaEvolucaoConfig?
+  mapaEvolucaoRegistros MapaEvolucaoRegistro[]
+
+  @@map("clientes_agencia")
+}
+
+model ServicoCliente {
+  id          String         @id @default(uuid())
+  clienteId   String         @map("cliente_id")
+  nome        String         @db.VarChar(255)
+  valorMensal Decimal        @map("valor_mensal") @db.Decimal(10, 2)
+  ativo       Boolean        @default(true)
+  criadoEm   DateTime       @default(now()) @map("criado_em")
+  cliente     ClienteAgencia @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+
+  @@map("servicos_cliente")
+}
+
+model PagamentoCliente {
+  id             String                 @id @default(uuid())
+  clienteId      String                 @map("cliente_id")
+  valor          Decimal                @db.Decimal(10, 2)
+  dataVencimento DateTime               @db.Date @map("data_vencimento")
+  dataPagamento  DateTime?              @db.Date @map("data_pagamento")
+  status         StatusPagamentoCliente @default(pendente)
+  observacoes    String?                @db.Text
+  criadoEm      DateTime               @default(now()) @map("criado_em")
+  atualizadoEm  DateTime               @updatedAt @map("atualizado_em")
+  cliente        ClienteAgencia         @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+
+  @@map("pagamentos_cliente")
+}
+
+model MapaAvaliacaoCliente {
+  id                  String               @id @default(uuid())
+  clienteId           String               @unique @map("cliente_id")
+  desempenhoCampanhas DesempenhoCampanhas? @map("desempenho_campanhas")
+  relacionamento      DesempenhoCampanhas?
+  preenchidoGestorEm  DateTime?            @map("preenchido_gestor_em")
+  preenchidoClienteEm DateTime?            @map("preenchido_cliente_em")
+  atualizadoEm        DateTime             @updatedAt @map("atualizado_em")
+  cliente             ClienteAgencia       @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+
+  @@map("mapa_avaliacao_clientes")
+}
+
+model MapaEvolucaoConfig {
+  id                    String         @id @default(uuid())
+  clienteId             String         @unique @map("cliente_id")
+  metaFaturamentoMensal Decimal?       @map("meta_faturamento_mensal") @db.Decimal(15, 2)
+  faturamentoInicio     Decimal?       @map("faturamento_inicio") @db.Decimal(15, 2)
+  vendasInicio          Int?           @map("vendas_inicio")
+  dataInicio            DateTime?      @db.Date @map("data_inicio")
+  observacoes           String?        @db.Text
+  criadoEm             DateTime       @default(now()) @map("criado_em")
+  atualizadoEm         DateTime       @updatedAt @map("atualizado_em")
+  cliente              ClienteAgencia @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+
+  @@map("mapa_evolucao_config")
+}
+
+model MapaEvolucaoRegistro {
+  id            String         @id @default(uuid())
+  clienteId     String         @map("cliente_id")
+  dataRegistro  DateTime       @db.Date @map("data_registro")
+  vendas        Int?
+  faturamento   Decimal?       @db.Decimal(15, 2)
+  observacoes   String?        @db.Text
+  preenchidoPor String         @default("gestor") @map("preenchido_por") @db.VarChar(20)
+  criadoEm     DateTime       @default(now()) @map("criado_em")
+  cliente       ClienteAgencia @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+
+  @@unique([clienteId, dataRegistro])
+  @@map("mapa_evolucao_registros")
 }

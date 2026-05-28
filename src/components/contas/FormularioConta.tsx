@@ -10,6 +10,11 @@ interface FormularioContaProps {
   onFechar: () => void;
 }
 
+interface ClienteOpcao {
+  id: string;
+  nome: string;
+}
+
 type CamposForm = {
   nomeCliente: string;
   slugCompartilhavel: string;
@@ -19,6 +24,7 @@ type CamposForm = {
   tipoPagamento: "cartao" | "boleto";
   orcamentoMensal: string;
   limiteAlertaSaldo: string;
+  clienteAgenciaId: string;
 };
 
 const OPCOES_FUNIL = Object.entries(LABELS_FUNIL) as [TipoFunil, string][];
@@ -48,11 +54,19 @@ export function FormularioConta({ conta, onSalvar, onFechar }: FormularioContaPr
     limiteAlertaSaldo: (conta as unknown as { limiteAlertaSaldo?: string | number | null })?.limiteAlertaSaldo
       ? String(Number((conta as unknown as { limiteAlertaSaldo?: string | number | null }).limiteAlertaSaldo))
       : "",
+    clienteAgenciaId: (conta as unknown as { clienteAgenciaId?: string | null })?.clienteAgenciaId ?? "",
   });
 
   const [slugManual, setSlugManual] = useState(modoEdicao);
   const [carregando, setCarregando] = useState(false);
   const [erro, setErro] = useState("");
+  const [clientes, setClientes] = useState<ClienteOpcao[]>([]);
+
+  useEffect(() => {
+    void fetch("/api/clientes-agencia")
+      .then((r) => r.json())
+      .then((d) => setClientes(d as ClienteOpcao[]));
+  }, []);
 
   useEffect(() => {
     if (!slugManual && form.nomeCliente) {
@@ -89,6 +103,7 @@ export function FormularioConta({ conta, onSalvar, onFechar }: FormularioContaPr
         limiteAlertaSaldo: form.tipoPagamento === "boleto" && form.limiteAlertaSaldo
           ? Number(form.limiteAlertaSaldo)
           : null,
+        clienteAgenciaId: form.clienteAgenciaId || null,
       };
 
       const url = modoEdicao ? `/api/contas/${conta.id}` : "/api/contas";
@@ -136,6 +151,24 @@ export function FormularioConta({ conta, onSalvar, onFechar }: FormularioContaPr
         </div>
 
         <form onSubmit={handleSubmit} className="overflow-y-auto flex flex-col gap-5 p-6">
+          {/* Vincular ao cliente */}
+          {clientes.length > 0 && (
+            <div className="flex flex-col gap-1.5">
+              <label className="text-sm font-medium text-gray-700">Vincular a um cliente</label>
+              <select
+                value={form.clienteAgenciaId}
+                onChange={(e) => setForm((prev) => ({ ...prev, clienteAgenciaId: e.target.value }))}
+                className="border border-[#e5e5e5] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black bg-white transition-shadow"
+              >
+                <option value="">Sem vínculo</option>
+                {clientes.map((c) => (
+                  <option key={c.id} value={c.id}>{c.nome}</option>
+                ))}
+              </select>
+              <p className="text-xs text-gray-400">Associe esta conta ao perfil de um cliente cadastrado.</p>
+            </div>
+          )}
+
           {/* Nome do cliente */}
           <div className="flex flex-col gap-1.5">
             <label className="text-sm font-medium text-gray-700">Nome do cliente</label>

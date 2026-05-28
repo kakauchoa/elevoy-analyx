@@ -20,6 +20,7 @@ type DadosAtualizacao = {
   orcamentoMensal?: number | null;
   limiteAlertaSaldo?: number | null;
   pageIdMeta?: string | null;
+  clienteAgenciaId?: string | null;
   ultimaSincronizacao?: null;
   saldoAtual?: null;
   saldoAtualizadoEm?: null;
@@ -104,6 +105,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Params }) {
       tipoPagamento?: "cartao" | "boleto";
       orcamentoMensal?: number | null;
       limiteAlertaSaldo?: number | null;
+      clienteAgenciaId?: string | null;
     };
 
     const dados: DadosAtualizacao = {};
@@ -153,6 +155,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Params }) {
     if (body.tipoPagamento) dados.tipoPagamento = body.tipoPagamento;
     if (body.orcamentoMensal !== undefined) dados.orcamentoMensal = body.orcamentoMensal;
     if (body.limiteAlertaSaldo !== undefined) dados.limiteAlertaSaldo = body.limiteAlertaSaldo;
+    if ("clienteAgenciaId" in body) dados.clienteAgenciaId = body.clienteAgenciaId;
 
     const atualizado = await prisma.contaAnuncio.update({
       where: { id },

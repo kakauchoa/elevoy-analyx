@@ -222,6 +222,7 @@ const SECTIONS: NavSection[] = [
     label: "Clientes",
     permission: "Clientes",
     items: [
+      { href: "/clientes", label: "Clientes", icon: <IconUsers /> },
       { href: "/contas", label: "Contas de Anúncio", icon: <IconStore /> },
       { href: "/administrativo/mapa-cliente", label: "Mapa do Cliente", icon: <IconMapPin /> },
       { href: "/administrativo/mapa-evolucao", label: "Mapa de Evolução", icon: <IconTrendingUp /> },
@@ -253,6 +254,7 @@ const SECTIONS: NavSection[] = [
     adminOnly: true,
     items: [
       { href: "/administrativo/planos", label: "Controle de Planos", icon: <IconShield /> },
+      { href: "/administrativo/agencias", label: "Agências SaaS", icon: <IconUsers /> },
     ],
   },
 ];

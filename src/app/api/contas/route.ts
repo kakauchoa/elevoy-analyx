@@ -58,6 +58,7 @@ export async function POST(req: NextRequest) {
       dataEntrada?: string | null;
       tipoPagamento?: "cartao" | "boleto";
       orcamentoMensal?: number | null;
+      clienteAgenciaId?: string | null;
     };
 
     const { nomeCliente, slugCompartilhavel, accountIdMeta, tipoFunil } = body;
@@ -113,6 +114,7 @@ export async function POST(req: NextRequest) {
         dataEntrada: body.dataEntrada ? new Date(body.dataEntrada) : null,
         tipoPagamento: body.tipoPagamento ?? "cartao",
         orcamentoMensal: body.orcamentoMensal ?? null,
+        clienteAgenciaId: body.clienteAgenciaId ?? null,
       },
       select: {
         id: true,
