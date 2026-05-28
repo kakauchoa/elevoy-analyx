@@ -8,20 +8,27 @@ export async function GET() {
   if (!session) return NextResponse.json({ erro: "Não autenticado" }, { status: 401 });
 
   try {
-    const clientes = await prisma.clienteAgencia.findMany({
-      where: { usuarioId: session.user.id, ativo: true },
-      include: {
-        contas: { select: { id: true, nomeCliente: true, tipoFunil: true, slugCompartilhavel: true, rastreamentoApenas: true } },
-        servicos: { where: { ativo: true } },
-        pagamentos: { orderBy: { dataVencimento: "desc" }, take: 1 },
-        indicadoPor: { select: { id: true, nome: true } },
-        mapaAvaliacao: true,
-      },
-      orderBy: { nome: "asc" },
-    });
+    const [clientes, contasSemCliente] = await Promise.all([
+      prisma.clienteAgencia.findMany({
+        where: { usuarioId: session.user.id, ativo: true },
+        include: {
+          contas: { select: { id: true, nomeCliente: true, tipoFunil: true, slugCompartilhavel: true, rastreamentoApenas: true } },
+          servicos: { where: { ativo: true } },
+          pagamentos: { orderBy: { dataVencimento: "desc" }, take: 1 },
+          indicadoPor: { select: { id: true, nome: true } },
+          mapaAvaliacao: true,
+        },
+        orderBy: { nome: "asc" },
+      }),
+      prisma.contaAnuncio.findMany({
+        where: { usuarioId: session.user.id, ativo: true, clienteAgenciaId: null },
+        select: { id: true, nomeCliente: true, tipoFunil: true, slugCompartilhavel: true, rastreamentoApenas: true },
+        orderBy: { nomeCliente: "asc" },
+      }),
+    ]);
 
-    return NextResponse.json(
-      clientes.map((c) => ({
+    return NextResponse.json({
+      clientes: clientes.map((c) => ({
         ...c,
         dataEntrada: c.dataEntrada?.toISOString().slice(0, 10) ?? null,
         criadoEm: c.criadoEm.toISOString(),
@@ -39,11 +46,11 @@ export async function GET() {
           valorMensal: s.valorMensal.toString(),
           criadoEm: s.criadoEm.toISOString(),
         })),
-      }))
-    );
+      })),
+      contasSemCliente,
+    });
   } catch {
-    // Tabela ainda não existe no banco — retorna lista vazia sem quebrar o frontend
-    return NextResponse.json([]);
+    return NextResponse.json({ clientes: [], contasSemCliente: [] });
   }
 }
 
@@ -61,6 +68,7 @@ export async function POST(request: Request) {
       dataEntrada?: string;
       indicadoPorId?: string;
       observacoes?: string;
+      contaAnuncioId?: string;
     };
 
     if (!body.nome?.trim()) {
@@ -81,8 +89,20 @@ export async function POST(request: Request) {
       },
     });
 
+    // Vincula a conta de anúncio ao novo cliente, se informada
+    if (body.contaAnuncioId) {
+      await prisma.contaAnuncio.updateMany({
+        where: { id: body.contaAnuncioId, usuarioId: session.user.id },
+        data: { clienteAgenciaId: cliente.id },
+      });
+    }
+
     return NextResponse.json({
       ...cliente,
+      contas: [],
+      servicos: [],
+      pagamentos: [],
+      indicadoPor: null,
       dataEntrada: cliente.dataEntrada?.toISOString().slice(0, 10) ?? null,
       criadoEm: cliente.criadoEm.toISOString(),
       atualizadoEm: cliente.atualizadoEm.toISOString(),
