@@ -186,7 +186,7 @@ export default function MapaEvolucaoPage() {
               <select
                 value={clienteSelecionado ?? ""}
                 onChange={(e) => setClienteSelecionado(e.target.value)}
-                className="border border-[#e5e5e5] rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#e85a23] min-w-[200px]"
+                className="border border-[#e5e5e5] rounded-lg px-3 py-2 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-[#e85a23] min-w-[200px]"
               >
                 {clientes.map((c) => (
                   <option key={c.id} value={c.id}>{c.nome}</option>
@@ -309,7 +309,7 @@ export default function MapaEvolucaoPage() {
                               type="date"
                               value={formRegistro.dataRegistro}
                               onChange={(e) => setFormRegistro((p) => ({ ...p, dataRegistro: e.target.value }))}
-                              className="w-full border border-[#e5e5e5] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#e85a23]"
+                              className="w-full border border-[#e5e5e5] rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#e85a23]"
                             />
                           </div>
                           <div>
@@ -320,7 +320,7 @@ export default function MapaEvolucaoPage() {
                               value={formRegistro.vendas}
                               onChange={(e) => setFormRegistro((p) => ({ ...p, vendas: e.target.value }))}
                               placeholder="0"
-                              className="w-full border border-[#e5e5e5] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#e85a23]"
+                              className="w-full border border-[#e5e5e5] rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#e85a23]"
                             />
                           </div>
                         </div>
@@ -333,7 +333,7 @@ export default function MapaEvolucaoPage() {
                             value={formRegistro.faturamento}
                             onChange={(e) => setFormRegistro((p) => ({ ...p, faturamento: e.target.value }))}
                             placeholder="0,00"
-                            className="w-full border border-[#e5e5e5] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#e85a23]"
+                            className="w-full border border-[#e5e5e5] rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#e85a23]"
                           />
                         </div>
                         <div>
@@ -342,7 +342,7 @@ export default function MapaEvolucaoPage() {
                             value={formRegistro.observacoes}
                             onChange={(e) => setFormRegistro((p) => ({ ...p, observacoes: e.target.value }))}
                             rows={2}
-                            className="w-full border border-[#e5e5e5] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#e85a23] resize-none"
+                            className="w-full border border-[#e5e5e5] rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#e85a23] resize-none"
                           />
                         </div>
                         <button
@@ -362,7 +362,7 @@ export default function MapaEvolucaoPage() {
                               type="date"
                               value={formConfig.dataInicio}
                               onChange={(e) => setFormConfig((p) => ({ ...p, dataInicio: e.target.value }))}
-                              className="w-full border border-[#e5e5e5] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#e85a23]"
+                              className="w-full border border-[#e5e5e5] rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#e85a23]"
                             />
                           </div>
                           <div>
@@ -373,7 +373,7 @@ export default function MapaEvolucaoPage() {
                               value={formConfig.vendasInicio}
                               onChange={(e) => setFormConfig((p) => ({ ...p, vendasInicio: e.target.value }))}
                               placeholder="0"
-                              className="w-full border border-[#e5e5e5] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#e85a23]"
+                              className="w-full border border-[#e5e5e5] rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#e85a23]"
                             />
                           </div>
                           <div>
@@ -385,7 +385,7 @@ export default function MapaEvolucaoPage() {
                               value={formConfig.faturamentoInicio}
                               onChange={(e) => setFormConfig((p) => ({ ...p, faturamentoInicio: e.target.value }))}
                               placeholder="0,00"
-                              className="w-full border border-[#e5e5e5] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#e85a23]"
+                              className="w-full border border-[#e5e5e5] rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#e85a23]"
                             />
                           </div>
                           <div>
@@ -397,7 +397,7 @@ export default function MapaEvolucaoPage() {
                               value={formConfig.metaFaturamentoMensal}
                               onChange={(e) => setFormConfig((p) => ({ ...p, metaFaturamentoMensal: e.target.value }))}
                               placeholder="0,00"
-                              className="w-full border border-[#e5e5e5] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#e85a23]"
+                              className="w-full border border-[#e5e5e5] rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#e85a23]"
                             />
                           </div>
                         </div>

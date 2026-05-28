@@ -374,22 +374,22 @@ export default function ClienteDetalhe({ params }: { params: Promise<{ id: strin
                   <div>
                     <label className="block text-xs font-medium text-gray-700 mb-1">Valor (R$) *</label>
                     <input type="number" step="0.01" min="0" value={novoPagamento.valor} onChange={(e) => setNovoPagamento((p) => ({ ...p, valor: e.target.value }))}
-                      className="w-full border border-[#e5e5e5] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#e85a23]" placeholder="0,00" />
+                      className="w-full border border-[#e5e5e5] rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#e85a23]" placeholder="0,00" />
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-gray-700 mb-1">Vencimento *</label>
                     <input type="date" value={novoPagamento.dataVencimento} onChange={(e) => setNovoPagamento((p) => ({ ...p, dataVencimento: e.target.value }))}
-                      className="w-full border border-[#e5e5e5] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#e85a23]" />
+                      className="w-full border border-[#e5e5e5] rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#e85a23]" />
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-gray-700 mb-1">Data do pagamento (se já pago)</label>
                     <input type="date" value={novoPagamento.dataPagamento} onChange={(e) => setNovoPagamento((p) => ({ ...p, dataPagamento: e.target.value }))}
-                      className="w-full border border-[#e5e5e5] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#e85a23]" />
+                      className="w-full border border-[#e5e5e5] rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#e85a23]" />
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-gray-700 mb-1">Observações</label>
                     <input type="text" value={novoPagamento.observacoes} onChange={(e) => setNovoPagamento((p) => ({ ...p, observacoes: e.target.value }))}
-                      className="w-full border border-[#e5e5e5] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#e85a23]" />
+                      className="w-full border border-[#e5e5e5] rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#e85a23]" />
                   </div>
                 </div>
                 <div className="flex justify-end gap-3">
@@ -482,7 +482,7 @@ export default function ClienteDetalhe({ params }: { params: Promise<{ id: strin
                   value={novoServico.nome}
                   onChange={(e) => setNovoServico((p) => ({ ...p, nome: e.target.value }))}
                   placeholder="Ex: Gestão de Tráfego"
-                  className="w-full border border-[#e5e5e5] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#e85a23]"
+                  className="w-full border border-[#e5e5e5] rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#e85a23]"
                 />
               </div>
               <div className="w-36">
@@ -494,7 +494,7 @@ export default function ClienteDetalhe({ params }: { params: Promise<{ id: strin
                   value={novoServico.valorMensal}
                   onChange={(e) => setNovoServico((p) => ({ ...p, valorMensal: e.target.value }))}
                   placeholder="0,00"
-                  className="w-full border border-[#e5e5e5] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#e85a23]"
+                  className="w-full border border-[#e5e5e5] rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#e85a23]"
                 />
               </div>
               <button
@@ -566,37 +566,37 @@ export default function ClienteDetalhe({ params }: { params: Promise<{ id: strin
                 <div className="col-span-2">
                   <label className="block text-xs font-medium text-gray-700 mb-1">Nome</label>
                   <input type="text" value={formEdicao.nome} onChange={(e) => setFormEdicao((p) => ({ ...p, nome: e.target.value }))}
-                    className="w-full border border-[#e5e5e5] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#e85a23]" />
+                    className="w-full border border-[#e5e5e5] rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#e85a23]" />
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1">CNPJ</label>
                   <input type="text" value={formEdicao.cnpj} onChange={(e) => setFormEdicao((p) => ({ ...p, cnpj: e.target.value }))}
-                    className="w-full border border-[#e5e5e5] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#e85a23]" />
+                    className="w-full border border-[#e5e5e5] rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#e85a23]" />
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1">Sócio</label>
                   <input type="text" value={formEdicao.nomeSocio} onChange={(e) => setFormEdicao((p) => ({ ...p, nomeSocio: e.target.value }))}
-                    className="w-full border border-[#e5e5e5] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#e85a23]" />
+                    className="w-full border border-[#e5e5e5] rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#e85a23]" />
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1">Telefone</label>
                   <input type="text" value={formEdicao.telefone} onChange={(e) => setFormEdicao((p) => ({ ...p, telefone: e.target.value }))}
-                    className="w-full border border-[#e5e5e5] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#e85a23]" />
+                    className="w-full border border-[#e5e5e5] rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#e85a23]" />
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1">E-mail</label>
                   <input type="email" value={formEdicao.email} onChange={(e) => setFormEdicao((p) => ({ ...p, email: e.target.value }))}
-                    className="w-full border border-[#e5e5e5] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#e85a23]" />
+                    className="w-full border border-[#e5e5e5] rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#e85a23]" />
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1">Data de entrada</label>
                   <input type="date" value={formEdicao.dataEntrada} onChange={(e) => setFormEdicao((p) => ({ ...p, dataEntrada: e.target.value }))}
-                    className="w-full border border-[#e5e5e5] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#e85a23]" />
+                    className="w-full border border-[#e5e5e5] rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#e85a23]" />
                 </div>
                 <div className="col-span-2">
                   <label className="block text-xs font-medium text-gray-700 mb-1">Observações</label>
                   <textarea value={formEdicao.observacoes} onChange={(e) => setFormEdicao((p) => ({ ...p, observacoes: e.target.value }))}
-                    rows={3} className="w-full border border-[#e5e5e5] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#e85a23] resize-none" />
+                    rows={3} className="w-full border border-[#e5e5e5] rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#e85a23] resize-none" />
                 </div>
               </div>
               <div className="flex justify-end gap-3 pt-2">

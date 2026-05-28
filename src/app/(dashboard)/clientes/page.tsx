@@ -175,7 +175,7 @@ export default function ClientesPage() {
             value={busca}
             onChange={(e) => setBusca(e.target.value)}
             placeholder="Buscar por nome, sócio ou CNPJ..."
-            className="w-full max-w-md border border-[#e5e5e5] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#e85a23]"
+            className="w-full max-w-md border border-[#e5e5e5] rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#e85a23]"
           />
         </div>
 
@@ -269,7 +269,7 @@ export default function ClientesPage() {
                     type="text"
                     value={form.nome}
                     onChange={(e) => setForm((p) => ({ ...p, nome: e.target.value }))}
-                    className="w-full border border-[#e5e5e5] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#e85a23]"
+                    className="w-full border border-[#e5e5e5] rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#e85a23]"
                     placeholder="Ex: Loja do João"
                   />
                 </div>
@@ -279,7 +279,7 @@ export default function ClientesPage() {
                     type="text"
                     value={form.cnpj}
                     onChange={(e) => setForm((p) => ({ ...p, cnpj: e.target.value }))}
-                    className="w-full border border-[#e5e5e5] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#e85a23]"
+                    className="w-full border border-[#e5e5e5] rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#e85a23]"
                     placeholder="00.000.000/0001-00"
                   />
                 </div>
@@ -289,7 +289,7 @@ export default function ClientesPage() {
                     type="text"
                     value={form.nomeSocio}
                     onChange={(e) => setForm((p) => ({ ...p, nomeSocio: e.target.value }))}
-                    className="w-full border border-[#e5e5e5] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#e85a23]"
+                    className="w-full border border-[#e5e5e5] rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#e85a23]"
                     placeholder="João Silva"
                   />
                 </div>
@@ -299,7 +299,7 @@ export default function ClientesPage() {
                     type="text"
                     value={form.telefone}
                     onChange={(e) => setForm((p) => ({ ...p, telefone: e.target.value }))}
-                    className="w-full border border-[#e5e5e5] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#e85a23]"
+                    className="w-full border border-[#e5e5e5] rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#e85a23]"
                     placeholder="(11) 99999-9999"
                   />
                 </div>
@@ -309,7 +309,7 @@ export default function ClientesPage() {
                     type="email"
                     value={form.email}
                     onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))}
-                    className="w-full border border-[#e5e5e5] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#e85a23]"
+                    className="w-full border border-[#e5e5e5] rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#e85a23]"
                     placeholder="joao@empresa.com"
                   />
                 </div>
@@ -319,7 +319,7 @@ export default function ClientesPage() {
                     type="date"
                     value={form.dataEntrada}
                     onChange={(e) => setForm((p) => ({ ...p, dataEntrada: e.target.value }))}
-                    className="w-full border border-[#e5e5e5] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#e85a23]"
+                    className="w-full border border-[#e5e5e5] rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#e85a23]"
                   />
                 </div>
                 <div className="col-span-2">
@@ -341,7 +341,7 @@ export default function ClientesPage() {
                     value={form.observacoes}
                     onChange={(e) => setForm((p) => ({ ...p, observacoes: e.target.value }))}
                     rows={2}
-                    className="w-full border border-[#e5e5e5] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#e85a23] resize-none"
+                    className="w-full border border-[#e5e5e5] rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#e85a23] resize-none"
                   />
                 </div>
               </div>
