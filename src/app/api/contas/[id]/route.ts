@@ -155,7 +155,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Params }) {
     if (body.tipoPagamento) dados.tipoPagamento = body.tipoPagamento;
     if (body.orcamentoMensal !== undefined) dados.orcamentoMensal = body.orcamentoMensal;
     if (body.limiteAlertaSaldo !== undefined) dados.limiteAlertaSaldo = body.limiteAlertaSaldo;
-    if ("clienteAgenciaId" in body) dados.clienteAgenciaId = body.clienteAgenciaId;
+    if ("clienteAgenciaId" in body) dados.clienteAgenciaId = body.clienteAgenciaId || null;
 
     const atualizado = await prisma.contaAnuncio.update({
       where: { id },

@@ -114,7 +114,7 @@ export async function POST(req: NextRequest) {
         dataEntrada: body.dataEntrada ? new Date(body.dataEntrada) : null,
         tipoPagamento: body.tipoPagamento ?? "cartao",
         orcamentoMensal: body.orcamentoMensal ?? null,
-        clienteAgenciaId: body.clienteAgenciaId ?? null,
+        clienteAgenciaId: body.clienteAgenciaId || null,
       },
       select: {
         id: true,
