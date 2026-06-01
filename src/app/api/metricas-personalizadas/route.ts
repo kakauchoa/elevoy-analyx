@@ -23,8 +23,10 @@ export async function GET(req: NextRequest) {
     });
 
     return NextResponse.json(metricas);
-  } catch {
-    return NextResponse.json({ erro: "Erro interno" }, { status: 500 });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    console.error("[metricas-personalizadas GET]", msg);
+    return NextResponse.json({ erro: "Erro interno", detalhe: msg }, { status: 500 });
   }
 }
 
@@ -67,7 +69,9 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json(criada, { status: 201 });
-  } catch {
-    return NextResponse.json({ erro: "Erro interno" }, { status: 500 });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    console.error("[metricas-personalizadas POST]", msg);
+    return NextResponse.json({ erro: "Erro interno", detalhe: msg }, { status: 500 });
   }
 }
