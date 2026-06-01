@@ -52,6 +52,7 @@ function formatarValorCustom(formato: FormatoMetrica, valor: number): string {
     return valor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
   }
   if (formato === "percentual") {
+    // valor já chega multiplicado por 100 (convertido em dadosGrafico)
     return `${valor.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%`;
   }
   return valor.toLocaleString("pt-BR", { maximumFractionDigits: 2 });
@@ -101,7 +102,9 @@ export function GraficoMetricas({
         if (m.startsWith("custom_")) {
           const id = m.slice(7);
           const mc = customMap.get(id);
-          base[m] = mc ? avaliarFormula(mc.formula, dadosNum) : 0;
+          let val = mc ? avaliarFormula(mc.formula, dadosNum) : 0;
+          if (mc?.formato === "percentual") val = val * 100;
+          base[m] = val;
         } else {
           base[m] = dadosNum[m] ?? 0;
         }

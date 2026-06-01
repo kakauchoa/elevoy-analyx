@@ -80,7 +80,7 @@ export function ModalMetricaPersonalizada({
       return valor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
     }
     if (formato === "percentual") {
-      return `${valor.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%`;
+      return `${(valor * 100).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%`;
     }
     return valor.toLocaleString("pt-BR", { maximumFractionDigits: 2 });
   }
