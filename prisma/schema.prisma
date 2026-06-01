@@ -89,6 +89,12 @@ enum DesempenhoCampanhas {
   pessimo
 }
 
+enum FormatoMetrica {
+  moeda
+  percentual
+  numero
+}
+
 enum StatusPagamentoCliente {
   pago
   pendente
@@ -119,10 +125,11 @@ model Usuario {
   etapasCrm           CrmEtapa[]
   contatosCrm         CrmContato[]
   tagsCrm             CrmTag[]
-  integracaoGoogle    IntegracaoGoogle?
-  prospeccoes         ProspeccaoGmn[]
-  historicosPesquisa  HistoricoPesquisaGmn[]
-  clientesAgencia     ClienteAgencia[]
+  integracaoGoogle      IntegracaoGoogle?
+  prospeccoes           ProspeccaoGmn[]
+  historicosPesquisa    HistoricoPesquisaGmn[]
+  clientesAgencia       ClienteAgencia[]
+  metricasPersonalizadas MetricaPersonalizada[]
 
   @@map("usuarios")
 }
@@ -167,9 +174,10 @@ model ContaAnuncio {
   configuracaoGtm        ConfiguracaoGtm?
   configuracaoDashboard  ConfiguracaoDashboard?
   gestorContas           GestorConta[]
-  notificacoes           NotificacaoSaldo[]
-  leadsWpp               LeadWpp[]
-  clientesCrm            ClienteCrm[]
+  notificacoes            NotificacaoSaldo[]
+  leadsWpp                LeadWpp[]
+  clientesCrm             ClienteCrm[]
+  metricasPersonalizadas  MetricaPersonalizada[]
 
   @@map("contas_anuncio")
 }
@@ -675,4 +683,19 @@ model MapaEvolucaoRegistro {
 
   @@unique([clienteId, dataRegistro])
   @@map("mapa_evolucao_registros")
+}
+
+model MetricaPersonalizada {
+  id             String         @id @default(uuid())
+  contaAnuncioId String         @map("conta_anuncio_id")
+  usuarioId      String         @map("usuario_id")
+  nome           String         @db.VarChar(100)
+  formula        Json
+  formato        FormatoMetrica @default(numero)
+  criadoEm       DateTime       @default(now()) @map("criado_em")
+  atualizadoEm   DateTime       @updatedAt @map("atualizado_em")
+  conta          ContaAnuncio   @relation(fields: [contaAnuncioId], references: [id], onDelete: Cascade)
+  usuario        Usuario        @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@map("metricas_personalizadas")
 }

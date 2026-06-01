@@ -11,6 +11,7 @@ import { TabelaCampanhas } from "@/components/dashboard/TabelaCampanhas";
 import { BotaoRelatorio } from "@/components/dashboard/BotaoRelatorio";
 import { CONFIGURACOES_FUNIL, TipoFunil } from "@/lib/metricas";
 import type { DashboardData, CampanhaHierarquica } from "@/types/dashboard";
+import type { MetricaPersonalizadaClient } from "@/lib/formula";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -23,6 +24,7 @@ export default function DashboardCompartilhavel({ params }: PageProps) {
   const [periodo, setPeriodo] = useState<TipoPeriodo>("ultimos7dias");
   const [dados, setDados] = useState<DashboardData | null>(null);
   const [campanhas, setCampanhas] = useState<CampanhaHierarquica[]>([]);
+  const [metricasPersonalizadas, setMetricasPersonalizadas] = useState<MetricaPersonalizadaClient[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [sincronizando, setSincronizando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
@@ -82,6 +84,10 @@ export default function DashboardCompartilhavel({ params }: PageProps) {
       const json: DashboardData = await res.json();
       setDados(json);
 
+      if (session?.user?.tipo === "gestor" && json.conta?.id) {
+        carregarMetricasPersonalizadas(json.conta.id);
+      }
+
       if (json.datasFaltando.length > 0) {
         setSincronizando(true);
         // Dispara a sincronização apenas uma vez por período — impede loop em re-renders
@@ -114,6 +120,17 @@ export default function DashboardCompartilhavel({ params }: PageProps) {
       setCampanhas(json.campanhas);
     } catch {
       // campanhas são opcionais
+    }
+  }
+
+  async function carregarMetricasPersonalizadas(contaId: string) {
+    try {
+      const res = await fetch(`/api/metricas-personalizadas?contaId=${contaId}`);
+      if (!res.ok) return;
+      const json: MetricaPersonalizadaClient[] = await res.json();
+      setMetricasPersonalizadas(json);
+    } catch {
+      // métricas personalizadas são opcionais
     }
   }
 
@@ -293,7 +310,17 @@ export default function DashboardCompartilhavel({ params }: PageProps) {
               <MetricasSecundarias metricas={config.submetricas} dados={dados.agregado} />
             </section>
             <section>
-              <GraficoMetricas porDia={dados.porDia} metricasDisponiveis={config.metricasGrafico} />
+              <GraficoMetricas
+                porDia={dados.porDia}
+                metricasDisponiveis={config.metricasGrafico}
+                metricasPersonalizadas={metricasPersonalizadas}
+                contaAnuncioId={dados.conta.id}
+                isGestor={isGestor}
+                onMetricaCriada={(m) => setMetricasPersonalizadas((p) => [...p, m])}
+                onMetricaRemovida={(id) =>
+                  setMetricasPersonalizadas((p) => p.filter((m) => m.id !== id))
+                }
+              />
             </section>
             {campanhas.length > 0 && (
               <section>

@@ -176,3 +176,20 @@ export function formatarMetrica(campo: string, valor: number): string {
 export function isMetricaMonetaria(campo: string): boolean {
   return METRICAS_MONETARIAS.has(campo);
 }
+
+export function isMetricaPercentual(campo: string): boolean {
+  return METRICAS_PERCENTUAIS.has(campo);
+}
+
+export const METRICAS_POR_CATEGORIA: Record<string, string[]> = {
+  "Gastos": ["spend", "cpm", "cpc", "cpp"],
+  "Tráfego": ["impressions", "reach", "clicks", "inlineLinkClicks", "uniqueClicks", "outboundClicks", "landingPageViews", "frequency"],
+  "Taxas": ["ctr", "uniqueCtr", "outboundCtr", "landingPageViewRate"],
+  "WhatsApp": ["whatsappClicks", "whatsappCost"],
+  "Leads": ["leadCount", "costPerLead"],
+  "E-commerce": ["purchaseCount", "purchaseValue", "purchaseRoas", "costPerPurchase", "addToCart", "initiateCheckout"],
+  "Contatos": ["contactCount", "costPerContact"],
+  "Engajamento": ["postEngagement", "postReactions", "postComments", "postShares", "pageLikes"],
+  "Vídeo": ["videoView3s", "videoView10s", "videoView25pct", "videoView50pct", "videoView75pct", "videoView95pct", "videoView100pct", "videoAvgTimeWatched", "videoPlayActions", "videoThruplay", "costPerThruplay"],
+  "Conversão": ["taxaConversaWhatsapp", "taxaConversaoLead", "taxaConversaoContato", "taxaConversaoCompra", "taxaConversaoThruplay", "taxaConversao"],
+};
