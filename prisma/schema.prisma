@@ -102,71 +102,77 @@ enum StatusPagamentoCliente {
 }
 
 model Usuario {
-  id                   String            @id @default(uuid())
-  nome                 String
-  email                String            @unique
-  senhaHash            String            @map("senha_hash") @db.Text
-  tipo                 TipoUsuario       @default(gestor)
-  perfil               PerfilUsuario     @default(gestor) @map("perfil")
-  ativo                Boolean           @default(true)
-  stripeCustomerId     String?           @unique @map("stripe_customer_id") @db.VarChar(255)
-  stripeSubscriptionId String?           @map("stripe_subscription_id") @db.VarChar(255)
-  plano                PlanoUsuario      @default(free)
-  contasMaximas        Int               @default(3) @map("contas_maximas")
-  assinaturaAtiva      Boolean           @default(false) @map("assinatura_ativa")
-  assinaturaVenceEm    DateTime?         @map("assinatura_vence_em")
-  criadoEm             DateTime          @default(now()) @map("criado_em")
-  atualizadoEm         DateTime          @updatedAt @map("atualizado_em")
-  contas              ContaAnuncio[]
-  relatorios          RelatorioGerado[]
-  gestorContas        GestorConta[]
-  configuracaoMetaApp ConfiguracaoMetaApp?
-  permissoes          UsuarioPermissao[]
-  etapasCrm           CrmEtapa[]
-  contatosCrm         CrmContato[]
-  tagsCrm             CrmTag[]
-  integracaoGoogle      IntegracaoGoogle?
-  prospeccoes           ProspeccaoGmn[]
-  historicosPesquisa    HistoricoPesquisaGmn[]
-  clientesAgencia       ClienteAgencia[]
-  metricasPersonalizadas MetricaPersonalizada[]
+  id                      String                           @id @default(uuid())
+  nome                    String
+  email                   String                           @unique
+  senhaHash               String                           @map("senha_hash") @db.Text
+  tipo                    TipoUsuario                      @default(gestor)
+  perfil                  PerfilUsuario                    @default(gestor) @map("perfil")
+  ativo                   Boolean                          @default(true)
+  stripeCustomerId        String?                          @unique @map("stripe_customer_id") @db.VarChar(255)
+  stripeSubscriptionId    String?                          @map("stripe_subscription_id") @db.VarChar(255)
+  plano                   PlanoUsuario                     @default(free)
+  contasMaximas           Int                              @default(3) @map("contas_maximas")
+  assinaturaAtiva         Boolean                          @default(false) @map("assinatura_ativa")
+  assinaturaVenceEm       DateTime?                        @map("assinatura_vence_em")
+  criadoEm                DateTime                         @default(now()) @map("criado_em")
+  atualizadoEm            DateTime                         @updatedAt @map("atualizado_em")
+  contas                  ContaAnuncio[]
+  relatorios              RelatorioGerado[]
+  gestorContas            GestorConta[]
+  configuracaoMetaApp     ConfiguracaoMetaApp?
+  permissoes              UsuarioPermissao[]
+  etapasCrm               CrmEtapa[]
+  contatosCrmLegado       CrmContatoLegado[]
+  tagsCrm                 CrmTag[]
+  leadsCrm                CrmLead[]
+  contatosCrm             CrmContato[]
+  negociosCrm             CrmNegocio[]
+  oportunidadesCrm        CrmOportunidade[]
+  origensCrm              CrmOrigem[]
+  camposPersonalizadosCrm CrmCampoPersonalizadoDefinicao[]
+  integracaoGoogle        IntegracaoGoogle?
+  prospeccoes             ProspeccaoGmn[]
+  historicosPesquisa      HistoricoPesquisaGmn[]
+  clientesAgencia         ClienteAgencia[]
+  metricasPersonalizadas  MetricaPersonalizada[]
 
   @@map("usuarios")
 }
 
 model ContaAnuncio {
-  id                     String            @id @default(uuid())
-  usuarioId              String            @map("usuario_id")
-  nomeCliente            String            @map("nome_cliente")
-  slugCompartilhavel     String            @unique @map("slug_compartilhavel")
-  accountIdMeta          String            @map("account_id_meta")
-  tokenAcesso            String?           @db.Text @map("token_acesso")
-  pageIdMeta             String?           @db.VarChar(100) @map("page_id_meta")
-  webhookToken           String?           @unique @db.VarChar(100) @map("webhook_token")
-  evolutionInstanceName  String?           @db.VarChar(100) @map("evolution_instance_name")
-  evolutionStatus        String?           @db.VarChar(30) @map("evolution_status")
-  dataEntrada            DateTime?         @db.Date @map("data_entrada")
-  tipoFunil              TipoFunil         @map("tipo_funil")
-  metricaPrincipal       String            @map("metrica_principal")
-  labelMetricaPrincipal  String            @map("label_metrica_principal")
-  labelCustoPorResultado String            @map("label_custo_por_resultado")
-  compartilhamentoAtivo  Boolean           @default(false) @map("compartilhamento_ativo")
-  ultimaSincronizacao    DateTime?         @map("ultima_sincronizacao")
-  tokenExpiraEm          DateTime?         @map("token_expira_em")
-  tokenStatus            TokenStatus       @default(ok) @map("token_status")
-  tipoPagamento          TipoPagamento     @default(cartao) @map("tipo_pagamento")
-  orcamentoMensal        Decimal?          @db.Decimal(10, 2) @map("orcamento_mensal")
-  saldoAtual             Decimal?          @db.Decimal(15, 2) @map("saldo_atual")
-  saldoAtualizadoEm      DateTime?         @map("saldo_atualizado_em")
-  limiteAlertaSaldo      Decimal?          @db.Decimal(10, 2) @map("limite_alerta_saldo")
-  rastreamentoAtivo      Boolean           @default(true) @map("rastreamento_ativo")
-  rastreamentoApenas     Boolean           @default(false) @map("rastreamento_apenas")
-  clienteAgenciaId       String?           @map("cliente_agencia_id")
-  ativo                  Boolean           @default(true)
-  criadoEm               DateTime          @default(now()) @map("criado_em")
-  atualizadoEm           DateTime          @updatedAt @map("atualizado_em")
-  usuario                Usuario           @relation(fields: [usuarioId], references: [id])
-  clienteAgencia         ClienteAgencia?   @relation(fields: [clienteAgenciaId], references: [id])
+  id                     String                 @id @default(uuid())
+  usuarioId              String                 @map("usuario_id")
+  nomeCliente            String                 @map("nome_cliente")
+  slugCompartilhavel     String                 @unique @map("slug_compartilhavel")
+  accountIdMeta          String                 @map("account_id_meta")
+  tokenAcesso            String?                @map("token_acesso") @db.Text
+  pageIdMeta             String?                @map("page_id_meta") @db.VarChar(100)
+  webhookToken           String?                @unique @map("webhook_token") @db.VarChar(100)
+  evolutionInstanceName  String?                @map("evolution_instance_name") @db.VarChar(100)
+  evolutionStatus        String?                @map("evolution_status") @db.VarChar(30)
+  dataEntrada            DateTime?              @map("data_entrada") @db.Date
+  tipoFunil              TipoFunil              @map("tipo_funil")
+  metricaPrincipal       String                 @map("metrica_principal")
+  labelMetricaPrincipal  String                 @map("label_metrica_principal")
+  labelCustoPorResultado String                 @map("label_custo_por_resultado")
+  compartilhamentoAtivo  Boolean                @default(false) @map("compartilhamento_ativo")
+  ultimaSincronizacao    DateTime?              @map("ultima_sincronizacao")
+  tokenExpiraEm          DateTime?              @map("token_expira_em")
+  tokenStatus            TokenStatus            @default(ok) @map("token_status")
+  tipoPagamento          TipoPagamento          @default(cartao) @map("tipo_pagamento")
+  orcamentoMensal        Decimal?               @map("orcamento_mensal") @db.Decimal(10, 2)
+  saldoAtual             Decimal?               @map("saldo_atual") @db.Decimal(15, 2)
+  saldoAtualizadoEm      DateTime?              @map("saldo_atualizado_em")
+  limiteAlertaSaldo      Decimal?               @map("limite_alerta_saldo") @db.Decimal(10, 2)
+  rastreamentoAtivo      Boolean                @default(true) @map("rastreamento_ativo")
+  rastreamentoApenas     Boolean                @default(false) @map("rastreamento_apenas")
+  clienteAgenciaId       String?                @map("cliente_agencia_id")
+  ativo                  Boolean                @default(true)
+  criadoEm               DateTime               @default(now()) @map("criado_em")
+  atualizadoEm           DateTime               @updatedAt @map("atualizado_em")
+  usuario                Usuario                @relation(fields: [usuarioId], references: [id])
+  clienteAgencia         ClienteAgencia?        @relation(fields: [clienteAgenciaId], references: [id])
   campanhas              Campanha[]
   insights               InsightDiario[]
   acessos                AcessoDashboard[]
@@ -174,10 +180,10 @@ model ContaAnuncio {
   configuracaoGtm        ConfiguracaoGtm?
   configuracaoDashboard  ConfiguracaoDashboard?
   gestorContas           GestorConta[]
-  notificacoes            NotificacaoSaldo[]
-  leadsWpp                LeadWpp[]
-  clientesCrm             ClienteCrm[]
-  metricasPersonalizadas  MetricaPersonalizada[]
+  notificacoes           NotificacaoSaldo[]
+  leadsWpp               LeadWpp[]
+  clientesCrm            ClienteCrm[]
+  metricasPersonalizadas MetricaPersonalizada[]
 
   @@map("contas_anuncio")
 }
@@ -320,8 +326,8 @@ model RelatorioGerado {
   contaAnuncioId String       @map("conta_anuncio_id")
   geradoPorId    String       @map("gerado_por_id")
   conteudo       String       @db.LongText
-  periodoInicio  DateTime     @db.Date @map("periodo_inicio")
-  periodoFim     DateTime     @db.Date @map("periodo_fim")
+  periodoInicio  DateTime     @map("periodo_inicio") @db.Date
+  periodoFim     DateTime     @map("periodo_fim") @db.Date
   criadoEm       DateTime     @default(now()) @map("criado_em")
   conta          ContaAnuncio @relation(fields: [contaAnuncioId], references: [id])
   geradoPor      Usuario      @relation(fields: [geradoPorId], references: [id])
@@ -334,7 +340,7 @@ model ConfiguracaoMetaApp {
   usuarioId     String      @unique @map("usuario_id")
   appId         String      @map("app_id") @db.VarChar(100)
   appSecret     String      @map("app_secret") @db.Text
-  tokenAcesso   String?     @db.Text @map("token_acesso")
+  tokenAcesso   String?     @map("token_acesso") @db.Text
   tokenExpiraEm DateTime?   @map("token_expira_em")
   tokenStatus   TokenStatus @default(ok) @map("token_status")
   criadoEm      DateTime    @default(now()) @map("criado_em")
@@ -355,80 +361,222 @@ model UsuarioPermissao {
 }
 
 model CrmEtapa {
-  id        String       @id @default(uuid())
-  usuarioId String       @map("usuario_id")
-  nome      String       @db.VarChar(100)
-  cor       String       @db.VarChar(20)
-  ordem     Int
-  fixo      Boolean      @default(false)
-  criadoEm  DateTime     @default(now()) @map("criado_em")
-  usuario   Usuario      @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
-  contatos  CrmContato[]
+  id             String             @id @default(uuid())
+  usuarioId      String             @map("usuario_id")
+  nome           String             @db.VarChar(100)
+  cor            String             @db.VarChar(20)
+  ordem          Int
+  fixo           Boolean            @default(false)
+  criadoEm       DateTime           @default(now()) @map("criado_em")
+  usuario        Usuario            @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  contatosLegado CrmContatoLegado[]
+  oportunidades  CrmOportunidade[]
 
   @@map("crm_etapas")
 }
 
-model CrmContato {
-  id                    String               @id @default(uuid())
-  etapaId               String               @map("etapa_id")
-  usuarioId             String               @map("usuario_id")
-  nome                  String               @db.VarChar(255)
-  telefone              String?              @db.VarChar(30)
-  empresa               String?              @db.VarChar(255)
-  email                 String?              @db.VarChar(255)
-  notas                 String?              @db.Text
-  dataContato           DateTime?            @map("data_follow_up")
-  dataMensagem          DateTime?            @map("data_mensagem")
-  dataReuniao           DateTime?            @map("data_reuniao")
-  googleCalendarEventId String?              @map("google_calendar_event_id") @db.VarChar(255)
-  criadoEm              DateTime             @default(now()) @map("criado_em")
-  atualizadoEm          DateTime             @updatedAt @map("atualizado_em")
-  etapa                 CrmEtapa             @relation(fields: [etapaId], references: [id], onDelete: Cascade)
-  usuario               Usuario              @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
-  campos                CrmCampoCustomizado[]
-  tags                  CrmContatoTag[]
+/// Modelo antigo do CRM, onde o Contato era o próprio card do Kanban.
+/// Substituído pelo par CrmOportunidade + CrmContato (novo). Mantido intocado
+/// (dados legados não migrados — decisão de 2026-09-22) só para não perder histórico no banco.
+model CrmContatoLegado {
+  id                    String                      @id @default(uuid())
+  etapaId               String                      @map("etapa_id")
+  usuarioId             String                      @map("usuario_id")
+  nome                  String                      @db.VarChar(255)
+  telefone              String?                     @db.VarChar(30)
+  empresa               String?                     @db.VarChar(255)
+  email                 String?                     @db.VarChar(255)
+  notas                 String?                     @db.Text
+  dataContato           DateTime?                   @map("data_follow_up")
+  dataMensagem          DateTime?                   @map("data_mensagem")
+  dataReuniao           DateTime?                   @map("data_reuniao")
+  googleCalendarEventId String?                     @map("google_calendar_event_id") @db.VarChar(255)
+  criadoEm              DateTime                    @default(now()) @map("criado_em")
+  atualizadoEm          DateTime                    @updatedAt @map("atualizado_em")
+  etapa                 CrmEtapa                    @relation(fields: [etapaId], references: [id], onDelete: Cascade)
+  usuario               Usuario                     @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  campos                CrmCampoCustomizadoLegado[]
+  tags                  CrmContatoTagLegado[]
 
   @@map("crm_contatos")
 }
 
-model CrmCampoCustomizado {
-  id        String     @id @default(uuid())
-  contatoId String     @map("contato_id")
-  chave     String     @db.VarChar(100)
-  valor     String     @db.Text
-  contato   CrmContato @relation(fields: [contatoId], references: [id], onDelete: Cascade)
+model CrmCampoCustomizadoLegado {
+  id        String           @id @default(uuid())
+  contatoId String           @map("contato_id")
+  chave     String           @db.VarChar(100)
+  valor     String           @db.Text
+  contato   CrmContatoLegado @relation(fields: [contatoId], references: [id], onDelete: Cascade)
 
   @@map("crm_campos_customizados")
 }
 
 model CrmTag {
-  id        String          @id @default(uuid())
-  usuarioId String          @map("usuario_id")
-  nome      String          @db.VarChar(50)
-  cor       String          @db.VarChar(20)
-  criadoEm  DateTime        @default(now()) @map("criado_em")
-  usuario   Usuario         @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
-  contatos  CrmContatoTag[]
+  id             String                @id @default(uuid())
+  usuarioId      String                @map("usuario_id")
+  nome           String                @db.VarChar(50)
+  cor            String                @db.VarChar(20)
+  criadoEm       DateTime              @default(now()) @map("criado_em")
+  usuario        Usuario               @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  contatosLegado CrmContatoTagLegado[]
+  oportunidades  CrmOportunidadeTag[]
 
   @@map("crm_tags")
 }
 
-model CrmContatoTag {
-  id        String     @id @default(uuid())
-  contatoId String     @map("contato_id")
-  tagId     String     @map("tag_id")
-  contato   CrmContato @relation(fields: [contatoId], references: [id], onDelete: Cascade)
-  tag       CrmTag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
+model CrmContatoTagLegado {
+  id        String           @id @default(uuid())
+  contatoId String           @map("contato_id")
+  tagId     String           @map("tag_id")
+  contato   CrmContatoLegado @relation(fields: [contatoId], references: [id], onDelete: Cascade)
+  tag       CrmTag           @relation(fields: [tagId], references: [id], onDelete: Cascade)
 
   @@unique([contatoId, tagId])
   @@map("crm_contato_tags")
 }
 
+/// ---- CRM 2.0 (Lead / Contato / Negócio / Oportunidade) ----
+/// Ver CLAUDE.md > "CRM Comercial 2.0 — Reformulação" para a arquitetura completa.
+
+model CrmOrigem {
+  id            String            @id @default(uuid())
+  usuarioId     String            @map("usuario_id")
+  nome          String            @db.VarChar(100)
+  aprovado      Boolean           @default(true) @map("aprovado")
+  criadoEm      DateTime          @default(now()) @map("criado_em")
+  usuario       Usuario           @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  leads         CrmLead[]
+  oportunidades CrmOportunidade[]
+
+  @@unique([usuarioId, nome])
+  @@map("crm_origens")
+}
+
+model CrmLead {
+  id           String           @id @default(uuid())
+  usuarioId    String           @map("usuario_id")
+  nome         String?          @db.VarChar(255)
+  telefone     String?          @db.VarChar(30)
+  email        String?          @db.VarChar(255)
+  mensagem     String?          @db.Text
+  origemId     String?          @map("origem_id")
+  meioCampanha String?          @map("meio_campanha") @db.VarChar(255)
+  campanha     String?          @db.VarChar(500)
+  conteudo     String?          @db.VarChar(500)
+  termo        String?          @db.VarChar(500)
+  canal        String?          @db.VarChar(50)
+  convertidoEm DateTime?        @map("convertido_em")
+  criadoEm     DateTime         @default(now()) @map("criado_em")
+  usuario      Usuario          @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  origem       CrmOrigem?       @relation(fields: [origemId], references: [id], onDelete: SetNull)
+  oportunidade CrmOportunidade?
+
+  @@map("crm_leads")
+}
+
+model CrmContato {
+  id            String            @id @default(uuid())
+  usuarioId     String            @map("usuario_id")
+  nome          String            @db.VarChar(255)
+  telefone      String?           @db.VarChar(30)
+  email         String?           @db.VarChar(255)
+  criadoEm      DateTime          @default(now()) @map("criado_em")
+  atualizadoEm  DateTime          @updatedAt @map("atualizado_em")
+  usuario       Usuario           @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  oportunidades CrmOportunidade[]
+
+  @@map("crm_pessoas")
+}
+
+model CrmNegocio {
+  id            String            @id @default(uuid())
+  usuarioId     String            @map("usuario_id")
+  nome          String            @db.VarChar(255)
+  observacoes   String?           @db.Text
+  criadoEm      DateTime          @default(now()) @map("criado_em")
+  atualizadoEm  DateTime          @updatedAt @map("atualizado_em")
+  usuario       Usuario           @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  oportunidades CrmOportunidade[]
+
+  @@map("crm_negocios")
+}
+
+model CrmOportunidade {
+  id                    String    @id @default(uuid())
+  usuarioId             String    @map("usuario_id")
+  etapaId               String    @map("etapa_id")
+  leadId                String?   @unique @map("lead_id")
+  contatoId             String    @map("contato_id")
+  negocioId             String?   @map("negocio_id")
+  titulo                String    @db.VarChar(255)
+  valor                 Decimal?  @db.Decimal(10, 2)
+  origemId              String?   @map("origem_id")
+  meioCampanha          String?   @map("meio_campanha") @db.VarChar(255)
+  campanha              String?   @db.VarChar(500)
+  conteudo              String?   @db.VarChar(500)
+  termo                 String?   @db.VarChar(500)
+  notas                 String?   @db.Text
+  dataContato           DateTime? @map("data_follow_up")
+  dataMensagem          DateTime? @map("data_mensagem")
+  dataReuniao           DateTime? @map("data_reuniao")
+  googleCalendarEventId String?   @map("google_calendar_event_id") @db.VarChar(255)
+  criadoEm              DateTime  @default(now()) @map("criado_em")
+  atualizadoEm          DateTime  @updatedAt @map("atualizado_em")
+
+  usuario Usuario                      @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  etapa   CrmEtapa                     @relation(fields: [etapaId], references: [id], onDelete: Cascade)
+  lead    CrmLead?                     @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  contato CrmContato                   @relation(fields: [contatoId], references: [id], onDelete: Cascade)
+  negocio CrmNegocio?                  @relation(fields: [negocioId], references: [id], onDelete: SetNull)
+  origem  CrmOrigem?                   @relation(fields: [origemId], references: [id], onDelete: SetNull)
+  tags    CrmOportunidadeTag[]
+  campos  CrmCampoPersonalizadoValor[]
+
+  @@map("crm_oportunidades")
+}
+
+model CrmOportunidadeTag {
+  id             String          @id @default(uuid())
+  oportunidadeId String          @map("oportunidade_id")
+  tagId          String          @map("tag_id")
+  oportunidade   CrmOportunidade @relation(fields: [oportunidadeId], references: [id], onDelete: Cascade)
+  tag            CrmTag          @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@unique([oportunidadeId, tagId])
+  @@map("crm_oportunidade_tags")
+}
+
+model CrmCampoPersonalizadoDefinicao {
+  id        String                       @id @default(uuid())
+  usuarioId String                       @map("usuario_id")
+  nome      String                       @db.VarChar(100)
+  tipo      String                       @db.VarChar(20)
+  opcoes    Json?
+  ordem     Int                          @default(0)
+  criadoEm  DateTime                     @default(now()) @map("criado_em")
+  usuario   Usuario                      @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  valores   CrmCampoPersonalizadoValor[]
+
+  @@map("crm_campos_personalizados_definicao")
+}
+
+model CrmCampoPersonalizadoValor {
+  id             String                         @id @default(uuid())
+  definicaoId    String                         @map("definicao_id")
+  oportunidadeId String                         @map("oportunidade_id")
+  valor          String                         @db.Text
+  definicao      CrmCampoPersonalizadoDefinicao @relation(fields: [definicaoId], references: [id], onDelete: Cascade)
+  oportunidade   CrmOportunidade                @relation(fields: [oportunidadeId], references: [id], onDelete: Cascade)
+
+  @@unique([definicaoId, oportunidadeId])
+  @@map("crm_campos_personalizados_valor")
+}
+
 model IntegracaoGoogle {
   id           String   @id @default(uuid())
   usuarioId    String   @unique @map("usuario_id")
-  accessToken  String   @db.Text @map("access_token")
-  refreshToken String   @db.Text @map("refresh_token")
+  accessToken  String   @map("access_token") @db.Text
+  refreshToken String   @map("refresh_token") @db.Text
   expiresAt    DateTime @map("expires_at")
   criadoEm     DateTime @default(now()) @map("criado_em")
   atualizadoEm DateTime @updatedAt @map("atualizado_em")
@@ -477,7 +625,7 @@ model ConfiguracaoPlataforma {
   evolutionInstance  String?  @map("evolution_instance") @db.VarChar(255)
   evolutionWhatsapp  String?  @map("evolution_whatsapp") @db.VarChar(50)
   evolutionVersion   String?  @map("evolution_version") @db.VarChar(30)
-  atualizadoEm      DateTime @updatedAt @map("atualizado_em")
+  atualizadoEm       DateTime @updatedAt @map("atualizado_em")
 
   @@map("configuracoes_plataforma")
 }
@@ -489,7 +637,7 @@ model NotificacaoSaldo {
   mensagem       String       @db.Text
   detalhes       Json?
   lida           Boolean      @default(false)
-  criadoEm      DateTime     @default(now()) @map("criado_em")
+  criadoEm       DateTime     @default(now()) @map("criado_em")
   conta          ContaAnuncio @relation(fields: [contaAnuncioId], references: [id])
 
   @@map("notificacoes_saldo")
@@ -519,24 +667,24 @@ model ConfiguracaoGtm {
 }
 
 model LeadWpp {
-  id             String          @id @default(uuid())
-  contaAnuncioId String          @map("conta_anuncio_id")
-  nome           String          @db.VarChar(255)
-  telefone       String          @db.VarChar(30)
-  mensagem       String?         @db.Text
-  ctwa           String?         @db.VarChar(500)
-  sourceId       String?         @db.VarChar(100) @map("source_id")
-  campanha       String?         @db.VarChar(500)
-  publico        String?         @db.VarChar(500)
-  anuncio        String?         @db.VarChar(500)
-  origem         String?         @db.VarChar(100)
-  midia          String?         @db.VarChar(100)
-  status         StatusLeadWpp   @default(ENTROU)
-  valor          Decimal?        @db.Decimal(10, 2)
-  observacoes    String?         @db.Text
-  criadoEm      DateTime        @default(now()) @map("criado_em")
-  atualizadoEm  DateTime        @updatedAt @map("atualizado_em")
-  conta          ContaAnuncio    @relation(fields: [contaAnuncioId], references: [id])
+  id             String             @id @default(uuid())
+  contaAnuncioId String             @map("conta_anuncio_id")
+  nome           String             @db.VarChar(255)
+  telefone       String             @db.VarChar(30)
+  mensagem       String?            @db.Text
+  ctwa           String?            @db.VarChar(500)
+  sourceId       String?            @map("source_id") @db.VarChar(100)
+  campanha       String?            @db.VarChar(500)
+  publico        String?            @db.VarChar(500)
+  anuncio        String?            @db.VarChar(500)
+  origem         String?            @db.VarChar(100)
+  midia          String?            @db.VarChar(100)
+  status         StatusLeadWpp      @default(ENTROU)
+  valor          Decimal?           @db.Decimal(10, 2)
+  observacoes    String?            @db.Text
+  criadoEm       DateTime           @default(now()) @map("criado_em")
+  atualizadoEm   DateTime           @updatedAt @map("atualizado_em")
+  conta          ContaAnuncio       @relation(fields: [contaAnuncioId], references: [id])
   historico      LeadWppHistorico[]
 
   @@index([contaAnuncioId, telefone])
@@ -548,63 +696,63 @@ model LeadWppHistorico {
   leadId       String         @map("lead_id")
   statusAntes  StatusLeadWpp? @map("status_antes")
   statusDepois StatusLeadWpp  @map("status_depois")
-  eventoMeta   String?        @db.VarChar(100) @map("evento_meta")
+  eventoMeta   String?        @map("evento_meta") @db.VarChar(100)
   sucesso      Boolean        @default(true)
   resposta     String?        @db.Text
-  criadoEm    DateTime       @default(now()) @map("criado_em")
+  criadoEm     DateTime       @default(now()) @map("criado_em")
   lead         LeadWpp        @relation(fields: [leadId], references: [id], onDelete: Cascade)
 
   @@map("leads_wpp_historico")
 }
 
 model ClienteCrm {
-  id             String           @id @default(uuid())
-  contaAnuncioId String?          @map("conta_anuncio_id")
-  nome           String           @db.VarChar(255)
-  email          String           @unique @db.VarChar(255)
-  telefone       String?          @db.VarChar(30)
-  senhaHash      String           @db.Text @map("senha_hash")
-  status         StatusClienteCrm @default(pendente)
-  aprovadoEm    DateTime?        @map("aprovado_em")
-  aprovadoPorId  String?          @db.VarChar(36) @map("aprovado_por_id")
-  criadoEm      DateTime         @default(now()) @map("criado_em")
-  atualizadoEm  DateTime         @updatedAt @map("atualizado_em")
-  conta          ContaAnuncio?    @relation(fields: [contaAnuncioId], references: [id])
+  id                String                @id @default(uuid())
+  contaAnuncioId    String?               @map("conta_anuncio_id")
+  nome              String                @db.VarChar(255)
+  email             String                @unique @db.VarChar(255)
+  telefone          String?               @db.VarChar(30)
+  senhaHash         String                @map("senha_hash") @db.Text
+  status            StatusClienteCrm      @default(pendente)
+  aprovadoEm        DateTime?             @map("aprovado_em")
+  aprovadoPorId     String?               @map("aprovado_por_id") @db.VarChar(36)
+  criadoEm          DateTime              @default(now()) @map("criado_em")
+  atualizadoEm      DateTime              @updatedAt @map("atualizado_em")
+  conta             ContaAnuncio?         @relation(fields: [contaAnuncioId], references: [id])
   solicitacoesReset SolicitacaoResetCrm[]
 
   @@map("clientes_crm")
 }
 
 model SolicitacaoResetCrm {
-  id          String           @id @default(uuid())
-  clienteId   String           @map("cliente_id")
-  status      StatusClienteCrm @default(pendente)
-  token       String           @unique @db.VarChar(255)
-  expiresAt   DateTime         @map("expires_at")
+  id         String           @id @default(uuid())
+  clienteId  String           @map("cliente_id")
+  status     StatusClienteCrm @default(pendente)
+  token      String           @unique @db.VarChar(255)
+  expiresAt  DateTime         @map("expires_at")
   aprovadoEm DateTime?        @map("aprovado_em")
   criadoEm   DateTime         @default(now()) @map("criado_em")
-  cliente     ClienteCrm       @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  cliente    ClienteCrm       @relation(fields: [clienteId], references: [id], onDelete: Cascade)
 
   @@map("solicitacoes_reset_crm")
 }
 
 model ClienteAgencia {
-  id                    String                   @id @default(uuid())
-  usuarioId             String                   @map("usuario_id")
-  nome                  String                   @db.VarChar(255)
-  cnpj                  String?                  @db.VarChar(18)
-  nomeSocio             String?                  @map("nome_socio") @db.VarChar(255)
-  telefone              String?                  @db.VarChar(30)
-  email                 String?                  @db.VarChar(255)
-  dataEntrada           DateTime?                @db.Date @map("data_entrada")
-  indicadoPorId         String?                  @map("indicado_por_id")
-  observacoes           String?                  @db.Text
-  ativo                 Boolean                  @default(true)
-  criadoEm              DateTime                 @default(now()) @map("criado_em")
-  atualizadoEm          DateTime                 @updatedAt @map("atualizado_em")
-  usuario               Usuario                  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
-  indicadoPor           ClienteAgencia?          @relation("indicacoes", fields: [indicadoPorId], references: [id])
-  indicacoes            ClienteAgencia[]         @relation("indicacoes")
+  id                    String                 @id @default(uuid())
+  usuarioId             String                 @map("usuario_id")
+  nome                  String                 @db.VarChar(255)
+  cnpj                  String?                @db.VarChar(18)
+  nomeSocio             String?                @map("nome_socio") @db.VarChar(255)
+  telefone              String?                @db.VarChar(30)
+  email                 String?                @db.VarChar(255)
+  dataEntrada           DateTime?              @map("data_entrada") @db.Date
+  indicadoPorId         String?                @map("indicado_por_id")
+  observacoes           String?                @db.Text
+  ativo                 Boolean                @default(true)
+  criadoEm              DateTime               @default(now()) @map("criado_em")
+  atualizadoEm          DateTime               @updatedAt @map("atualizado_em")
+  usuario               Usuario                @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  indicadoPor           ClienteAgencia?        @relation("indicacoes", fields: [indicadoPorId], references: [id])
+  indicacoes            ClienteAgencia[]       @relation("indicacoes")
   contas                ContaAnuncio[]
   servicos              ServicoCliente[]
   pagamentos            PagamentoCliente[]
@@ -621,7 +769,7 @@ model ServicoCliente {
   nome        String         @db.VarChar(255)
   valorMensal Decimal        @map("valor_mensal") @db.Decimal(10, 2)
   ativo       Boolean        @default(true)
-  criadoEm   DateTime       @default(now()) @map("criado_em")
+  criadoEm    DateTime       @default(now()) @map("criado_em")
   cliente     ClienteAgencia @relation(fields: [clienteId], references: [id], onDelete: Cascade)
 
   @@map("servicos_cliente")
@@ -631,12 +779,12 @@ model PagamentoCliente {
   id             String                 @id @default(uuid())
   clienteId      String                 @map("cliente_id")
   valor          Decimal                @db.Decimal(10, 2)
-  dataVencimento DateTime               @db.Date @map("data_vencimento")
-  dataPagamento  DateTime?              @db.Date @map("data_pagamento")
+  dataVencimento DateTime               @map("data_vencimento") @db.Date
+  dataPagamento  DateTime?              @map("data_pagamento") @db.Date
   status         StatusPagamentoCliente @default(pendente)
   observacoes    String?                @db.Text
-  criadoEm      DateTime               @default(now()) @map("criado_em")
-  atualizadoEm  DateTime               @updatedAt @map("atualizado_em")
+  criadoEm       DateTime               @default(now()) @map("criado_em")
+  atualizadoEm   DateTime               @updatedAt @map("atualizado_em")
   cliente        ClienteAgencia         @relation(fields: [clienteId], references: [id], onDelete: Cascade)
 
   @@map("pagamentos_cliente")
@@ -661,11 +809,11 @@ model MapaEvolucaoConfig {
   metaFaturamentoMensal Decimal?       @map("meta_faturamento_mensal") @db.Decimal(15, 2)
   faturamentoInicio     Decimal?       @map("faturamento_inicio") @db.Decimal(15, 2)
   vendasInicio          Int?           @map("vendas_inicio")
-  dataInicio            DateTime?      @db.Date @map("data_inicio")
+  dataInicio            DateTime?      @map("data_inicio") @db.Date
   observacoes           String?        @db.Text
-  criadoEm             DateTime       @default(now()) @map("criado_em")
-  atualizadoEm         DateTime       @updatedAt @map("atualizado_em")
-  cliente              ClienteAgencia @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  criadoEm              DateTime       @default(now()) @map("criado_em")
+  atualizadoEm          DateTime       @updatedAt @map("atualizado_em")
+  cliente               ClienteAgencia @relation(fields: [clienteId], references: [id], onDelete: Cascade)
 
   @@map("mapa_evolucao_config")
 }
@@ -673,12 +821,12 @@ model MapaEvolucaoConfig {
 model MapaEvolucaoRegistro {
   id            String         @id @default(uuid())
   clienteId     String         @map("cliente_id")
-  dataRegistro  DateTime       @db.Date @map("data_registro")
+  dataRegistro  DateTime       @map("data_registro") @db.Date
   vendas        Int?
   faturamento   Decimal?       @db.Decimal(15, 2)
   observacoes   String?        @db.Text
   preenchidoPor String         @default("gestor") @map("preenchido_por") @db.VarChar(20)
-  criadoEm     DateTime       @default(now()) @map("criado_em")
+  criadoEm      DateTime       @default(now()) @map("criado_em")
   cliente       ClienteAgencia @relation(fields: [clienteId], references: [id], onDelete: Cascade)
 
   @@unique([clienteId, dataRegistro])

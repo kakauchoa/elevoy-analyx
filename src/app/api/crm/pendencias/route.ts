@@ -10,19 +10,32 @@ export async function GET() {
 
     const agora = new Date();
 
-    const contatos = await prisma.crmContato.findMany({
+    const oportunidades = await prisma.crmOportunidade.findMany({
       where: {
         usuarioId: session.user.id,
         dataContato: { lt: agora, not: null },
       },
       include: {
+        contato: true,
+        negocio: true,
         etapa: { select: { id: true, nome: true, cor: true } },
         tags: { include: { tag: true } },
       },
       orderBy: { dataContato: "asc" },
     });
 
-    return NextResponse.json(contatos);
+    // Mantém o mesmo formato que a UI de Pendências já consome
+    const pendentes = oportunidades.map((o) => ({
+      id: o.id,
+      nome: o.contato.nome,
+      telefone: o.contato.telefone,
+      empresa: o.negocio?.nome ?? null,
+      dataContato: o.dataContato,
+      etapa: o.etapa,
+      tags: o.tags,
+    }));
+
+    return NextResponse.json(pendentes);
   } catch {
     return NextResponse.json({ erro: "Erro interno do servidor" }, { status: 500 });
   }

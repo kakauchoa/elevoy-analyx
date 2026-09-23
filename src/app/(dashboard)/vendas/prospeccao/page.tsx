@@ -128,12 +128,12 @@ function ModalEnviarCrm({
     setSalvando(true);
     setErro("");
     try {
-      const res = await fetch("/api/crm/contatos", {
+      const res = await fetch("/api/crm/oportunidades", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           etapaId,
-          nome: nome.trim(),
+          titulo: nome.trim(),
           telefone: telefone || null,
           empresa: empresa || null,
           email: email || null,

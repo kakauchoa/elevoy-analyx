@@ -1,0 +1,45 @@
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+
+export async function GET() {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session) return NextResponse.json({ erro: "Não autorizado" }, { status: 401 });
+
+    const negocios = await prisma.crmNegocio.findMany({
+      where: { usuarioId: session.user.id },
+      include: { oportunidades: { select: { id: true, titulo: true } } },
+      orderBy: { criadoEm: "desc" },
+    });
+
+    return NextResponse.json(negocios);
+  } catch {
+    return NextResponse.json({ erro: "Erro interno do servidor" }, { status: 500 });
+  }
+}
+
+export async function POST(req: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session) return NextResponse.json({ erro: "Não autorizado" }, { status: 401 });
+
+    const body = (await req.json()) as { nome?: string; observacoes?: string };
+    if (!body.nome?.trim()) {
+      return NextResponse.json({ erro: "Nome é obrigatório" }, { status: 400 });
+    }
+
+    const negocio = await prisma.crmNegocio.create({
+      data: {
+        usuarioId: session.user.id,
+        nome: body.nome.trim(),
+        observacoes: body.observacoes?.trim() || null,
+      },
+    });
+
+    return NextResponse.json(negocio, { status: 201 });
+  } catch {
+    return NextResponse.json({ erro: "Erro interno do servidor" }, { status: 500 });
+  }
+}

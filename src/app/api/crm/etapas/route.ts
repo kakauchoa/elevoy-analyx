@@ -22,8 +22,14 @@ export async function GET() {
     const etapas = await prisma.crmEtapa.findMany({
       where: { usuarioId: session.user.id },
       include: {
-        contatos: {
-          include: { campos: true, tags: { include: { tag: true } } },
+        oportunidades: {
+          include: {
+            contato: true,
+            negocio: true,
+            origem: true,
+            campos: { include: { definicao: true } },
+            tags: { include: { tag: true } },
+          },
           orderBy: { criadoEm: "asc" },
         },
       },
@@ -62,7 +68,7 @@ export async function POST(req: NextRequest) {
         ordem: (ultima?.ordem ?? 0) + 1,
         fixo: false,
       },
-      include: { contatos: { include: { campos: true, tags: { include: { tag: true } } } } },
+      include: { oportunidades: true },
     });
 
     return NextResponse.json(etapa, { status: 201 });

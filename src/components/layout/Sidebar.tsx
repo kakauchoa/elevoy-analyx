@@ -188,6 +188,49 @@ function IconChevron({ open }: { open: boolean }) {
   );
 }
 
+function IconBriefcase() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="2" y="7" width="20" height="14" rx="2" />
+      <path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16" />
+    </svg>
+  );
+}
+
+function IconStar() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+    </svg>
+  );
+}
+
+function IconZap() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+    </svg>
+  );
+}
+
+function IconPlug() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M9 2v6m6-6v6M6 8h12l-1 6a5 5 0 01-10 0L6 8z" />
+      <path d="M12 18v4" />
+    </svg>
+  );
+}
+
+function IconSettings() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="3" />
+      <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06A1.65 1.65 0 005 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06A1.65 1.65 0 009 4.6a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09A1.65 1.65 0 0015.4 4.6a1.65 1.65 0 001.82.33l.06-.06a2 2 0 112.83 2.83l-.06.06A1.65 1.65 0 0019.4 9c.14.32.22.66.24 1H21a2 2 0 010 4h-.09c-.14.32-.22.66-.24 1z" />
+    </svg>
+  );
+}
+
 // ── Section config ─────────────────────────────────────────────────────────
 
 interface NavItem {
@@ -197,6 +240,7 @@ interface NavItem {
   adminOnly?: boolean;
   exact?: boolean;
   permission?: string;
+  children?: NavItem[];
 }
 
 interface NavSection {
@@ -230,11 +274,24 @@ const SECTIONS: NavSection[] = [
   },
   {
     id: "vendas",
-    label: "Vendas",
+    label: "Comercial",
     permission: "Vendas",
     items: [
       { href: "/vendas/pendencias", label: "Pendências", icon: <IconAlert /> },
-      { href: "/vendas/crm", label: "CRM", icon: <IconKanban /> },
+      {
+        href: "/vendas/crm",
+        label: "CRM",
+        icon: <IconKanban />,
+        children: [
+          { href: "/vendas/crm", label: "Pipeline", icon: <IconKanban />, exact: true },
+          { href: "/vendas/crm/contatos", label: "Contatos", icon: <IconUsers /> },
+          { href: "/vendas/crm/leads", label: "Leads", icon: <IconZap /> },
+          { href: "/vendas/crm/negocios", label: "Negócios", icon: <IconBriefcase /> },
+          { href: "/vendas/crm/oportunidades", label: "Oportunidades", icon: <IconStar /> },
+          { href: "/vendas/crm/integracoes", label: "Integrações", icon: <IconPlug /> },
+          { href: "/vendas/crm/configuracoes", label: "Configurações", icon: <IconSettings /> },
+        ],
+      },
       { href: "/vendas/prospeccao", label: "Prospecção GMN", icon: <IconSearch /> },
     ],
   },
@@ -270,6 +327,7 @@ export function Sidebar({ isAdmin, userName, permissoes }: SidebarProps) {
     vendas: false,
     ferramentas: false,
   });
+  const [openItems, setOpenItems] = useState<Record<string, boolean>>({});
   const [popupAberto, setPopupAberto] = useState(false);
   const popupRef = useRef<HTMLDivElement>(null);
 
@@ -278,8 +336,30 @@ export function Sidebar({ isAdmin, userName, permissoes }: SidebarProps) {
     try {
       const salvo = localStorage.getItem("sidebar-sections");
       if (salvo) setOpenSections(JSON.parse(salvo) as Record<string, boolean>);
+      const salvoItens = localStorage.getItem("sidebar-items");
+      if (salvoItens) setOpenItems(JSON.parse(salvoItens) as Record<string, boolean>);
     } catch {}
   }, []);
+
+  // Abre automaticamente um item com filhos se a rota atual for de um dos filhos
+  useEffect(() => {
+    for (const section of SECTIONS) {
+      for (const item of section.items) {
+        if (item.children?.some((c) => pathname.startsWith(c.href))) {
+          setOpenItems((prev) => (prev[item.href] === undefined ? { ...prev, [item.href]: true } : prev));
+        }
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname]);
+
+  function toggleItem(href: string) {
+    setOpenItems((prev) => {
+      const novo = { ...prev, [href]: !prev[href] };
+      try { localStorage.setItem("sidebar-items", JSON.stringify(novo)); } catch {}
+      return novo;
+    });
+  }
 
   useEffect(() => {
     function handleClickFora(e: MouseEvent) {
@@ -394,6 +474,50 @@ export function Sidebar({ isAdmin, userName, permissoes }: SidebarProps) {
                 <div className="mt-0.5">
                   {visibleItems.map((item) => {
                     const active = isActive(item.href, item.exact);
+                    const temFilhos = !collapsed && item.children && item.children.length > 0;
+                    const itemAberto = openItems[item.href] ?? false;
+
+                    if (temFilhos) {
+                      return (
+                        <div key={item.href}>
+                          <button
+                            onClick={() => toggleItem(item.href)}
+                            className={`mx-2 flex items-center gap-2.5 px-3 py-2 rounded-lg transition-colors ${
+                              active && !itemAberto
+                                ? "bg-white text-[#e85a23]"
+                                : "text-white/80 hover:bg-white/15 hover:text-white"
+                            }`}
+                            style={{ width: "calc(100% - 1rem)" }}
+                          >
+                            <span className="shrink-0">{item.icon}</span>
+                            <span className="text-sm font-medium truncate flex-1 text-left">{item.label}</span>
+                            <IconChevron open={itemAberto} />
+                          </button>
+                          {itemAberto && (
+                            <div className="mt-0.5 space-y-0.5">
+                              {item.children!.map((filho) => {
+                                const filhoAtivo = isActive(filho.href, filho.exact);
+                                return (
+                                  <Link
+                                    key={filho.href}
+                                    href={filho.href}
+                                    className={`mx-2 ml-5 flex items-center gap-2.5 px-3 py-1.5 rounded-lg transition-colors ${
+                                      filhoAtivo
+                                        ? "bg-white text-[#e85a23]"
+                                        : "text-white/70 hover:bg-white/15 hover:text-white"
+                                    }`}
+                                  >
+                                    <span className="shrink-0">{filho.icon}</span>
+                                    <span className="text-xs font-medium truncate flex-1">{filho.label}</span>
+                                  </Link>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    }
+
                     return (
                       <Link
                         key={item.href}

@@ -952,3 +952,286 @@ echo "Deploy concluído!"
 12. Painel de acessos ao dashboard (`/acessos`)
 13. Configuração de GTM e Pixel por conta (`/contas`)
 14. Gestão de usuários clientes (`/usuarios`)
+
+---
+
+## CRM Comercial 2.0 — Reformulação (em implementação)
+
+> Definido em conversa com o usuário em 2026-09-22. Substitui o modelo atual (onde `CrmContato` faz o papel de card do Kanban) por um CRM de verdade, com Contato/Negócio/Oportunidade separados. Este documento é a fonte da verdade da arquitetura-alvo — implementar em fases, migrando os dados existentes (`crm_contatos`, `crm_campos_customizados`) com cuidado, sem perder histórico.
+
+### Estado atual (antes da reformulação)
+
+- Todo o CRM vive num único arquivo: `src/app/(dashboard)/vendas/crm/page.tsx` (~1100 linhas, sem componentes separados).
+- `CrmContato` **é** o card do Kanban hoje (tem `etapaId` direto). Não existe separação entre pessoa, empresa e card de negociação.
+- O card abre como **painel lateral direito** (drawer feito na mão, não é Sheet/Dialog de biblioteca) — vai virar modal central.
+- `CrmCampoCustomizado` é chave/valor livre sem tipo, preso a `CrmContato`.
+- Tags (`CrmTag`/`CrmContatoTag`) já existem e devem ser preservadas, só mudam de dono (passam a ser do CRM como um todo, configuráveis em Configurações do CRM).
+- **Não confundir** com `crm-cliente` (portal separado onde os clientes da agência veem os próprios leads de WhatsApp via `LeadWpp`) — sistema totalmente distinto, não mexer.
+- `LeadWpp`/`LeadWppHistorico` (alimentado por `baileys-manager.ts` + `processar-lead-wpp.ts` + `evolution-api.ts`/webhook) não tem nenhuma FK real para o CRM de vendas hoje — são mundos isolados.
+- Não existe nenhuma integração com Meta Lead Ads/formulários instantâneos ainda.
+- Não existe conceito de UTM no schema. O que existe (`LeadWpp.campanha/publico/anuncio/origem/midia`) vem da resolução de `sourceId` (clique em anúncio via CTWA) na Graph API, não de query string.
+
+### Conceitos do novo modelo
+
+- **Lead** — entrada bruta, o card geral que chega de qualquer canal (automação de WhatsApp, formulário instantâneo do Meta, cadastro manual). É o ponto de partida, antes de qualificação.
+- **Contato** — a pessoa com quem se fala (nome, telefone, email).
+- **Negócio** — a empresa em si.
+- **Oportunidade** — o card final, que aparece no Kanban/pipeline, criado quando um Lead é convertido em negociação real. **É a Oportunidade que roda nas colunas do Kanban**, não mais o Contato.
+- Um Lead pode gerar um Contato + um Negócio + uma Oportunidade ao ser convertido. A Oportunidade referencia os três (`leadId`, `contatoId`, `negocioId`).
+
+### Navegação lateral
+
+Hoje a seção "Vendas" da Sidebar (`src/components/layout/Sidebar.tsx`) tem só 2 níveis (seção → item). Precisa virar item expansível (item → subitens) — estender o tipo `NavItem` para aceitar `children?: NavItem[]`.
+
+Estrutura alvo dentro da seção Comercial (renomear label "Vendas" → "Comercial"):
+
+```
+Comercial
+├─ CRM (expansível, ao clicar abre submenu)
+│   ├─ Pipeline        → /vendas/crm                (padrão, é o Kanban de Oportunidades)
+│   ├─ Contatos        → /vendas/crm/contatos
+│   ├─ Leads           → /vendas/crm/leads
+│   ├─ Negócios        → /vendas/crm/negocios
+│   ├─ Oportunidades   → /vendas/crm/oportunidades   (visão em lista/tabela, alternativa ao Kanban)
+│   ├─ Integrações     → /vendas/crm/integracoes
+│   └─ Configurações   → /vendas/crm/configuracoes   (campos personalizados, tags, origens)
+├─ Pendências          → /vendas/pendencias   (mantém como está)
+└─ Prospecção GMN      → /vendas/prospeccao   (mantém como está)
+```
+
+### Card da Oportunidade — modal central (substitui o drawer)
+
+- Trocar o painel lateral atual por **modal centralizado**, com pequenas margens laterais (não ocupa a tela inteira) e fundo com `backdrop-blur` + overlay escuro.
+- Mantém os campos que já existem hoje (nome do contato, telefone, empresa, email, datas, tags, notas, campos personalizados).
+- Adiciona os 5 campos padrão descritos abaixo, sempre presentes em toda Oportunidade desde a criação.
+
+### Campos padrão de atribuição (tipo UTM) — presentes em toda Oportunidade desde o início
+
+Equivalentes a `utm_source/medium/campaign/content/term`, só que alimentados pela resolução de anúncio via Graph API (mesmo padrão do fluxo n8n do usuário — ver seção "Referência: fluxo n8n" abaixo), não por query string de URL:
+
+| Campo | Tipo | Observação |
+|---|---|---|
+| Origem | **Select** (catálogo `CrmOrigem`) | Ex: Instagram, Facebook, WhatsApp Direto, Indicação. Editável em Configurações do CRM. |
+| Meio de Campanha | Texto livre | |
+| Campanha | Texto livre | |
+| Conteúdo | Texto livre | |
+| Termo | Texto livre | |
+
+**Regra de Origem nova/desconhecida:** quando uma automação (WhatsApp observador, Lead Ads) reporta um valor de Origem que não bate (case-insensitive) com nenhuma `CrmOrigem` já cadastrada, criar a origem com `aprovado = false` e listá-la em Configurações → Origens como **pendente de avaliação**. O gestor pode:
+1. **Aprovar como nova origem** (`aprovado = true`), ou
+2. **Vincular a uma existente** — reatribui em lote todo `origemId` pendente para o destino escolhido e remove a pendente.
+
+### Campos personalizados (Configurações do CRM)
+
+Substituir o `CrmCampoCustomizado` livre (chave/valor solto) por um sistema de **catálogo + valor**, igual ao espírito das Métricas Personalizadas do dashboard (`src/lib/metricas.ts`), mas para o CRM:
+
+- `CrmCampoPersonalizadoDefinicao` — catálogo por usuário: nome, tipo (texto/número/data/select), opções (JSON, se select), ordem. Gerenciado em **Configurações do CRM → Campos Personalizados**.
+- `CrmCampoPersonalizadoValor` — valor de cada definição por Oportunidade.
+- Os 5 campos de atribuição acima **não** passam por esse sistema genérico (são colunas nativas em `CrmOportunidade`, porque Origem tem comportamento especial de catálogo/merge que um campo key/value genérico não expressa bem).
+- Tags continuam como estão (`CrmTag`/`CrmContatoTag` → passar a se relacionar com `CrmOportunidade` em vez de `CrmContato`), também editáveis em Configurações do CRM.
+
+### Modelo de dados alvo (Prisma) — rascunho para revisão antes de migrar
+
+```prisma
+model CrmLead {
+  id            String    @id @default(uuid())
+  usuarioId     String    @map("usuario_id")
+  nome          String?   @db.VarChar(255)
+  telefone      String?   @db.VarChar(30)
+  email         String?   @db.VarChar(255)
+  mensagem      String?   @db.Text
+  origemId      String?   @map("origem_id")
+  meioCampanha  String?   @map("meio_campanha") @db.VarChar(255)
+  campanha      String?   @db.VarChar(500)
+  conteudo      String?   @db.VarChar(500)
+  termo         String?   @db.VarChar(500)
+  canal         String?   @db.VarChar(50) // "whatsapp" | "meta_lead_ads" | "manual"
+  convertidoEm  DateTime? @map("convertido_em")
+  oportunidade  CrmOportunidade?
+  criadoEm      DateTime  @default(now()) @map("criado_em")
+  @@map("crm_leads")
+}
+
+model CrmContato {
+  id        String    @id @default(uuid())
+  usuarioId String    @map("usuario_id")
+  nome      String    @db.VarChar(255)
+  telefone  String?   @db.VarChar(30)
+  email     String?   @db.VarChar(255)
+  criadoEm  DateTime  @default(now()) @map("criado_em")
+  oportunidades CrmOportunidade[]
+  @@map("crm_contatos")
+}
+
+model CrmNegocio {
+  id        String    @id @default(uuid())
+  usuarioId String    @map("usuario_id")
+  nome      String    @db.VarChar(255)  // nome da empresa
+  observacoes String? @db.Text
+  criadoEm  DateTime  @default(now()) @map("criado_em")
+  oportunidades CrmOportunidade[]
+  @@map("crm_negocios")
+}
+
+model CrmOportunidade {
+  id                    String    @id @default(uuid())
+  usuarioId             String    @map("usuario_id")
+  etapaId               String    @map("etapa_id")
+  leadId                String?   @unique @map("lead_id")
+  contatoId             String    @map("contato_id")
+  negocioId             String?   @map("negocio_id")
+  valor                 Decimal?  @db.Decimal(10, 2)
+  origemId              String?   @map("origem_id")
+  meioCampanha          String?   @map("meio_campanha") @db.VarChar(255)
+  campanha              String?   @db.VarChar(500)
+  conteudo              String?   @db.VarChar(500)
+  termo                 String?   @db.VarChar(500)
+  notas                 String?   @db.Text
+  dataContato           DateTime? @map("data_follow_up")
+  dataMensagem          DateTime? @map("data_mensagem")
+  dataReuniao           DateTime? @map("data_reuniao")
+  googleCalendarEventId String?   @map("google_calendar_event_id") @db.VarChar(255)
+  criadoEm              DateTime  @default(now()) @map("criado_em")
+  atualizadoEm          DateTime  @updatedAt @map("atualizado_em")
+  etapa     CrmEtapa    @relation(fields: [etapaId], references: [id])
+  lead      CrmLead?    @relation(fields: [leadId], references: [id])
+  contato   CrmContato  @relation(fields: [contatoId], references: [id])
+  negocio   CrmNegocio? @relation(fields: [negocioId], references: [id])
+  tags      CrmOportunidadeTag[]
+  campos    CrmCampoPersonalizadoValor[]
+  @@map("crm_oportunidades")
+}
+
+model CrmOrigem {
+  id        String   @id @default(uuid())
+  usuarioId String   @map("usuario_id")
+  nome      String   @db.VarChar(100)
+  aprovado  Boolean  @default(true) // false = pendente de avaliação (criada automaticamente por integração)
+  criadoEm  DateTime @default(now()) @map("criado_em")
+  @@unique([usuarioId, nome])
+  @@map("crm_origens")
+}
+
+model CrmCampoPersonalizadoDefinicao {
+  id        String   @id @default(uuid())
+  usuarioId String   @map("usuario_id")
+  nome      String   @db.VarChar(100)
+  tipo      String   @db.VarChar(20) // texto | numero | data | select
+  opcoes    Json?    // se tipo = select
+  ordem     Int      @default(0)
+  @@map("crm_campos_personalizados_definicao")
+}
+
+model CrmCampoPersonalizadoValor {
+  id           String @id @default(uuid())
+  definicaoId  String @map("definicao_id")
+  oportunidadeId String @map("oportunidade_id")
+  valor        String @db.Text
+  oportunidade CrmOportunidade @relation(fields: [oportunidadeId], references: [id], onDelete: Cascade)
+  @@map("crm_campos_personalizados_valor")
+}
+```
+
+`CrmEtapa` e `CrmTag` são mantidos (só muda a FK de `CrmContato` para `CrmOportunidade` em tags). **Decisão de migração (confirmada com o usuário em 2026-09-22): começar do zero.** Os `crm_contatos`/`crm_campos_customizados` antigos (modelo antigo, onde Contato = card do Kanban) **não são migrados** — ficam intocados no banco, sem uso na nova UI. O Kanban novo (Oportunidades) começa vazio. Isso significa que o model `CrmContato` antigo será renomeado/substituído (ex: `CrmContatoLegado`) via migration para não colidir com o novo `CrmContato` (pessoa), preservando os dados antigos sem apagar nada.
+
+### Integrações do CRM
+
+Nova seção `/vendas/crm/integracoes`, ponto central de conexões externas do CRM.
+
+**1. Meta Lead Ads (Formulários Instantâneos) — a implementar agora**
+
+O que a API do Meta exige:
+1. Página do Facebook do cliente precisa ter um **Token de Acesso de Página** (Page Access Token) de longa duração, com permissões `pages_show_list`, `pages_manage_metadata`, `leads_retrieval`. Para contas de terceiros (não a própria empresa), o app do Meta precisa passar por **App Review** para essas permissões em produção.
+2. Assinar o webhook do objeto **Page** no campo `leadgen`: `POST /{page-id}/subscribed_apps?subscribed_fields=leadgen`. Configurar callback URL + verify token no produto Webhooks do App (handshake `GET` com `hub.challenge`, validar assinatura `X-Hub-Signature-256` com o App Secret — mesmo padrão de outros webhooks do Meta no projeto).
+3. O evento recebido no webhook só traz `leadgen_id`, `page_id`, `form_id`, `ad_id`, `created_time` — **não** traz os dados preenchidos. É preciso buscar em seguida: `GET /{leadgen_id}?fields=field_data,ad_id,form_id,campaign_id,campaign_name,adset_id,adset_name,ad_name&access_token={page_token}`.
+4. `field_data` é um array `{ name, values[] }` com os nomes de campo do formulário do cliente (variam por conta) — precisa de um **mapeamento configurável por formulário** (nome do campo do form → nome/telefone/email/campo personalizado), similar em espírito ao `metrica_principal` por funil.
+5. Resolver `campaign_name`/`adset_name`/`ad_name` (já vêm nos fields acima, sem precisar de chamadas extras como no fluxo do WhatsApp) e mapear para Campanha/Conteúdo/Termo/Origem="Meta Lead Ads" do `CrmLead` criado.
+6. Nova tabela de config: `CrmIntegracaoMeta` (por usuário/conta) — `pageId`, `pageAccessToken` (criptografado via `src/lib/cripto.ts`, mesmo padrão de `token_acesso`), `webhookVerifyToken`, mapeamentos de formulário salvos em JSON.
+7. Deduplicar por `leadgen_id` (evitar processar o mesmo lead 2x se o webhook reenviar).
+
+Depois de conectado, cada leadgen recebido cria um `CrmLead` novo (ou uma `CrmOportunidade` direto, a definir na implementação) com os campos de atribuição já preenchidos.
+
+**2. Disparo de eventos para o Pixel/CAPI a partir do CRM — planejado, depois da integração acima**
+
+O usuário já tem esse fluxo funcionando fora do sistema, via automação n8n (ver seção seguinte). A ideia é internalizar: quando uma Oportunidade muda de etapa no CRM (ex: entrou → qualificado → agendou → venda), disparar o evento correspondente (`LeadSubmitted`, `Schedule`, `QualifiedLead`, `Purchase`) para a Conversions API do Meta, usando pixel/token já configurados em `configuracoes_gtm`/conta. Reaproveitar `src/lib/meta-capi.ts` (já existe, usado por `processar-lead-wpp.ts`). Detalhar schema/rotas quando entrar em desenvolvimento.
+
+**3. Observador de WhatsApp (conexão, leitura passiva) — próximo passo, não agora**
+
+- Conectar um número de WhatsApp por conta/usuário, **somente para observar** mensagens recebidas (não responde nada por ali).
+- Objetivo: capturar automaticamente atribuição de campanha (via CTWA — click-to-whatsapp) e criar/alimentar `CrmLead` automaticamente, do mesmo jeito que hoje `processar-lead-wpp.ts` faz para `LeadWpp`.
+- Reaproveitar o padrão de `src/lib/baileys-manager.ts` (singleton global, `useMultiFileAuthState`, listener de `messages.upsert`) — mas escrevendo em `CrmLead`/`CrmOportunidade` em vez de `LeadWpp`. Avaliar se dá pra unificar com `baileys-manager.ts` atual (parametrizar o destino: CRM vs. rastreamento de cliente) em vez de duplicar mais uma implementação — hoje já existem *duas* implementações quase idênticas (Baileys embutido + Evolution externo via webhook) alimentando só `LeadWpp`; não criar uma terceira do zero se der pra generalizar a existente.
+- **Fica para depois da integração de Meta Lead Ads** — não implementar nesta fase.
+
+### Referência: fluxo n8n existente (WhatsApp → UTM → Planilha → Pixel)
+
+O usuário já opera esse fluxo fora do sistema, via n8n, e ele é a referência de como a atribuição de campanha deve funcionar para leads de WhatsApp:
+
+1. Webhook recebe evento `messages.upsert` da Evolution API.
+2. Extrai `contextInfo.externalAdReply.sourceId` (ID do anúncio clicado) e `ctwaClid` da mensagem.
+3. Busca na Graph API, em cascata: `GET /{sourceId}?fields=name,adset,campaign` → `GET /{adset.id}?fields=name` → `GET /{campaign.id}?fields=name` — resolve nome do anúncio, conjunto (público) e campanha.
+4. Verifica se o lead (por telefone) já existe numa planilha/BD; se não existir, grava linha nova com data/hora, UTMs resolvidas, mensagem, atendente.
+5. Dispara evento `LeadSubmitted` para a Conversions API do Meta (hash SHA-256 do telefone, `ctwa_clid`, `page_id`, pixel).
+6. Em pontos posteriores do funil (planilha atualizada externamente por atendente), dispara `Schedule` (agendou), `QualifiedLead` (qualificado) e `Purchase` (venda) — mesmo padrão de POST para `/{pixel}/events`.
+
+Essa lógica de resolução de anúncio→conjunto→campanha via Graph API já existe praticamente igual em `src/lib/processar-lead-wpp.ts` (para `LeadWpp`) — é o modelo a seguir para o "Observador de WhatsApp" do novo CRM, só trocando o destino da gravação.
+
+### Ordem de implementação sugerida
+
+1. Migrar schema Prisma (Lead/Contato/Negócio/Oportunidade/Origem/CampoPersonalizado) + script de migração de dados dos `crm_contatos` existentes.
+2. Modularizar o CRM (sair do arquivo único `page.tsx` para componentes em `src/components/crm/`).
+3. Trocar o drawer lateral pelo modal central.
+4. Telas de Contatos, Leads, Negócios, Oportunidades (lista) + Pipeline (Kanban, já existe, só passa a renderizar Oportunidade).
+5. Configurações do CRM: Campos Personalizados, Tags, Origens (fila de aprovação).
+6. Sidebar: CRM expansível com os submenus.
+7. Integração Meta Lead Ads.
+8. Disparo de eventos Pixel/CAPI por mudança de etapa.
+9. Observador de WhatsApp (depois de tudo acima).
+
+---
+
+## Roadmap — Próximas Funcionalidades (planejado, ainda não implementado)
+
+> Itens definidos em conversa com o usuário em 2026-09-10. Servem como norte para as próximas etapas de desenvolvimento do Elevoy Analyx. Cada item deve ser detalhado (schema, rotas, UI) no momento em que entrar em desenvolvimento.
+
+### 1. Painel completo por cliente (dentro de `/clientes/[id]`)
+
+Hoje a pasta do cliente já existe (`src/app/(dashboard)/clientes/[id]/page.tsx`), mas precisa ganhar abas/seções novas:
+
+- **Cadastro do cliente** — dados gerais (já existe, revisar completude)
+- **Cálculo de meta** — meta definida para o cliente (ex: número de resultados, ROAS, orçamento) e acompanhamento do atingimento
+- **Saldo das contas** — Google Ads e Meta Ads exibidos juntos por cliente (hoje o saldo do Meta já existe; falta integrar saldo do Google Ads)
+- **Histórico de conversa no WhatsApp** — vínculo com o grupo do WhatsApp do cliente, exibindo o histórico de mensagens
+- **Mapa de evolução** — já existe uma versão (`/administrativo/mapa-evolucao` e `/ferramentas/mapa-evolucao`); avaliar se deve virar aba dentro do próprio cliente ao invés de página separada, mostrando "de onde ele saiu (ponto A) para onde chegou (ponto B)"
+- **Relatórios** — aba com os relatórios gerados (histórico), além do botão de gerar novo
+- **Análise de IA** — diagnóstico gerado por IA sobre o desempenho do cliente
+- **Tarefas do cliente** — tarefas vinculadas especificamente àquele cliente (hoje `/tarefas` é geral; avaliar se precisa de FK `cliente_id`)
+- **Serviços prestados** — lista do que é entregue para aquele cliente (ex: gestão de tráfego, criação de site, etc.)
+- **Pagamentos e contratos** — controle financeiro e documentos contratuais do cliente
+- **Documentos** — funcionalidade para criar documentos de onboarding e datas importantes (ver item 4)
+- **Pautas de reunião** — registro de pautas e anotações de reuniões com o cliente (ver item 5)
+
+A ideia é: existe a página geral `/clientes` (lista), e ao entrar em um cliente específico (`/clientes/[id]`), todas essas seções ficam disponíveis para configuração e consulta.
+
+### 2. Acompanhamento de métricas gerais por funil (comparativo temporal)
+
+- Aba separada por cliente mostrando o funil (taxas de conversão entre etapas) considerando os dados de campanha já sincronizados
+- Períodos: **hoje, ontem, últimos 7 dias, últimos 30 dias, últimos 90 dias e período personalizado**
+- Objetivo: identificar se o cliente está evoluindo (melhora) ou piorando ao longo do tempo
+- As métricas que compõem o funil de cada cliente devem ser definidas na hora da criação/configuração da conta (já existe base disso via `tipo_funil` e `metricasGrafico`/`metricasDestaque` em `src/lib/metricas.ts` — este novo painel deve reaproveitar essa configuração, adicionando a comparação por período)
+
+### 3. WhatsApp por atendente no CRM comercial (Analix)
+
+- Na parte comercial do Analyx (CRM de clientes + prospecção de locais), conectar **um WhatsApp por atendente** (cada atendente tem sua própria instância)
+- O projeto já usa Baileys (`@whiskeysockets/baileys`) e tem infraestrutura de conexão via `src/lib/baileys-manager` e configuração em `/configuracoes/evolution` — avaliar se o WhatsApp por atendente reaproveita essa mesma infra ou precisa de instâncias adicionais por usuário
+- Ao abrir um card do Kanban do CRM (`/vendas/crm`), deve ser possível visualizar o histórico de conversa do WhatsApp daquele contato, vinculado ao atendente responsável
+- **Ver também [[CRM Comercial 2.0]]** — o "Observador de WhatsApp" descrito lá é um recurso distinto (leitura passiva para atribuição de origem/campanha, não para atendimento) e deve ser implementado antes deste item, reaproveitando o mesmo padrão de infraestrutura (`baileys-manager`) descrito abaixo.
+
+### 4. Documentos (dentro da pasta do cliente)
+
+- Nova seção "Documentos" na pasta do cliente
+- Funcionalidade para criar documentos de onboarding e registrar datas importantes relacionadas ao cliente
+
+### 5. Pautas de reunião (dentro da pasta do cliente)
+
+- Nova seção para registrar pautas de reunião
+- Precisa permitir salvar pautas e dados diversos (formato livre/flexível), pois ainda será usado durante a construção do restante do sistema
