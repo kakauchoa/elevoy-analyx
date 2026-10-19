@@ -31,6 +31,6 @@ export default withAuth(
 // Protege rotas do dashboard — exclui rotas públicas e do portal do cliente CRM
 export const config = {
   matcher: [
-    "/((?!login|cadastro|admin/login|api/health|api/jobs|api/admin-master|compartilhavel|api/compartilhavel|api/auth|api/rastreamento/webhook|api/cliente-crm|crm-cliente|_next/static|_next/image|favicon.ico|public).*)",
+    "/((?!login|cadastro|admin/login|api/health|api/jobs|api/admin-master|compartilhavel|api/compartilhavel|api/auth|api/rastreamento/webhook|api/cliente-crm|api/claude|crm-cliente|_next/static|_next/image|favicon.ico|public).*)",
   ],
 };

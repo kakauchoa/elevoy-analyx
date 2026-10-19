@@ -13,7 +13,19 @@ claude/
       contexto.md        o negócio em texto livre
       log-acoes.md       o que foi feito nas campanhas e por quê
     <slug-do-cliente>/   uma pasta por cliente, mesmos 3 arquivos
+  rotinas/
+    diaria.md            roteiro da rotina das 8h (todo dia)
+    semanal.md           roteiro da rotina de segunda 9h
 ```
+
+## Onde os relatórios aparecem
+
+As rotinas enviam cada relatório para `POST /api/claude/relatorios` no Analyx, que salva nas tabelas `claude_relatorios` e `claude_otimizacoes`. Eles aparecem na aba **Claude → Relatórios** do painel (só admin):
+
+- `/claude`: visão geral, card por cliente com tendência, métricas e pendências
+- `/claude/<slug>`: histórico de relatórios e lista de otimizações (marcar como feita ou descartar)
+
+O token fica na variável `CLAUDE_RELATORIOS_TOKEN` do app e como segredo de rede no ambiente das rotinas. Nunca neste repo.
 
 ## Cadastro de cliente novo
 
