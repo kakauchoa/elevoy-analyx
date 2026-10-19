@@ -847,3 +847,114 @@ model MetricaPersonalizada {
 
   @@map("metricas_personalizadas")
 }
+
+// ── Relatórios gerados pelo Claude (aba Claude) ─────────────────────────────
+// Gravados pelas rotinas agendadas via POST /api/claude/relatorios (token).
+// Não têm vínculo com ContaAnuncio: o cadastro de clientes fica em claude/clientes no repo.
+
+enum ClaudeTipoRelatorio {
+  diario
+  semanal
+}
+
+enum ClaudeTendencia {
+  melhorando
+  estavel
+  caindo
+  sem_dados
+}
+
+enum ClaudePrioridade {
+  alta
+  media
+  baixa
+}
+
+enum ClaudeStatusOtimizacao {
+  pendente
+  feita
+  descartada
+}
+
+model ClaudeRelatorio {
+  id             String              @id @default(uuid())
+  clienteSlug    String              @map("cliente_slug") @db.VarChar(100)
+  clienteNome    String              @map("cliente_nome") @db.VarChar(255)
+  tipo           ClaudeTipoRelatorio
+  dataReferencia DateTime            @map("data_referencia") @db.Date
+  tendencia      ClaudeTendencia     @default(sem_dados)
+  resumo         String              @db.Text
+  conteudo       String              @db.LongText
+  metricas       Json?
+  pedidosCliente Json?               @map("pedidos_cliente")
+  criadoEm       DateTime            @default(now()) @map("criado_em")
+  atualizadoEm   DateTime            @updatedAt @map("atualizado_em")
+  otimizacoes    ClaudeOtimizacao[]
+
+  @@unique([clienteSlug, tipo, dataReferencia])
+  @@index([dataReferencia])
+  @@map("claude_relatorios")
+}
+
+model ClaudeOtimizacao {
+  id          String                 @id @default(uuid())
+  relatorioId String                 @map("relatorio_id")
+  clienteSlug String                 @map("cliente_slug") @db.VarChar(100)
+  titulo      String                 @db.VarChar(255)
+  descricao   String                 @db.Text
+  plataforma  String                 @default("meta") @db.VarChar(30)
+  prioridade  ClaudePrioridade       @default(media)
+  status      ClaudeStatusOtimizacao @default(pendente)
+  feitaEm     DateTime?              @map("feita_em")
+  criadoEm    DateTime               @default(now()) @map("criado_em")
+  relatorio   ClaudeRelatorio        @relation(fields: [relatorioId], references: [id], onDelete: Cascade)
+
+  @@index([clienteSlug, status])
+  @@map("claude_otimizacoes")
+}
+
+// ── Cadastro de clientes da aba Claude ──────────────────────────────────────
+// Fonte da verdade para as rotinas de relatório: quais contas puxar e o contexto
+// do negócio. Separado de ClienteAgencia/ContaAnuncio de propósito.
+
+enum ClaudeStatusCliente {
+  ativo
+  pausado
+  encerrado
+}
+
+enum ClaudeEstadoCliente {
+  saudavel
+  atencao
+  risco
+}
+
+model ClaudeCliente {
+  id                    String              @id @default(uuid())
+  slug                  String              @unique @db.VarChar(100)
+  nome                  String              @db.VarChar(255)
+  segmento              String?             @db.VarChar(120)
+  cidade                String?             @db.VarChar(120)
+  status                ClaudeStatusCliente @default(ativo)
+  estado                ClaudeEstadoCliente @default(saudavel)
+  ticketMensal          Decimal?            @map("ticket_mensal") @db.Decimal(10, 2)
+  dataEntrada           DateTime?           @map("data_entrada") @db.Date
+  ultimaVisita          DateTime?           @map("ultima_visita") @db.Date
+  metaAdAccountIds      Json?               @map("meta_ad_account_ids")
+  googleAdsCustomerId   String?             @map("google_ads_customer_id") @db.VarChar(20)
+  ga4PropertyId         String?             @map("ga4_property_id") @db.VarChar(30)
+  kommoConta            String?             @map("kommo_conta") @db.VarChar(120)
+  resultadoPrincipal    String?             @map("resultado_principal") @db.VarChar(60)
+  metaCustoPorResultado Decimal?            @map("meta_custo_por_resultado") @db.Decimal(10, 2)
+  orcamentoMidia        Decimal?            @map("orcamento_midia") @db.Decimal(10, 2)
+  briefing              String?             @db.LongText
+  contexto              String?             @db.Text
+  links                 Json?
+  pastasDrive           Json?               @map("pastas_drive")
+  mapaServicos          Json?               @map("mapa_servicos")
+  criadoEm              DateTime            @default(now()) @map("criado_em")
+  atualizadoEm          DateTime            @updatedAt @map("atualizado_em")
+
+  @@index([status])
+  @@map("claude_clientes")
+}
