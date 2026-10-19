@@ -19,7 +19,7 @@ Os mesmos da diária: lista de `GET /api/claude/clientes?status=ativo`.
 Antes de analisar, busque o que foi feito na semana:
 
 ```bash
-curl -sS "https://analyx.elevoy.com.br/api/claude/otimizacoes?cliente=<slug>&status=feita&desde=<HOJE-7>"
+curl -sS -H "Authorization: Bearer <TOKEN>" "https://analyx.elevoy.com.br/api/claude/otimizacoes?cliente=<slug>&status=feita&desde=<HOJE-7>"
 ```
 
 Junte com o histórico de alterações das contas no Meta e no Google (`change_event`). Se uma otimização foi marcada como feita, avalie se ela surtiu efeito.
@@ -27,7 +27,7 @@ Junte com o histórico de alterações das contas no Meta e no Google (`change_e
 Busque também os diários da semana para manter a coerência:
 
 ```bash
-curl -sS "https://analyx.elevoy.com.br/api/claude/relatorios?cliente=<slug>&tipo=diario&desde=<HOJE-7>"
+curl -sS -H "Authorization: Bearer <TOKEN>" "https://analyx.elevoy.com.br/api/claude/relatorios?cliente=<slug>&tipo=diario&desde=<HOJE-7>"
 ```
 
 ## Estrutura do `conteudo`

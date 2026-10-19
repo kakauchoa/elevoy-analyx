@@ -28,4 +28,4 @@ Para tirar um cliente das análises: status **Pausado** ou **Encerrado** na fich
 | `POST relatorios`, `GET relatorios`, `GET otimizacoes` | Rotina (token) ou admin logado |
 | `PATCH otimizacoes/:id` | Admin logado |
 
-O token fica na variável `CLAUDE_RELATORIOS_TOKEN` do app e como segredo de rede no ambiente das rotinas. Nunca neste repo.
+O token fica na variável `CLAUDE_RELATORIOS_TOKEN` do app e nas instruções das tarefas agendadas (Analyx diário e Analyx semanal). Nunca neste repo.

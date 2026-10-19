@@ -16,7 +16,7 @@ Use o fuso America/Sao_Paulo. `HOJE` é a data de hoje. Períodos:
 Busque o cadastro no Analyx:
 
 ```bash
-curl -sS "https://analyx.elevoy.com.br/api/claude/clientes?status=ativo"
+curl -sS -H "Authorization: Bearer <TOKEN>" "https://analyx.elevoy.com.br/api/claude/clientes?status=ativo"
 ```
 
 Entram só os clientes que voltarem nessa lista. Para cada um você recebe: contas (`metaAdAccountIds`, `googleAdsCustomerId`, `ga4PropertyId`, `kommoConta`), objetivo (`resultadoPrincipal`, `metaCustoPorResultado`, `orcamentoMidia`), `briefing`, `contexto`, `links`, `pastasDrive` e `mapaServicos`. Use o briefing e o contexto para entender o negócio antes de analisar.
@@ -73,11 +73,12 @@ Para cada cliente, faça um POST:
 
 ```bash
 curl -sS -X POST https://analyx.elevoy.com.br/api/claude/relatorios \
+  -H "Authorization: Bearer <TOKEN>" \
   -H "Content-Type: application/json" \
   --data @/tmp/relatorio-<slug>.json
 ```
 
-Não adicione header de autorização: o segredo de rede do ambiente injeta o token sozinho.
+Toda chamada para `analyx.elevoy.com.br` (GET e POST) leva o header `Authorization: Bearer <TOKEN>`, com o token que está nas instruções da tarefa agendada. Nunca escreva esse token em arquivo do repositório nem na mensagem final.
 
 Formato do JSON:
 
