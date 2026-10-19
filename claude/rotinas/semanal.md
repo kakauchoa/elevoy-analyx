@@ -4,7 +4,7 @@ Mesmas regras de escrita, coleta e envio da `claude/rotinas/diaria.md` (leia ela
 
 ## Clientes
 
-Entram os que têm `"ativo": true` e `"relatorio": { "semanal": true }`.
+Os mesmos da diária: lista de `GET /api/claude/clientes?status=ativo`.
 
 ## Períodos
 
@@ -22,7 +22,7 @@ Antes de analisar, busque o que foi feito na semana:
 curl -sS "https://analyx.elevoy.com.br/api/claude/otimizacoes?cliente=<slug>&status=feita&desde=<HOJE-7>"
 ```
 
-Junte com o `log-acoes.md` do cliente e o histórico de alterações da conta no Meta. Se uma otimização foi marcada como feita, avalie se ela surtiu efeito.
+Junte com o histórico de alterações das contas no Meta e no Google (`change_event`). Se uma otimização foi marcada como feita, avalie se ela surtiu efeito.
 
 Busque também os diários da semana para manter a coerência:
 

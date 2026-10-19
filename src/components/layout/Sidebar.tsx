@@ -275,7 +275,8 @@ const SECTIONS: NavSection[] = [
     label: "Claude",
     adminOnly: true,
     items: [
-      { href: "/claude", label: "Relatórios", icon: <IconSparkles /> },
+      { href: "/claude", label: "Relatórios", icon: <IconSparkles />, exact: true },
+      { href: "/claude/clientes", label: "Clientes", icon: <IconUsers /> },
     ],
   },
   {
