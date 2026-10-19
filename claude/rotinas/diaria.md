@@ -133,7 +133,59 @@ Se a resposta não for `{"ok":true,...}`, tente mais uma vez. Se falhar de novo,
 
 Depois de todos os clientes, envie mais um POST com `"clienteSlug": "geral"`, `"clienteNome": "Visão geral"`, `tipo: "diario"`, tendência predominante da carteira, e no `conteudo`: quem caiu e precisa de atenção hoje (primeiro), quem melhorou, investimento total da carteira em U7, e as 3 ações mais importantes do dia. Sem `otimizacoes` nesse.
 
-## 7. Mensagem final
+## 7. Envio para o n8n
+
+Depois dos POSTs no Analyx, envie um resumo de tudo para o webhook do n8n (um POST só, com todos os clientes):
+
+```bash
+curl -sS -X POST https://veltrox-n8n.6cna1x.easypanel.host/webhook/relatorio-clientes-elevoy \
+  -H "Content-Type: application/json" \
+  --data @/tmp/n8n-resumo.json
+```
+
+Formato do JSON (sempre esses campos, mesmo que vazios):
+
+```json
+{
+  "tipo": "diario",
+  "dataReferencia": "2026-10-19",
+  "geradoEm": "2026-10-20T07:52:00-03:00",
+  "mensagem": "O mesmo texto da mensagem final do passo 8",
+  "carteira": {
+    "clientes": 2,
+    "caindo": 1,
+    "melhorando": 0,
+    "estavel": 1,
+    "semDados": 0,
+    "investimento7d": 627.02
+  },
+  "clientes": [
+    {
+      "slug": "vox2you-nove-de-julho",
+      "nome": "Vox2You Nove de Julho",
+      "tendencia": "caindo",
+      "resumo": "2 a 3 frases, igual ao enviado ao Analyx",
+      "investimento7d": 471.64,
+      "resultados7d": 38,
+      "custoPorResultado7d": 12.41,
+      "variacaoCustoPorResultado": 18.2,
+      "canais": {
+        "meta": { "investimento7d": 471.64, "resultados7d": 38 },
+        "google": { "investimento7d": 0, "resultados7d": 0 }
+      },
+      "otimizacoes": [
+        { "titulo": "...", "prioridade": "alta", "plataforma": "meta" }
+      ],
+      "pedidosCliente": [],
+      "linkAnalyx": "https://analyx.elevoy.com.br/claude/vox2you-nove-de-julho"
+    }
+  ]
+}
+```
+
+Números sem formatação (ponto decimal, sem "R$"), `variacaoCustoPorResultado` em % contra os 7 dias anteriores. Canal que o cliente não usa fica `null`. Se o webhook não responder 2xx, tente mais uma vez e, se falhar de novo, cite na mensagem final.
+
+## 8. Mensagem final
 
 Termine com uma mensagem curta (vai como notificação no celular):
 
@@ -146,4 +198,4 @@ Top ação: ...
 Detalhes na aba Claude.
 ```
 
-Se algum POST falhou, diga quais.
+Se algum envio falhou (Analyx ou n8n), diga quais.

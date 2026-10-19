@@ -62,6 +62,8 @@ curl -sS "https://analyx.elevoy.com.br/api/claude/relatorios?cliente=<slug>&tipo
 
 Envie também o `geral` com `"tipo": "semanal"`: resumo da carteira, quem precisa de atenção, e a lista consolidada do que pedir para cada cliente.
 
+Envio para o n8n: igual ao passo 7 da diária, com `"tipo": "semanal"` e, em cada cliente, também `"melhorou"`, `"piorou"`, `"fizemos"` e `"planoDaSemana"` (listas de frases curtas).
+
 Mensagem final para notificação:
 
 ```
