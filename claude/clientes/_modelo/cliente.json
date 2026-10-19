@@ -1,0 +1,28 @@
+{
+  "nome": "",
+  "slug": "",
+  "ativo": true,
+  "segmento": "",
+  "cidade": "",
+  "data_inicio": "AAAA-MM-DD",
+
+  "contas": {
+    "meta_ad_account_ids": [],
+    "google_ads_customer_id": null,
+    "ga4_property_id": null,
+    "tiktok_advertiser_id": null
+  },
+
+  "objetivo": {
+    "resultado_principal": "",
+    "meta_custo_por_resultado": null,
+    "orcamento_mensal": null,
+    "ticket_medio": null,
+    "metricas_acompanhadas": []
+  },
+
+  "relatorio": {
+    "diario": true,
+    "semanal": true
+  }
+}
