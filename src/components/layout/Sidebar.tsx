@@ -321,6 +321,7 @@ const SECTIONS: NavSection[] = [
       { href: "/ferramentas", label: "Verificação de Saldo", icon: <IconShield />, exact: true, adminOnly: true },
       { href: "/ferramentas/rastreamento-whatsapp", label: "Rastreamento WhatsApp", icon: <IconWhatsApp /> },
       { href: "/ferramentas/construtor-dashboard", label: "Construtor de Dashboard", icon: <IconLayout />, adminOnly: true },
+      { href: "/ferramentas/baixar-instagram", label: "Baixar do Instagram", icon: <IconSearch /> },
     ],
   },
   {
